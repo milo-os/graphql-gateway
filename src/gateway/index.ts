@@ -9,6 +9,7 @@ import { createGatewayServer } from './server'
 import { env, scopedEndpoints } from './config'
 import { initAuth, getK8sServer } from './auth'
 import { initializeGateway } from './runtime'
+import { initGeolocation } from './services/geolocation'
 import { log } from '@/shared/utils'
 
 const main = async () => {
@@ -19,6 +20,20 @@ const main = async () => {
     const message = error instanceof Error ? error.message : String(error)
     log.error('Failed to initialize K8s auth', { error: message })
     process.exit(1)
+  }
+
+  // Initialize MaxMind geolocation database
+  if (env.maxmindDbPath) {
+    try {
+      await initGeolocation(env.maxmindDbPath)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      log.warn('Failed to load MaxMind database, geolocation will be unavailable', {
+        error: message,
+      })
+    }
+  } else {
+    log.info('MAXMIND_DB_PATH not set, geolocation lookups will be unavailable')
   }
 
   // Initialize gateway: compose supergraph eagerly + start background polling

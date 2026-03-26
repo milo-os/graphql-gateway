@@ -46,4 +46,7 @@ export const env = {
 
   /** Service version for Sentry release tracking */
   version: process.env.VERSION || 'dev',
+
+  /** Path to the MaxMind GeoLite2-City.mmdb database file */
+  maxmindDbPath: process.env.MAXMIND_DB_PATH || '',
 }

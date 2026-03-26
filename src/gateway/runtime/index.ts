@@ -6,6 +6,7 @@ import { env } from '@/gateway/config'
 import { getMTLSConfig } from '@/gateway/auth'
 import { log } from '@/shared/utils'
 import { usePrometheusMetrics } from '@/gateway/metrics/metrics'
+import { additionalTypeDefs, additionalResolvers } from '@/gateway/graphql'
 
 /** Cached supergraph SDL - updated by the worker after each composition cycle */
 let supergraphSdl: string = ''
@@ -186,6 +187,8 @@ export const gateway = createGatewayRuntime({
   supergraph: getSupergraph,
   logging: env.logLevel,
   unifiedGraphHandler,
+  additionalTypeDefs,
+  additionalResolvers,
   plugins: (ctx) => [
     // Uses the SDK configured in telemetry/telemetry.ts via openTelemetrySetup
     useOpenTelemetry({}),
