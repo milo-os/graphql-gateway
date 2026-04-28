@@ -27,7 +27,7 @@
     "@sentry/node": "^8",
     "@graphql-hive/gateway": "^2.1.19",
     "@graphql-hive/router-runtime": "^1.0.1",
-    "@graphql-mesh/compose-cli": "^1.5.3",
+    "@graphql-mesh/compose-cli": "^1.5.26",
     "@graphql-mesh/plugin-prometheus": "^2.1.13",
     "@kubernetes/client-node": "^1.4.0",
     "@omnigraph/openapi": "^0.109.23",
