@@ -30,7 +30,7 @@
     "@graphql-mesh/compose-cli": "^1.5.3",
     "@graphql-mesh/plugin-prometheus": "^2.1.13",
     "@kubernetes/client-node": "^1.4.0",
-    "@omnigraph/openapi": "^0.109.23",
+    "@omnigraph/openapi": "^0.109.46",
     "@opentelemetry/context-async-hooks": "^2.4.0",
     "@opentelemetry/exporter-trace-otlp-grpc": "^0.208.0",
     "yaml": "^2.3.2"
