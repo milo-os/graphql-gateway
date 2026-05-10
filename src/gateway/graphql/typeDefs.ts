@@ -27,7 +27,16 @@ export const additionalTypeDefs = /* GraphQL */ `
   extend type Query {
     parseUserAgent(userAgent: String!): ParsedUserAgent!
     geolocateIP(ip: String!): GeoLocation
-    sessions: [ExtendedSession!]!
+    """
+    Returns sessions for the authenticated caller by default.
+
+    When userID is provided and differs from the caller, the request is
+    forwarded to milo with a status.userUID field selector. milo authorizes
+    the cross-user lookup via SubjectAccessReview against
+    iam.miloapis.com/users/<userID> — callers without that permission get
+    an empty list (the underlying 403 is logged).
+    """
+    sessions(userID: ID): [ExtendedSession!]!
   }
 
   extend type Mutation {

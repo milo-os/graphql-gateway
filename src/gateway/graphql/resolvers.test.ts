@@ -54,8 +54,10 @@ const jsonResponse = (body: unknown, status = 200) =>
     headers: { 'content-type': 'application/json' },
   })
 
-const callSessions = (context: ReturnType<typeof ctx> = ctx()) =>
-  (additionalResolvers.Query!.sessions as SessionsResolver)(null, null, context)
+const callSessions = (
+  args: { userID?: string } = {},
+  context: ReturnType<typeof ctx> = ctx()
+) => (additionalResolvers.Query!.sessions as SessionsResolver)(null, args, context)
 
 const callDeleteSession = (
   args: { id: string },
@@ -94,7 +96,7 @@ describe('Query.sessions', () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({ items: [] }))
     await (additionalResolvers.Query!.sessions as SessionsResolver)(
       null,
-      null,
+      {},
       yogaCtx({ 'x-resource-endpoint-prefix': '/apis/iam.miloapis.com/v1alpha1/users/u1/control-plane' }) as Parameters<SessionsResolver>[2]
     )
 
@@ -111,7 +113,7 @@ describe('Query.sessions', () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({ items: [] }))
     await (additionalResolvers.Query!.sessions as SessionsResolver)(
       null,
-      null,
+      {},
       { headers: {} } as Parameters<SessionsResolver>[2]
     )
 
@@ -123,11 +125,21 @@ describe('Query.sessions', () => {
 
   it('honours x-resource-endpoint-prefix when present', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({ items: [] }))
-    await callSessions(ctx({ 'x-resource-endpoint-prefix': '/projects/p1' }))
+    await callSessions({}, ctx({ 'x-resource-endpoint-prefix': '/projects/p1' }))
 
     const [url] = fetchSpy.mock.calls[0]
     expect(url).toBe(
       'https://k8s.test/projects/p1/apis/identity.miloapis.com/v1alpha1/sessions'
+    )
+  })
+
+  it('forwards userID as a status.userUID field selector', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse({ items: [] }))
+    await callSessions({ userID: 'target-user' })
+
+    const [url] = fetchSpy.mock.calls[0]
+    expect(url).toBe(
+      'https://k8s.test/apis/identity.miloapis.com/v1alpha1/sessions?fieldSelector=status.userUID%3Dtarget-user'
     )
   })
 

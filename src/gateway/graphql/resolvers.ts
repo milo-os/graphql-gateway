@@ -63,11 +63,21 @@ function enrichSession(session: UpstreamSession) {
   }
 }
 
-function sessionsURL(context: ResolverContext, name?: string) {
+function sessionsURL(
+  context: ResolverContext,
+  options: { name?: string; userID?: string } = {}
+) {
   const server = getK8sServer()
   const endpointPrefix = getHeader(context, 'x-resource-endpoint-prefix')
   const base = `${server}${endpointPrefix}/apis/identity.miloapis.com/v1alpha1/sessions`
-  return name ? `${base}/${encodeURIComponent(name)}` : base
+  if (options.name) return `${base}/${encodeURIComponent(options.name)}`
+  if (options.userID) {
+    const params = new URLSearchParams({
+      fieldSelector: `status.userUID=${options.userID}`,
+    })
+    return `${base}?${params.toString()}`
+  }
+  return base
 }
 
 export const additionalResolvers = {
@@ -80,9 +90,13 @@ export const additionalResolvers = {
       return lookupIp(args.ip)
     },
 
-    sessions: async (_root: unknown, _args: unknown, context: ResolverContext) => {
+    sessions: async (
+      _root: unknown,
+      args: { userID?: string },
+      context: ResolverContext
+    ) => {
       try {
-        const url = sessionsURL(context)
+        const url = sessionsURL(context, { userID: args.userID })
         const authorization = getHeader(context, 'authorization')
 
         // Use the pre-override fetch so no client cert is presented. milo's
@@ -122,7 +136,7 @@ export const additionalResolvers = {
       args: { id: string },
       context: ResolverContext
     ) => {
-      const url = sessionsURL(context, args.id)
+      const url = sessionsURL(context, { name: args.id })
       const authorization = getHeader(context, 'authorization')
 
       // Same reason as Query.sessions — bypass the mTLS-wrapped global
