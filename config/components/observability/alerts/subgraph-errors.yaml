@@ -21,7 +21,7 @@ spec:
               execute requests against subgraph {{ $labels.subgraphName }}.
               This typically indicates a TLS certificate issue or the
               downstream API server being unreachable.
-            runbook_url: "https://github.com/datum-cloud/graphql-gateway/blob/main/docs/runbooks/subgraph-errors.md"
+            runbook_url: "https://github.com/milo-os/graphql-gateway/blob/main/docs/runbooks/subgraph-errors.md"
         - alert: GraphQLGatewaySubgraphErrorsSustained
           expr: |
             increase(graphql_gateway_subgraph_execute_errors[15m]) > 5
@@ -38,4 +38,4 @@ spec:
               over 10 minutes. Users are likely unable to load
               organization memberships or other data served by this
               subgraph.
-            runbook_url: "https://github.com/datum-cloud/graphql-gateway/blob/main/docs/runbooks/subgraph-errors.md"
+            runbook_url: "https://github.com/milo-os/graphql-gateway/blob/main/docs/runbooks/subgraph-errors.md"
