@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
         - name: graphql-gateway
-          image: ghcr.io/datum-cloud/graphql-gateway:latest
+          image: ghcr.io/milo-os/graphql-gateway:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 4000
