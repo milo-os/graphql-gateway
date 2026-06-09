@@ -63,10 +63,7 @@ function enrichSession(session: UpstreamSession) {
   }
 }
 
-function sessionsURL(
-  context: ResolverContext,
-  options: { name?: string; userID?: string } = {}
-) {
+function sessionsURL(context: ResolverContext, options: { name?: string; userID?: string } = {}) {
   const server = getK8sServer()
   const endpointPrefix = getHeader(context, 'x-resource-endpoint-prefix')
   const base = `${server}${endpointPrefix}/apis/identity.miloapis.com/v1alpha1/sessions`
@@ -80,6 +77,83 @@ function sessionsURL(
   return base
 }
 
+const PROJECT_DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
+
+interface UpstreamServiceConsumer {
+  metadata?: { name?: string; creationTimestamp?: string }
+  spec?: {
+    serviceRef?: { name?: string }
+    consumerProjectRef?: { name?: string }
+    approval?: { decision?: string; message?: string }
+  }
+  status?: { phase?: string }
+}
+
+interface UpstreamServiceConsumerList {
+  items?: UpstreamServiceConsumer[]
+}
+
+interface UpstreamProject {
+  metadata?: { annotations?: Record<string, string> }
+}
+
+// ServiceConsumers live in the producer project's control plane, not at the
+// core level — hence the /projects/<producer>/control-plane prefix. The list
+// is cluster-scoped within that control plane (no namespace).
+function serviceConsumersURL(producerProject: string) {
+  const server = getK8sServer()
+  return (
+    `${server}/apis/resourcemanager.miloapis.com/v1alpha1` +
+    `/projects/${encodeURIComponent(producerProject)}/control-plane` +
+    `/apis/services.miloapis.com/v1alpha1/serviceconsumers`
+  )
+}
+
+// The Project object itself is read at the core resourcemanager API (no
+// control-plane prefix) — that's where its annotations live.
+function projectURL(name: string) {
+  const server = getK8sServer()
+  return `${server}/apis/resourcemanager.miloapis.com/v1alpha1/projects/${encodeURIComponent(name)}`
+}
+
+/**
+ * Resolves the human-readable display name for each unique consumer project.
+ *
+ * Returns a name -> displayName map. Per-project failures (missing annotation,
+ * 403, network) are swallowed so the project simply falls back to its raw
+ * name later — a single inaccessible project never fails the whole query.
+ * Fetches run in parallel; there is no gateway-level dataloader.
+ */
+async function resolveProjectDisplayNames(
+  projectNames: string[],
+  headers: Record<string, string>
+): Promise<Map<string, string>> {
+  const fetchFn = getOriginalFetch()
+  const displayNames = new Map<string, string>()
+
+  await Promise.all(
+    projectNames.map(async (name) => {
+      try {
+        const response = await fetchFn(projectURL(name), { headers })
+        if (!response.ok) {
+          log.warn('milo project fetch failed', { project: name, status: response.status })
+          return
+        }
+        const project = (await response.json()) as UpstreamProject
+        const description = project.metadata?.annotations?.[PROJECT_DESCRIPTION_ANNOTATION]
+        if (description) displayNames.set(name, description)
+      } catch (error) {
+        log.warn('milo project fetch threw', {
+          project: name,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    })
+  )
+
+  return displayNames
+}
+
 export const additionalResolvers = {
   Query: {
     parseUserAgent: (_root: unknown, args: { userAgent: string }) => {
@@ -90,11 +164,7 @@ export const additionalResolvers = {
       return lookupIp(args.ip)
     },
 
-    sessions: async (
-      _root: unknown,
-      args: { userID?: string },
-      context: ResolverContext
-    ) => {
+    sessions: async (_root: unknown, args: { userID?: string }, context: ResolverContext) => {
       try {
         const url = sessionsURL(context, { userID: args.userID })
         const authorization = getHeader(context, 'authorization')
@@ -128,14 +198,71 @@ export const additionalResolvers = {
         return []
       }
     },
+
+    serviceConsumers: async (
+      _root: unknown,
+      args: { producerProject: string },
+      context: ResolverContext
+    ) => {
+      try {
+        const authorization = getHeader(context, 'authorization')
+        // Use the pre-override fetch (bearer, not the gateway's mTLS cert) so
+        // milo authorizes the end user — same reasoning as Query.sessions.
+        const fetchFn = getOriginalFetch()
+        const headers = {
+          ...(authorization ? { Authorization: authorization } : {}),
+          Accept: 'application/json',
+        }
+
+        const url = serviceConsumersURL(args.producerProject)
+        const response = await fetchFn(url, { headers })
+        if (!response.ok) {
+          log.warn('milo serviceConsumers fetch failed', {
+            status: response.status,
+            url,
+            hasAuthorization: !!authorization,
+          })
+          return []
+        }
+
+        const body = (await response.json()) as UpstreamServiceConsumerList
+        const consumers = body.items ?? []
+
+        const projectNames = [
+          ...new Set(
+            consumers
+              .map((c) => c.spec?.consumerProjectRef?.name)
+              .filter((name): name is string => !!name)
+          ),
+        ]
+        const displayNames = await resolveProjectDisplayNames(projectNames, headers)
+
+        return consumers.map((consumer) => {
+          const projectName = consumer.spec?.consumerProjectRef?.name ?? ''
+          return {
+            name: consumer.metadata?.name ?? '',
+            serviceName: consumer.spec?.serviceRef?.name ?? null,
+            phase: consumer.status?.phase ?? null,
+            approvalDecision: consumer.spec?.approval?.decision ?? null,
+            approvalMessage: consumer.spec?.approval?.message ?? null,
+            requestedAt: consumer.metadata?.creationTimestamp ?? null,
+            consumerProject: {
+              name: projectName,
+              displayName: displayNames.get(projectName) || projectName,
+            },
+          }
+        })
+      } catch (error) {
+        log.error('ServiceConsumers resolver failed', {
+          error: error instanceof Error ? error.message : String(error),
+        })
+        return []
+      }
+    },
   },
 
   Mutation: {
-    deleteSession: async (
-      _root: unknown,
-      args: { id: string },
-      context: ResolverContext
-    ) => {
+    deleteSession: async (_root: unknown, args: { id: string }, context: ResolverContext) => {
       const url = sessionsURL(context, { name: args.id })
       const authorization = getHeader(context, 'authorization')
 

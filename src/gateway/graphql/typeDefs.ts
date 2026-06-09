@@ -24,9 +24,45 @@ export const additionalTypeDefs = /* GraphQL */ `
     location: GeoLocation
   }
 
+  type ConsumerProject {
+    "The project's machine name (metadata.name)."
+    name: String!
+    "Human-readable name from the kubernetes.io/description annotation, falling back to name."
+    displayName: String!
+  }
+
+  type ServiceConsumer {
+    "The ServiceConsumer's name (metadata.name)."
+    name: String!
+    "The referenced service (spec.serviceRef.name), used by callers to filter by service."
+    serviceName: String
+    "Lifecycle phase (status.phase), e.g. Active, PendingApproval."
+    phase: String
+    "Approval decision (spec.approval.decision), e.g. Approved, Denied."
+    approvalDecision: String
+    "Optional approval note (spec.approval.message)."
+    approvalMessage: String
+    "When the consumer was requested (metadata.creationTimestamp)."
+    requestedAt: String
+    "The consuming project, enriched with its display name."
+    consumerProject: ConsumerProject!
+  }
+
   extend type Query {
     parseUserAgent(userAgent: String!): ParsedUserAgent!
     geolocateIP(ip: String!): GeoLocation
+    """
+    Lists ServiceConsumers in the given producer project, enriched with each
+    consumer project's human-readable display name (the
+    kubernetes.io/description annotation on the Project, falling back to the
+    project name).
+
+    Authorization uses the caller's bearer token for both the consumer list
+    (in the producer project's control plane) and the per-project lookups (at
+    the core resourcemanager API). A list failure returns an empty list; a
+    per-project lookup failure degrades that row to the raw project name.
+    """
+    serviceConsumers(producerProject: ID!): [ServiceConsumer!]!
     """
     Returns sessions for the authenticated caller by default.
 
