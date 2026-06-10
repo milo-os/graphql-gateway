@@ -36,6 +36,7 @@ import { additionalResolvers } from './resolvers'
 type Resolvers = typeof additionalResolvers
 type SessionsResolver = NonNullable<Resolvers['Query']>['sessions']
 type DeleteResolver = NonNullable<Resolvers['Mutation']>['deleteSession']
+type ServiceConsumersResolver = NonNullable<Resolvers['Query']>['serviceConsumers']
 
 const ctx = (overrides: Record<string, string> = {}) => ({
   headers: { authorization: 'Bearer test', ...overrides },
@@ -54,15 +55,36 @@ const jsonResponse = (body: unknown, status = 200) =>
     headers: { 'content-type': 'application/json' },
   })
 
-const callSessions = (
-  args: { userID?: string } = {},
-  context: ReturnType<typeof ctx> = ctx()
-) => (additionalResolvers.Query!.sessions as SessionsResolver)(null, args, context)
+const callSessions = (args: { userID?: string } = {}, context: ReturnType<typeof ctx> = ctx()) =>
+  (additionalResolvers.Query!.sessions as SessionsResolver)(null, args, context)
 
-const callDeleteSession = (
-  args: { id: string },
+const callDeleteSession = (args: { id: string }, context: ReturnType<typeof ctx> = ctx()) =>
+  (additionalResolvers.Mutation!.deleteSession as DeleteResolver)(null, args, context)
+
+const callServiceConsumers = (
+  args: { producerProject: string },
   context: ReturnType<typeof ctx> = ctx()
-) => (additionalResolvers.Mutation!.deleteSession as DeleteResolver)(null, args, context)
+) => (additionalResolvers.Query!.serviceConsumers as ServiceConsumersResolver)(null, args, context)
+
+// Routes fetch responses by URL so the consumer-list call and the per-project
+// lookups can be stubbed independently within a single resolver invocation.
+const routedFetch = (routes: {
+  consumers?: Response
+  projects?: Record<string, Response>
+  fallback?: Response
+}) =>
+  vi.fn((input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+    if (url.includes('/serviceconsumers')) {
+      return Promise.resolve(routes.consumers ?? jsonResponse({ items: [] }))
+    }
+    const projectMatch = url.match(/\/projects\/([^/?]+)$/)
+    if (projectMatch) {
+      const name = decodeURIComponent(projectMatch[1])
+      return Promise.resolve(routes.projects?.[name] ?? jsonResponse({}, 404))
+    }
+    return Promise.resolve(routes.fallback ?? jsonResponse({}, 404))
+  })
 
 describe('Query.sessions', () => {
   let fetchSpy: ReturnType<typeof vi.fn>
@@ -83,9 +105,7 @@ describe('Query.sessions', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     const [url, init] = fetchSpy.mock.calls[0]
-    expect(url).toBe(
-      'https://k8s.test/apis/identity.miloapis.com/v1alpha1/sessions'
-    )
+    expect(url).toBe('https://k8s.test/apis/identity.miloapis.com/v1alpha1/sessions')
     expect((init as RequestInit).headers).toMatchObject({
       Authorization: 'Bearer test',
       Accept: 'application/json',
@@ -97,7 +117,9 @@ describe('Query.sessions', () => {
     await (additionalResolvers.Query!.sessions as SessionsResolver)(
       null,
       {},
-      yogaCtx({ 'x-resource-endpoint-prefix': '/apis/iam.miloapis.com/v1alpha1/users/u1/control-plane' }) as Parameters<SessionsResolver>[2]
+      yogaCtx({
+        'x-resource-endpoint-prefix': '/apis/iam.miloapis.com/v1alpha1/users/u1/control-plane',
+      }) as Parameters<SessionsResolver>[2]
     )
 
     const [url, init] = fetchSpy.mock.calls[0]
@@ -111,11 +133,9 @@ describe('Query.sessions', () => {
 
   it('omits the Authorization header entirely when no token is on the context', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({ items: [] }))
-    await (additionalResolvers.Query!.sessions as SessionsResolver)(
-      null,
-      {},
-      { headers: {} } as Parameters<SessionsResolver>[2]
-    )
+    await (additionalResolvers.Query!.sessions as SessionsResolver)(null, {}, {
+      headers: {},
+    } as Parameters<SessionsResolver>[2])
 
     const [, init] = fetchSpy.mock.calls[0]
     const sent = (init as RequestInit).headers as Record<string, string>
@@ -128,9 +148,7 @@ describe('Query.sessions', () => {
     await callSessions({}, ctx({ 'x-resource-endpoint-prefix': '/projects/p1' }))
 
     const [url] = fetchSpy.mock.calls[0]
-    expect(url).toBe(
-      'https://k8s.test/projects/p1/apis/identity.miloapis.com/v1alpha1/sessions'
-    )
+    expect(url).toBe('https://k8s.test/projects/p1/apis/identity.miloapis.com/v1alpha1/sessions')
   })
 
   it('forwards userID as a status.userUID field selector', async () => {
@@ -231,9 +249,7 @@ describe('Mutation.deleteSession', () => {
     await callDeleteSession({ id: 'sess-1' })
 
     const [url, init] = fetchSpy.mock.calls[0]
-    expect(url).toBe(
-      'https://k8s.test/apis/identity.miloapis.com/v1alpha1/sessions/sess-1'
-    )
+    expect(url).toBe('https://k8s.test/apis/identity.miloapis.com/v1alpha1/sessions/sess-1')
     expect((init as RequestInit).method).toBe('DELETE')
     expect((init as RequestInit).headers).toMatchObject({
       Authorization: 'Bearer test',
@@ -245,9 +261,7 @@ describe('Mutation.deleteSession', () => {
     await callDeleteSession({ id: 'a b/c' })
 
     const [url] = fetchSpy.mock.calls[0]
-    expect(url).toBe(
-      'https://k8s.test/apis/identity.miloapis.com/v1alpha1/sessions/a%20b%2Fc'
-    )
+    expect(url).toBe('https://k8s.test/apis/identity.miloapis.com/v1alpha1/sessions/a%20b%2Fc')
   })
 
   it('returns true on a 200 response', async () => {
@@ -271,6 +285,156 @@ describe('Mutation.deleteSession', () => {
         status: 500,
       }),
     })
+  })
+})
+
+describe('Query.serviceConsumers', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+  })
+
+  const consumer = (over: {
+    name: string
+    project?: string
+    service?: string
+    phase?: string
+    decision?: string
+    message?: string
+    createdAt?: string
+  }) => ({
+    metadata: { name: over.name, creationTimestamp: over.createdAt ?? '2026-06-01T00:00:00Z' },
+    spec: {
+      ...(over.service ? { serviceRef: { name: over.service } } : {}),
+      ...(over.project ? { consumerProjectRef: { name: over.project } } : {}),
+      ...(over.decision ? { approval: { decision: over.decision, message: over.message } } : {}),
+    },
+    status: over.phase ? { phase: over.phase } : {},
+  })
+
+  const project = (description?: string) =>
+    jsonResponse({
+      metadata: description ? { annotations: { 'kubernetes.io/description': description } } : {},
+    })
+
+  it('lists consumers in the producer project control plane forwarding Authorization', async () => {
+    fetchSpy = routedFetch({ consumers: jsonResponse({ items: [] }) })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    await callServiceConsumers({ producerProject: 'prod-proj' })
+
+    const [url, init] = fetchSpy.mock.calls[0]
+    expect(url).toBe(
+      'https://k8s.test/apis/resourcemanager.miloapis.com/v1alpha1' +
+        '/projects/prod-proj/control-plane' +
+        '/apis/services.miloapis.com/v1alpha1/serviceconsumers'
+    )
+    expect((init as RequestInit).headers).toMatchObject({
+      Authorization: 'Bearer test',
+      Accept: 'application/json',
+    })
+  })
+
+  it('enriches each consumer with the project display name', async () => {
+    fetchSpy = routedFetch({
+      consumers: jsonResponse({
+        items: [consumer({ name: 'sc-1', project: 'alpha', service: 'svc', phase: 'Active' })],
+      }),
+      projects: { alpha: project("Alice's Project") },
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await callServiceConsumers({ producerProject: 'prod-proj' })
+    expect(result).toEqual([
+      {
+        name: 'sc-1',
+        serviceName: 'svc',
+        phase: 'Active',
+        approvalDecision: null,
+        approvalMessage: null,
+        requestedAt: '2026-06-01T00:00:00Z',
+        consumerProject: { name: 'alpha', displayName: "Alice's Project" },
+      },
+    ])
+  })
+
+  it('maps approval decision and message', async () => {
+    fetchSpy = routedFetch({
+      consumers: jsonResponse({
+        items: [
+          consumer({
+            name: 'sc-2',
+            project: 'beta',
+            decision: 'Approved',
+            message: 'looks good',
+          }),
+        ],
+      }),
+      projects: { beta: project('Beta') },
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const [row] = await callServiceConsumers({ producerProject: 'p' })
+    expect(row.approvalDecision).toBe('Approved')
+    expect(row.approvalMessage).toBe('looks good')
+  })
+
+  it('falls back to the raw project name when the annotation is missing', async () => {
+    fetchSpy = routedFetch({
+      consumers: jsonResponse({ items: [consumer({ name: 'sc-3', project: 'gamma' })] }),
+      projects: { gamma: project() },
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const [row] = await callServiceConsumers({ producerProject: 'p' })
+    expect(row.consumerProject).toEqual({ name: 'gamma', displayName: 'gamma' })
+  })
+
+  it('falls back to the raw project name when the project lookup is forbidden', async () => {
+    fetchSpy = routedFetch({
+      consumers: jsonResponse({ items: [consumer({ name: 'sc-4', project: 'delta' })] }),
+      projects: { delta: new Response('forbidden', { status: 403 }) },
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const [row] = await callServiceConsumers({ producerProject: 'p' })
+    expect(row.consumerProject).toEqual({ name: 'delta', displayName: 'delta' })
+  })
+
+  it('fetches each unique project only once', async () => {
+    fetchSpy = routedFetch({
+      consumers: jsonResponse({
+        items: [
+          consumer({ name: 'sc-5', project: 'shared' }),
+          consumer({ name: 'sc-6', project: 'shared' }),
+        ],
+      }),
+      projects: { shared: project('Shared') },
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await callServiceConsumers({ producerProject: 'p' })
+    const projectCalls = fetchSpy.mock.calls.filter(([url]) =>
+      String(url).match(/\/projects\/shared$/)
+    )
+    expect(projectCalls).toHaveLength(1)
+    expect(result.map((r) => r.consumerProject.displayName)).toEqual(['Shared', 'Shared'])
+  })
+
+  it('returns an empty list when the consumer list fetch fails', async () => {
+    fetchSpy = routedFetch({ consumers: new Response('boom', { status: 500 }) })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    expect(await callServiceConsumers({ producerProject: 'p' })).toEqual([])
+  })
+
+  it('returns an empty list when fetch throws', async () => {
+    fetchSpy = vi.fn().mockRejectedValue(new Error('network down'))
+    vi.stubGlobal('fetch', fetchSpy)
+
+    expect(await callServiceConsumers({ producerProject: 'p' })).toEqual([])
   })
 })
 
