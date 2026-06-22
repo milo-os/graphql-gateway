@@ -77,7 +77,7 @@ function sessionsURL(context: ResolverContext, options: { name?: string; userID?
   return base
 }
 
-const PROJECT_DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
+const DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
 
 interface UpstreamContactGroupMembership {
   metadata?: { name?: string }
@@ -168,7 +168,7 @@ async function resolveProjectDisplayNames(
           return
         }
         const project = (await response.json()) as UpstreamProject
-        const description = project.metadata?.annotations?.[PROJECT_DESCRIPTION_ANNOTATION]
+        const description = project.metadata?.annotations?.[DESCRIPTION_ANNOTATION]
         if (description) displayNames.set(name, description)
       } catch (error) {
         log.warn('milo project fetch threw', {
@@ -182,8 +182,6 @@ async function resolveProjectDisplayNames(
   return displayNames
 }
 
-const CONTACT_DISPLAY_NAME_ANNOTATION = 'kubernetes.io/description'
-
 function mapContact(contact: UpstreamContact) {
   return {
     name: contact.metadata?.name ?? '',
@@ -191,7 +189,7 @@ function mapContact(contact: UpstreamContact) {
     email: contact.spec?.email ?? null,
     givenName: contact.spec?.givenName ?? null,
     familyName: contact.spec?.familyName ?? null,
-    displayName: contact.metadata?.annotations?.[CONTACT_DISPLAY_NAME_ANNOTATION] ?? null,
+    displayName: contact.metadata?.annotations?.[DESCRIPTION_ANNOTATION] ?? null,
   }
 }
 
@@ -201,6 +199,38 @@ function mapContactGroup(group: UpstreamContactGroup) {
     namespace: group.metadata?.namespace ?? '',
     displayName: group.spec?.displayName ?? null,
   }
+}
+
+const USER_SUMMARIES_MAX = 100
+
+async function fetchMemberships(
+  args: { namespace?: string; fieldSelector?: string; limit?: number; cursor?: string },
+  context: ResolverContext
+) {
+  const authorization = getHeader(context, 'authorization')
+  const fetchFn = getOriginalFetch()
+  const headers = {
+    ...(authorization ? { Authorization: authorization } : {}),
+    Accept: 'application/json',
+  }
+  const server = getK8sServer()
+  const namespace = encodeURIComponent(args.namespace ?? 'default')
+  const params = new URLSearchParams()
+  if (args.fieldSelector) params.set('fieldSelector', args.fieldSelector)
+  if (args.limit != null) params.set('limit', String(args.limit))
+  if (args.cursor) params.set('continue', args.cursor)
+  const paramStr = params.toString()
+  const url =
+    `${server}/apis/notification.miloapis.com/v1alpha1/namespaces/${namespace}/contactgroupmemberships` +
+    (paramStr ? `?${paramStr}` : '')
+
+  const response = await fetchFn(url, { headers })
+  if (!response.ok) {
+    log.warn('milo contactgroupmemberships fetch failed', { status: response.status, url, hasAuthorization: !!authorization })
+    return { headers, memberships: [], continueToken: null }
+  }
+  const body = (await response.json()) as UpstreamContactGroupMembershipList
+  return { headers, memberships: body.items ?? [], continueToken: body.metadata?.continue ?? null }
 }
 
 export const additionalResolvers = {
@@ -250,178 +280,94 @@ export const additionalResolvers = {
 
     contactGroupMembershipsWithContacts: async (
       _root: unknown,
-      args: { fieldSelector?: string; limit?: number; cursor?: string },
+      args: { namespace?: string; fieldSelector?: string; limit?: number; cursor?: string },
       context: ResolverContext
     ) => {
       try {
-        const authorization = getHeader(context, 'authorization')
-        const fetchFn = getOriginalFetch()
-        const headers = {
-          ...(authorization ? { Authorization: authorization } : {}),
-          Accept: 'application/json',
-        }
-
+        const { headers, memberships, continueToken } = await fetchMemberships(args, context)
         const server = getK8sServer()
-        const params = new URLSearchParams()
-        if (args.fieldSelector) params.set('fieldSelector', args.fieldSelector)
-        if (args.limit != null) params.set('limit', String(args.limit))
-        if (args.cursor) params.set('continue', args.cursor)
-        const paramStr = params.toString()
-        const url = `${server}/apis/notification.miloapis.com/v1alpha1/contactgroupmemberships${paramStr ? `?${paramStr}` : ''}`
-
-        const response = await fetchFn(url, { headers })
-        if (!response.ok) {
-          log.warn('milo contactgroupmemberships fetch failed', {
-            status: response.status,
-            url,
-            hasAuthorization: !!authorization,
-          })
-          return { items: [] }
-        }
-
-        const body = (await response.json()) as UpstreamContactGroupMembershipList
-        const memberships = body.items ?? []
-
-        // Collect unique (namespace, name) pairs from contactRef
         const uniqueContacts = new Map<string, { name: string; namespace: string }>()
         for (const m of memberships) {
           const ref = m.spec?.contactRef
           if (ref?.name && ref.namespace) {
-            uniqueContacts.set(`${ref.namespace}/${ref.name}`, {
-              name: ref.name,
-              namespace: ref.namespace,
-            })
+            uniqueContacts.set(`${ref.namespace}/${ref.name}`, { name: ref.name, namespace: ref.namespace })
           }
         }
-
-        // Fetch all contacts in parallel, swallowing per-contact errors
         const contactMap = new Map<string, ReturnType<typeof mapContact>>()
+        const fetchFn = getOriginalFetch()
         await Promise.all(
           Array.from(uniqueContacts.values()).map(async ({ name, namespace }) => {
             try {
-              const contactUrl = `${server}/apis/notification.miloapis.com/v1alpha1/namespaces/${encodeURIComponent(namespace)}/contacts/${encodeURIComponent(name)}`
-              const r = await fetchFn(contactUrl, { headers })
+              const url = `${server}/apis/notification.miloapis.com/v1alpha1/namespaces/${encodeURIComponent(namespace)}/contacts/${encodeURIComponent(name)}`
+              const r = await fetchFn(url, { headers })
               if (!r.ok) return
-              const contact = (await r.json()) as UpstreamContact
-              contactMap.set(`${namespace}/${name}`, mapContact(contact))
+              contactMap.set(`${namespace}/${name}`, mapContact((await r.json()) as UpstreamContact))
             } catch (error) {
-              log.warn('milo contact fetch threw', {
-                name,
-                namespace,
-                error: error instanceof Error ? error.message : String(error),
-              })
+              log.warn('milo contact fetch threw', { name, namespace, error: error instanceof Error ? error.message : String(error) })
             }
           })
         )
-
         return {
-          continue: body.metadata?.continue ?? null,
+          continue: continueToken,
           items: memberships.map((m) => {
             const ref = m.spec?.contactRef
-            const contactKey = ref?.namespace && ref.name ? `${ref.namespace}/${ref.name}` : ''
+            const key = ref?.namespace && ref.name ? `${ref.namespace}/${ref.name}` : ''
             return {
               name: m.metadata?.name ?? '',
-              contactRef: {
-                name: ref?.name ?? '',
-                namespace: ref?.namespace ?? '',
-              },
-              contact: contactKey ? (contactMap.get(contactKey) ?? null) : null,
+              contactRef: { name: ref?.name ?? '', namespace: ref?.namespace ?? '' },
+              contact: key ? (contactMap.get(key) ?? null) : null,
             }
           }),
         }
       } catch (error) {
-        log.error('contactGroupMembershipsWithContacts resolver failed', {
-          error: error instanceof Error ? error.message : String(error),
-        })
+        log.error('contactGroupMembershipsWithContacts resolver failed', { error: error instanceof Error ? error.message : String(error) })
         return { items: [] }
       }
     },
 
     contactMembershipsWithGroups: async (
       _root: unknown,
-      args: { fieldSelector?: string; limit?: number; cursor?: string },
+      args: { namespace?: string; fieldSelector?: string; limit?: number; cursor?: string },
       context: ResolverContext
     ) => {
       try {
-        const authorization = getHeader(context, 'authorization')
-        const fetchFn = getOriginalFetch()
-        const headers = {
-          ...(authorization ? { Authorization: authorization } : {}),
-          Accept: 'application/json',
-        }
-
+        const { headers, memberships, continueToken } = await fetchMemberships(args, context)
         const server = getK8sServer()
-        const params = new URLSearchParams()
-        if (args.fieldSelector) params.set('fieldSelector', args.fieldSelector)
-        if (args.limit != null) params.set('limit', String(args.limit))
-        if (args.cursor) params.set('continue', args.cursor)
-        const paramStr = params.toString()
-        const url = `${server}/apis/notification.miloapis.com/v1alpha1/contactgroupmemberships${paramStr ? `?${paramStr}` : ''}`
-
-        const response = await fetchFn(url, { headers })
-        if (!response.ok) {
-          log.warn('milo contactgroupmemberships (groups) fetch failed', {
-            status: response.status,
-            url,
-            hasAuthorization: !!authorization,
-          })
-          return { items: [] }
-        }
-
-        const body = (await response.json()) as UpstreamContactGroupMembershipList
-        const memberships = body.items ?? []
-
-        // Collect unique (namespace, name) pairs from contactGroupRef
         const uniqueGroups = new Map<string, { name: string; namespace: string }>()
         for (const m of memberships) {
           const ref = m.spec?.contactGroupRef
           if (ref?.name && ref.namespace) {
-            uniqueGroups.set(`${ref.namespace}/${ref.name}`, {
-              name: ref.name,
-              namespace: ref.namespace,
-            })
+            uniqueGroups.set(`${ref.namespace}/${ref.name}`, { name: ref.name, namespace: ref.namespace })
           }
         }
-
-        // Fetch all contact groups in parallel, swallowing per-group errors
         const groupMap = new Map<string, ReturnType<typeof mapContactGroup>>()
+        const fetchFn = getOriginalFetch()
         await Promise.all(
           Array.from(uniqueGroups.values()).map(async ({ name, namespace }) => {
             try {
-              const groupUrl = `${server}/apis/notification.miloapis.com/v1alpha1/namespaces/${encodeURIComponent(namespace)}/contactgroups/${encodeURIComponent(name)}`
-              const r = await fetchFn(groupUrl, { headers })
+              const url = `${server}/apis/notification.miloapis.com/v1alpha1/namespaces/${encodeURIComponent(namespace)}/contactgroups/${encodeURIComponent(name)}`
+              const r = await fetchFn(url, { headers })
               if (!r.ok) return
-              const group = (await r.json()) as UpstreamContactGroup
-              groupMap.set(`${namespace}/${name}`, mapContactGroup(group))
+              groupMap.set(`${namespace}/${name}`, mapContactGroup((await r.json()) as UpstreamContactGroup))
             } catch (error) {
-              log.warn('milo contactgroup fetch threw', {
-                name,
-                namespace,
-                error: error instanceof Error ? error.message : String(error),
-              })
+              log.warn('milo contactgroup fetch threw', { name, namespace, error: error instanceof Error ? error.message : String(error) })
             }
           })
         )
-
         return {
-          continue: body.metadata?.continue ?? null,
+          continue: continueToken,
           items: memberships.map((m) => {
             const ref = m.spec?.contactGroupRef
-            const groupKey = ref?.namespace && ref.name ? `${ref.namespace}/${ref.name}` : ''
+            const key = ref?.namespace && ref.name ? `${ref.namespace}/${ref.name}` : ''
             return {
               name: m.metadata?.name ?? '',
-              contactGroupRef: {
-                name: ref?.name ?? '',
-                namespace: ref?.namespace ?? '',
-              },
-              contactGroup: groupKey ? (groupMap.get(groupKey) ?? null) : null,
+              contactGroupRef: { name: ref?.name ?? '', namespace: ref?.namespace ?? '' },
+              contactGroup: key ? (groupMap.get(key) ?? null) : null,
             }
           }),
         }
       } catch (error) {
-        log.error('contactMembershipsWithGroups resolver failed', {
-          error: error instanceof Error ? error.message : String(error),
-        })
+        log.error('contactMembershipsWithGroups resolver failed', { error: error instanceof Error ? error.message : String(error) })
         return { items: [] }
       }
     },
@@ -441,8 +387,13 @@ export const additionalResolvers = {
 
         const server = getK8sServer()
 
+        const names = args.names.slice(0, USER_SUMMARIES_MAX)
+        if (args.names.length > USER_SUMMARIES_MAX) {
+          log.warn('userSummaries truncated', { requested: args.names.length, limit: USER_SUMMARIES_MAX })
+        }
+
         const results = await Promise.all(
-          args.names.map(async (name) => {
+          names.map(async (name) => {
             try {
               const url = `${server}/apis/iam.miloapis.com/v1alpha1/users/${encodeURIComponent(name)}`
               const r = await fetchFn(url, { headers })

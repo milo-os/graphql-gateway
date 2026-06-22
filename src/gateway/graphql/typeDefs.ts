@@ -137,12 +137,12 @@ export const additionalTypeDefs = /* GraphQL */ `
     Contact data for each membership. Resolves all contacts in parallel.
     fieldSelector supports standard Kubernetes field selectors.
     """
-    contactGroupMembershipsWithContacts(fieldSelector: String, limit: Int, cursor: String): EnrichedContactGroupMembershipList!
+    contactGroupMembershipsWithContacts(namespace: String, fieldSelector: String, limit: Int, cursor: String): EnrichedContactGroupMembershipList!
     """
-    Lists ContactGroupMemberships across all namespaces, enriched with full
+    Lists ContactGroupMemberships in the given namespace, enriched with full
     ContactGroup data for each membership. Resolves all contact groups in parallel.
     """
-    contactMembershipsWithGroups(fieldSelector: String, limit: Int, cursor: String): EnrichedContactMembershipList!
+    contactMembershipsWithGroups(namespace: String, fieldSelector: String, limit: Int, cursor: String): EnrichedContactMembershipList!
     """
     Batch-fetches User summaries by name. Fetches run in parallel; individual
     lookup failures return null for that entry (filtered from the result).
