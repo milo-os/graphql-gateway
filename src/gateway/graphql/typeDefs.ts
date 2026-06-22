@@ -107,6 +107,52 @@ export const additionalTypeDefs = /* GraphQL */ `
     familyName: String
   }
 
+  type User {
+    "metadata.name — the stable user ID."
+    name: String!
+    uid: String
+    resourceVersion: String
+    email: String
+    givenName: String
+    familyName: String
+    createdAt: String
+    "preferences/theme annotation."
+    theme: String
+    "preferences/timezone annotation."
+    timezone: String
+    "preferences/newsletter annotation parsed to boolean."
+    newsletter: Boolean
+    "onboarding/completedAt annotation."
+    onboardedAt: String
+    registrationApproval: String
+    state: String
+    avatarUrl: String
+    lastLoginProvider: String
+    nameReviewRequired: Boolean
+  }
+
+  type UserIdentity {
+    name: String!
+    createdAt: String
+    userUID: String
+    providerID: String
+    providerName: String
+    username: String
+  }
+
+  input UpdateUserInput {
+    givenName: String
+    familyName: String
+    email: String
+  }
+
+  input UpdateUserPreferencesInput {
+    theme: String
+    timezone: String
+    newsletter: Boolean
+    onboardedAt: String
+  }
+
   extend type Query {
     parseUserAgent(userAgent: String!): ParsedUserAgent!
     geolocateIP(ip: String!): GeoLocation
@@ -148,9 +194,20 @@ export const additionalTypeDefs = /* GraphQL */ `
     lookup failures return null for that entry (filtered from the result).
     """
     userSummaries(names: [String!]!): [UserSummary!]!
+    "Returns the full User resource for the authenticated caller (id='me') or by explicit ID."
+    me: User
+    user(id: String!): User
+    "Lists UserIdentity resources scoped to the given user."
+    userIdentities(userID: String!): [UserIdentity!]!
   }
 
   extend type Mutation {
     deleteSession(id: String!): Boolean!
+    "Updates a user's profile fields (givenName, familyName, email)."
+    updateUser(id: String!, input: UpdateUserInput!): User!
+    "Updates a user's preferences stored as annotations."
+    updateUserPreferences(id: String!, input: UpdateUserPreferencesInput!): User!
+    "Deletes a user account. Returns the deleted user."
+    deleteUser(id: String!): User
   }
 `
