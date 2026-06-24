@@ -103,13 +103,6 @@ interface UpstreamContactGroup {
 }
 
 interface UpstreamUser {
-  metadata?: { name?: string }
-  spec?: { email?: string; givenName?: string; familyName?: string }
-}
-
-// --- User resource interfaces ---
-
-interface UpstreamUser {
   metadata?: {
     name?: string
     uid?: string
@@ -306,6 +299,143 @@ async function fetchMemberships(
   }
   const body = (await response.json()) as UpstreamContactGroupMembershipList
   return { headers, memberships: body.items ?? [], continueToken: body.metadata?.continue ?? null }
+}
+
+// ============================================================================
+// Organizations + Projects
+// ============================================================================
+
+interface UpstreamOrganization {
+  metadata?: {
+    name?: string
+    creationTimestamp?: string
+    annotations?: Record<string, string>
+  }
+  spec?: { type?: string }
+  status?: { conditions?: Array<{ type?: string; status?: string }> }
+}
+
+interface UpstreamOrganizationList {
+  items?: UpstreamOrganization[]
+  metadata?: { continue?: string }
+}
+
+interface UpstreamProjectFull {
+  metadata?: {
+    name?: string
+    creationTimestamp?: string
+    annotations?: Record<string, string>
+  }
+  spec?: { ownerRef?: { name?: string; kind?: string } }
+  status?: { conditions?: Array<{ type?: string; status?: string }> }
+}
+
+interface UpstreamProjectList {
+  items?: UpstreamProjectFull[]
+  metadata?: { continue?: string }
+}
+
+interface UpstreamOrganizationMembership {
+  metadata?: { name?: string; creationTimestamp?: string }
+  spec?: { userRef?: { name?: string }; roles?: string[] }
+  status?: { user?: { givenName?: string; familyName?: string; email?: string } }
+}
+
+interface UpstreamOrganizationMembershipList {
+  items?: UpstreamOrganizationMembership[]
+}
+
+interface UpstreamUserInvitation {
+  metadata?: { name?: string; creationTimestamp?: string }
+  spec?: {
+    givenName?: string
+    familyName?: string
+    email?: string
+    roles?: string[]
+    state?: string
+  }
+}
+
+interface UpstreamUserInvitationList {
+  items?: UpstreamUserInvitation[]
+}
+
+function mapOrganization(raw: UpstreamOrganization) {
+  const annotations = raw.metadata?.annotations ?? {}
+  const displayName = annotations[PROJECT_DESCRIPTION_ANNOTATION] || raw.metadata?.name || ''
+  const readyCondition = raw.status?.conditions?.find((c) => c.type === 'Ready')
+  return {
+    name: raw.metadata?.name ?? '',
+    displayName,
+    type: raw.spec?.type ?? '',
+    createdAt: raw.metadata?.creationTimestamp ?? null,
+    state: readyCondition?.status ?? null,
+  }
+}
+
+function mapProjectFull(raw: UpstreamProjectFull) {
+  const annotations = raw.metadata?.annotations ?? {}
+  const displayName = annotations[PROJECT_DESCRIPTION_ANNOTATION] || raw.metadata?.name || ''
+  const readyCondition = raw.status?.conditions?.find((c) => c.type === 'Ready')
+  return {
+    name: raw.metadata?.name ?? '',
+    displayName,
+    organizationName: raw.spec?.ownerRef?.name ?? '',
+    createdAt: raw.metadata?.creationTimestamp ?? null,
+    state: readyCondition?.status ?? null,
+  }
+}
+
+function organizationsURL(params: { name?: string; limit?: number; cursor?: string; search?: string } = {}) {
+  const server = getK8sServer()
+  const base = `${server}/apis/resourcemanager.miloapis.com/v1alpha1/organizations`
+  if (params.name) return `${base}/${encodeURIComponent(params.name)}`
+  const query = new URLSearchParams()
+  if (params.limit) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('continue', params.cursor)
+  if (params.search) query.set('fieldSelector', `metadata.name=${params.search}`)
+  const qs = query.toString()
+  return qs ? `${base}?${qs}` : base
+}
+
+function orgProjectsURL(orgName: string, params: { limit?: number; cursor?: string } = {}) {
+  const server = getK8sServer()
+  const base =
+    `${server}/apis/resourcemanager.miloapis.com/v1alpha1` +
+    `/organizations/${encodeURIComponent(orgName)}/control-plane` +
+    `/apis/resourcemanager.miloapis.com/v1alpha1/projects`
+  const query = new URLSearchParams()
+  if (params.limit) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('continue', params.cursor)
+  const qs = query.toString()
+  return qs ? `${base}?${qs}` : base
+}
+
+function orgMembershipsURL(orgName: string) {
+  const server = getK8sServer()
+  return (
+    `${server}/apis/resourcemanager.miloapis.com/v1alpha1` +
+    `/namespaces/organization-${encodeURIComponent(orgName)}/organizationmemberships`
+  )
+}
+
+function orgInvitationsURL(orgName: string) {
+  const server = getK8sServer()
+  return (
+    `${server}/apis/iam.miloapis.com/v1alpha1` +
+    `/namespaces/organization-${encodeURIComponent(orgName)}/userinvitations`
+  )
+}
+
+function projectsListURL(params: { limit?: number; cursor?: string; search?: string } = {}) {
+  const server = getK8sServer()
+  const base = `${server}/apis/resourcemanager.miloapis.com/v1alpha1/projects`
+  const query = new URLSearchParams()
+  if (params.limit) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('continue', params.cursor)
+  if (params.search) query.set('fieldSelector', `metadata.name=${params.search}`)
+  const qs = query.toString()
+  return qs ? `${base}?${qs}` : base
 }
 
 export const additionalResolvers = {
@@ -612,6 +742,181 @@ export const additionalResolvers = {
           error: error instanceof Error ? error.message : String(error),
         })
         return []
+      }
+    },
+
+    organizations: async (
+      _root: unknown,
+      args: { limit?: number; cursor?: string; search?: string },
+      context: ResolverContext
+    ) => {
+      const authorization = getHeader(context, 'authorization')
+      try {
+        const url = organizationsURL({ limit: args.limit, cursor: args.cursor, search: args.search })
+        const r = await getOriginalFetch()(url, {
+          headers: { ...(authorization ? { Authorization: authorization } : {}), Accept: 'application/json' },
+        })
+        if (!r.ok) {
+          log.warn('milo organizations fetch failed', { status: r.status, url })
+          return { items: [], continueToken: null }
+        }
+        const body = (await r.json()) as UpstreamOrganizationList
+        return {
+          items: (body.items ?? []).map(mapOrganization),
+          continueToken: body.metadata?.continue ?? null,
+        }
+      } catch (error) {
+        log.error('organizations resolver failed', { error: error instanceof Error ? error.message : String(error) })
+        return { items: [], continueToken: null }
+      }
+    },
+
+    organization: async (_root: unknown, args: { name: string }, context: ResolverContext) => {
+      const authorization = getHeader(context, 'authorization')
+      try {
+        const url = organizationsURL({ name: args.name })
+        const r = await getOriginalFetch()(url, {
+          headers: { ...(authorization ? { Authorization: authorization } : {}), Accept: 'application/json' },
+        })
+        if (!r.ok) {
+          log.warn('milo organization fetch failed', { name: args.name, status: r.status })
+          return null
+        }
+        return mapOrganization((await r.json()) as UpstreamOrganization)
+      } catch (error) {
+        log.error('organization resolver failed', { error: error instanceof Error ? error.message : String(error) })
+        return null
+      }
+    },
+
+    organizationProjects: async (
+      _root: unknown,
+      args: { orgName: string; limit?: number; cursor?: string },
+      context: ResolverContext
+    ) => {
+      const authorization = getHeader(context, 'authorization')
+      try {
+        const url = orgProjectsURL(args.orgName, { limit: args.limit, cursor: args.cursor })
+        const r = await getOriginalFetch()(url, {
+          headers: { ...(authorization ? { Authorization: authorization } : {}), Accept: 'application/json' },
+        })
+        if (!r.ok) {
+          log.warn('milo organizationProjects fetch failed', { orgName: args.orgName, status: r.status })
+          return { items: [], continueToken: null }
+        }
+        const body = (await r.json()) as UpstreamProjectList
+        return {
+          items: (body.items ?? []).map(mapProjectFull),
+          continueToken: body.metadata?.continue ?? null,
+        }
+      } catch (error) {
+        log.error('organizationProjects resolver failed', { error: error instanceof Error ? error.message : String(error) })
+        return { items: [], continueToken: null }
+      }
+    },
+
+    organizationMembers: async (
+      _root: unknown,
+      args: { orgName: string },
+      context: ResolverContext
+    ) => {
+      const authorization = getHeader(context, 'authorization')
+      const headers = { ...(authorization ? { Authorization: authorization } : {}), Accept: 'application/json' }
+      const fetchFn = getOriginalFetch()
+      try {
+        const [membershipsRes, invitationsRes] = await Promise.all([
+          fetchFn(orgMembershipsURL(args.orgName), { headers }),
+          fetchFn(orgInvitationsURL(args.orgName), { headers }),
+        ])
+
+        const result: {
+          name: string; givenName: string | null; familyName: string | null; email: string
+          roles: string[]; type: string; invitationState: string | null; createdAt: string | null
+        }[] = []
+
+        if (membershipsRes.ok) {
+          const body = (await membershipsRes.json()) as UpstreamOrganizationMembershipList
+          for (const m of body.items ?? []) {
+            result.push({
+              name: m.metadata?.name ?? '',
+              givenName: m.status?.user?.givenName ?? null,
+              familyName: m.status?.user?.familyName ?? null,
+              email: m.status?.user?.email ?? '',
+              roles: m.spec?.roles ?? [],
+              type: 'member',
+              invitationState: null,
+              createdAt: m.metadata?.creationTimestamp ?? null,
+            })
+          }
+        } else {
+          log.warn('milo orgMemberships fetch failed', { orgName: args.orgName, status: membershipsRes.status })
+        }
+
+        if (invitationsRes.ok) {
+          const body = (await invitationsRes.json()) as UpstreamUserInvitationList
+          for (const inv of body.items ?? []) {
+            result.push({
+              name: inv.metadata?.name ?? '',
+              givenName: inv.spec?.givenName ?? null,
+              familyName: inv.spec?.familyName ?? null,
+              email: inv.spec?.email ?? '',
+              roles: inv.spec?.roles ?? [],
+              type: 'invitation',
+              invitationState: inv.spec?.state ?? null,
+              createdAt: inv.metadata?.creationTimestamp ?? null,
+            })
+          }
+        } else {
+          log.warn('milo orgInvitations fetch failed', { orgName: args.orgName, status: invitationsRes.status })
+        }
+
+        return result
+      } catch (error) {
+        log.error('organizationMembers resolver failed', { error: error instanceof Error ? error.message : String(error) })
+        return []
+      }
+    },
+
+    projects: async (
+      _root: unknown,
+      args: { limit?: number; cursor?: string; search?: string },
+      context: ResolverContext
+    ) => {
+      const authorization = getHeader(context, 'authorization')
+      try {
+        const url = projectsListURL({ limit: args.limit, cursor: args.cursor, search: args.search })
+        const r = await getOriginalFetch()(url, {
+          headers: { ...(authorization ? { Authorization: authorization } : {}), Accept: 'application/json' },
+        })
+        if (!r.ok) {
+          log.warn('milo projects fetch failed', { status: r.status, url })
+          return { items: [], continueToken: null }
+        }
+        const body = (await r.json()) as UpstreamProjectList
+        return {
+          items: (body.items ?? []).map(mapProjectFull),
+          continueToken: body.metadata?.continue ?? null,
+        }
+      } catch (error) {
+        log.error('projects resolver failed', { error: error instanceof Error ? error.message : String(error) })
+        return { items: [], continueToken: null }
+      }
+    },
+
+    project: async (_root: unknown, args: { name: string }, context: ResolverContext) => {
+      const authorization = getHeader(context, 'authorization')
+      try {
+        const r = await getOriginalFetch()(projectURL(args.name), {
+          headers: { ...(authorization ? { Authorization: authorization } : {}), Accept: 'application/json' },
+        })
+        if (!r.ok) {
+          log.warn('milo project fetch failed', { name: args.name, status: r.status })
+          return null
+        }
+        return mapProjectFull((await r.json()) as UpstreamProjectFull)
+      } catch (error) {
+        log.error('project resolver failed', { error: error instanceof Error ? error.message : String(error) })
+        return null
       }
     },
   },

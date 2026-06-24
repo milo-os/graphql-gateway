@@ -153,6 +153,56 @@ export const additionalTypeDefs = /* GraphQL */ `
     onboardedAt: String
   }
 
+  type Organization {
+    "metadata.name — the stable organization ID."
+    name: String!
+    "Human-readable name from the kubernetes.io/description annotation, falling back to name."
+    displayName: String!
+    "Organization type: Personal or Standard."
+    type: String!
+    createdAt: String
+    "Status of the Ready condition."
+    state: String
+  }
+
+  type OrganizationList {
+    items: [Organization!]!
+    "Pagination cursor — pass as cursor on the next call to continue listing."
+    continueToken: String
+  }
+
+  type Project {
+    "metadata.name — the stable project ID."
+    name: String!
+    "Human-readable name from the kubernetes.io/description annotation, falling back to name."
+    displayName: String!
+    "Name of the owning organization."
+    organizationName: String!
+    createdAt: String
+    "Status of the Ready condition."
+    state: String
+  }
+
+  type ProjectList {
+    items: [Project!]!
+    "Pagination cursor — pass as cursor on the next call to continue listing."
+    continueToken: String
+  }
+
+  type OrgMember {
+    "Resource name of the membership or invitation."
+    name: String!
+    givenName: String
+    familyName: String
+    email: String!
+    roles: [String!]!
+    "member or invitation"
+    type: String!
+    "Only set for invitations: Pending, Accepted, Declined."
+    invitationState: String
+    createdAt: String
+  }
+
   extend type Query {
     parseUserAgent(userAgent: String!): ParsedUserAgent!
     geolocateIP(ip: String!): GeoLocation
@@ -199,6 +249,18 @@ export const additionalTypeDefs = /* GraphQL */ `
     user(id: String!): User
     "Lists UserIdentity resources scoped to the given user."
     userIdentities(userID: String!): [UserIdentity!]!
+    "Lists all organizations the caller can access."
+    organizations(limit: Int, cursor: String, search: String): OrganizationList!
+    "Returns a single organization by name."
+    organization(name: String!): Organization
+    "Lists projects in an organization via its control plane."
+    organizationProjects(orgName: String!, limit: Int, cursor: String): ProjectList!
+    "Lists members and pending invitations for an organization."
+    organizationMembers(orgName: String!): [OrgMember!]!
+    "Lists all projects the caller can access."
+    projects(limit: Int, cursor: String, search: String): ProjectList!
+    "Returns a single project by name."
+    project(name: String!): Project
   }
 
   extend type Mutation {
