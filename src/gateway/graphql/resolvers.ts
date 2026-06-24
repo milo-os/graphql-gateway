@@ -337,7 +337,7 @@ interface UpstreamProjectList {
 
 interface UpstreamOrganizationMembership {
   metadata?: { name?: string; creationTimestamp?: string }
-  spec?: { userRef?: { name?: string }; roles?: string[] }
+  spec?: { userRef?: { name?: string }; roles?: Array<{ name: string; namespace?: string }> }
   status?: { user?: { givenName?: string; familyName?: string; email?: string } }
 }
 
@@ -351,7 +351,7 @@ interface UpstreamUserInvitation {
     givenName?: string
     familyName?: string
     email?: string
-    roles?: string[]
+    roles?: Array<{ name: string; namespace?: string }>
     state?: string
   }
 }
@@ -842,7 +842,7 @@ export const additionalResolvers = {
               givenName: m.status?.user?.givenName ?? null,
               familyName: m.status?.user?.familyName ?? null,
               email: m.status?.user?.email ?? '',
-              roles: m.spec?.roles ?? [],
+              roles: (m.spec?.roles ?? []).map((r) => r.name),
               type: 'member',
               invitationState: null,
               createdAt: m.metadata?.creationTimestamp ?? null,
@@ -860,7 +860,7 @@ export const additionalResolvers = {
               givenName: inv.spec?.givenName ?? null,
               familyName: inv.spec?.familyName ?? null,
               email: inv.spec?.email ?? '',
-              roles: inv.spec?.roles ?? [],
+              roles: (inv.spec?.roles ?? []).map((r) => r.name),
               type: 'invitation',
               invitationState: inv.spec?.state ?? null,
               createdAt: inv.metadata?.creationTimestamp ?? null,

@@ -591,7 +591,7 @@ describe('Query.organizationMembers', () => {
         return Promise.resolve(jsonResponse({
           items: [{
             metadata: { name: 'mbr-1', creationTimestamp: '2024-01-01T00:00:00Z' },
-            spec: { userRef: { name: 'user-1' }, roles: ['viewer'] },
+            spec: { userRef: { name: 'user-1' }, roles: [{ name: 'viewer' }] },
             status: { user: { givenName: 'Ada', familyName: 'Lovelace', email: 'ada@example.com' } },
           }],
         }))
@@ -599,7 +599,7 @@ describe('Query.organizationMembers', () => {
       return Promise.resolve(jsonResponse({
         items: [{
           metadata: { name: 'inv-1', creationTimestamp: '2024-02-01T00:00:00Z' },
-          spec: { givenName: 'Bob', familyName: 'Builder', email: 'bob@example.com', roles: ['editor'], state: 'Pending' },
+          spec: { givenName: 'Bob', familyName: 'Builder', email: 'bob@example.com', roles: [{ name: 'editor' }], state: 'Pending' },
         }],
       }))
     })
