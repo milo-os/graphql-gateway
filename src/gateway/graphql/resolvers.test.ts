@@ -795,7 +795,7 @@ describe('Query.projectQuotaBuckets', () => {
     fetchSpy.mockResolvedValue(jsonResponse({ items: [] }))
     const result = await (additionalResolvers.Query!.projectQuotaBuckets as (r: null, a: { projectName: string }, c: ReturnType<typeof ctx>) => Promise<unknown>)(null, { projectName: 'my-proj' }, ctx()) as { items: unknown[] }
     expect(result.items).toEqual([])
-    const urls: string[] = fetchSpy.mock.calls.map((c: [string]) => c[0])
+    const urls: string[] = fetchSpy.mock.calls.map((c: unknown[]) => c[0] as string)
     expect(urls.some((u) => u.includes('/projects/my-proj/control-plane'))).toBe(true)
   })
 })
@@ -862,7 +862,7 @@ describe('Query.projectQuotaGrants', () => {
     fetchSpy.mockResolvedValue(jsonResponse({ items: [] }))
     const result = await (additionalResolvers.Query!.projectQuotaGrants as (r: null, a: { projectName: string }, c: ReturnType<typeof ctx>) => Promise<unknown>)(null, { projectName: 'my-proj' }, ctx()) as { items: unknown[] }
     expect(result.items).toEqual([])
-    const urls: string[] = fetchSpy.mock.calls.map((c: [string]) => c[0])
+    const urls: string[] = fetchSpy.mock.calls.map((c: unknown[]) => c[0] as string)
     expect(urls.some((u) => u.includes('/projects/my-proj/control-plane'))).toBe(true)
   })
 })
