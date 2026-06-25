@@ -704,3 +704,165 @@ describe('Query.parseUserAgent and Query.geolocateIP', () => {
     })
   })
 })
+
+// ─── Quota resolvers ──────────────────────────────────────────────────────────
+
+const mockBucket = (resourceType: string, overrides: Record<string, unknown> = {}) => ({
+  metadata: { name: `bucket-${resourceType}`, namespace: 'organization-acme' },
+  spec: {
+    resourceType,
+    consumerRef: { apiGroup: 'resourcemanager.miloapis.com', kind: 'Organization', name: 'acme' },
+  },
+  status: { allocated: 3, limit: 10, available: 7 },
+  ...overrides,
+})
+
+const mockRegistration = (resourceType: string, overrides: Record<string, unknown> = {}) => ({
+  metadata: {
+    name: `reg-${resourceType}`,
+    annotations: { 'kubernetes.io/display-name': `Display ${resourceType}`, 'kubernetes.io/description': `Desc ${resourceType}` },
+    labels: { 'services.miloapis.com/owner': 'core.miloapis.com' },
+  },
+  spec: { resourceType, type: 'Allocation' },
+  ...overrides,
+})
+
+describe('Query.orgQuotaBuckets', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+  beforeEach(() => { fetchSpy = vi.fn(); vi.stubGlobal('fetch', fetchSpy) })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const call = (orgName: string) =>
+    (additionalResolvers.Query!.orgQuotaBuckets as (r: null, a: { orgName: string }, c: ReturnType<typeof ctx>) => Promise<unknown>)(null, { orgName }, ctx())
+
+  it('joins buckets with registrations and resolves display names', async () => {
+    fetchSpy.mockImplementation((url: string) => {
+      if (url.includes('allowancebuckets'))
+        return Promise.resolve(jsonResponse({ items: [mockBucket('core.miloapis.com/quotas')] }))
+      return Promise.resolve(jsonResponse({ items: [mockRegistration('core.miloapis.com/quotas')] }))
+    })
+    const result = await call('acme') as { items: unknown[] }
+    expect(result.items).toHaveLength(1)
+    expect((result.items[0] as Record<string, unknown>).displayName).toBe('Display core.miloapis.com/quotas')
+    expect((result.items[0] as Record<string, unknown>).serviceDisplayName).toBe('Platform Core')
+    expect((result.items[0] as Record<string, unknown>).allocated).toBe(3)
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('filters out Feature-type registrations', async () => {
+    fetchSpy.mockImplementation((url: string) => {
+      if (url.includes('allowancebuckets'))
+        return Promise.resolve(jsonResponse({ items: [mockBucket('some.com/feature')] }))
+      return Promise.resolve(jsonResponse({ items: [{ ...mockRegistration('some.com/feature'), spec: { resourceType: 'some.com/feature', type: 'Feature' } }] }))
+    })
+    const result = await call('acme') as { items: unknown[] }
+    expect(result.items).toHaveLength(0)
+  })
+
+  it('falls back to hardcoded display name when annotation absent', async () => {
+    fetchSpy.mockImplementation((url: string) => {
+      if (url.includes('allowancebuckets'))
+        return Promise.resolve(jsonResponse({ items: [mockBucket('compute.datumapis.com/instances')] }))
+      return Promise.resolve(jsonResponse({ items: [{ metadata: { name: 'r', annotations: {}, labels: { 'services.miloapis.com/owner': 'compute.datumapis.com' } }, spec: { resourceType: 'compute.datumapis.com/instances', type: 'Allocation' } }] }))
+    })
+    const result = await call('acme') as { items: { displayName: string; serviceDisplayName: string }[] }
+    expect(result.items[0].displayName).toBe('Instances')
+    expect(result.items[0].serviceDisplayName).toBe('Compute')
+  })
+
+  it('returns empty list when buckets fetch fails', async () => {
+    fetchSpy.mockImplementation((url: string) => {
+      if (url.includes('allowancebuckets')) return Promise.resolve(new Response('{}', { status: 403 }))
+      return Promise.resolve(jsonResponse({ items: [] }))
+    })
+    const result = await call('acme') as { items: unknown[] }
+    expect(result.items).toEqual([])
+  })
+
+  it('returns empty list on network error', async () => {
+    fetchSpy.mockRejectedValue(new Error('network'))
+    const result = await call('acme') as { items: unknown[] }
+    expect(result.items).toEqual([])
+  })
+})
+
+describe('Query.projectQuotaBuckets', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+  beforeEach(() => { fetchSpy = vi.fn(); vi.stubGlobal('fetch', fetchSpy) })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('fetches from project control plane', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ items: [] }))
+    const result = await (additionalResolvers.Query!.projectQuotaBuckets as (r: null, a: { projectName: string }, c: ReturnType<typeof ctx>) => Promise<unknown>)(null, { projectName: 'my-proj' }, ctx()) as { items: unknown[] }
+    expect(result.items).toEqual([])
+    const urls: string[] = fetchSpy.mock.calls.map((c: [string]) => c[0])
+    expect(urls.some((u) => u.includes('/projects/my-proj/control-plane'))).toBe(true)
+  })
+})
+
+describe('Query.orgQuotaGrants', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+  beforeEach(() => { fetchSpy = vi.fn(); vi.stubGlobal('fetch', fetchSpy) })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const call = (orgName: string) =>
+    (additionalResolvers.Query!.orgQuotaGrants as (r: null, a: { orgName: string }, c: ReturnType<typeof ctx>) => Promise<unknown>)(null, { orgName }, ctx())
+
+  const mockGrant = () => ({
+    metadata: { name: 'grant-1', namespace: 'organization-acme', creationTimestamp: '2024-01-01T00:00:00Z', labels: {} },
+    spec: { allowances: [{ resourceType: 'core.miloapis.com/quotas', buckets: [{ amount: 5 }, { amount: 3 }] }] },
+    status: { conditions: [{ type: 'Active', status: 'True', message: 'ok' }] },
+  })
+
+  it('flattens allowances and resolves display names', async () => {
+    fetchSpy.mockImplementation((url: string) => {
+      if (url.includes('resourcegrants'))
+        return Promise.resolve(jsonResponse({ items: [mockGrant()] }))
+      return Promise.resolve(jsonResponse({ items: [mockRegistration('core.miloapis.com/quotas')] }))
+    })
+    const result = await call('acme') as { items: { allowances: { resourceType: string; amount: number; displayName: string }[]; autoCreated: boolean; conditions: unknown[] }[] }
+    expect(result.items).toHaveLength(1)
+    expect(result.items[0].allowances).toHaveLength(1)
+    expect(result.items[0].allowances[0].amount).toBe(8) // 5 + 3
+    expect(result.items[0].allowances[0].displayName).toBe('Display core.miloapis.com/quotas')
+    expect(result.items[0].autoCreated).toBe(false)
+    expect(result.items[0].conditions).toHaveLength(1)
+  })
+
+  it('marks autoCreated grants', async () => {
+    const autoGrant = {
+      metadata: { name: 'auto-1', namespace: 'organization-acme', labels: { 'quota.miloapis.com/auto-created': 'true' } },
+      spec: { allowances: [] },
+      status: { conditions: [] },
+    }
+    fetchSpy.mockImplementation((url: string) => {
+      if (url.includes('resourcegrants')) return Promise.resolve(jsonResponse({ items: [autoGrant] }))
+      return Promise.resolve(jsonResponse({ items: [] }))
+    })
+    const result = await call('acme') as { items: { autoCreated: boolean }[] }
+    expect(result.items[0].autoCreated).toBe(true)
+  })
+
+  it('returns empty list when grants fetch fails', async () => {
+    fetchSpy.mockImplementation((url: string) => {
+      if (url.includes('resourcegrants')) return Promise.resolve(new Response('{}', { status: 500 }))
+      return Promise.resolve(jsonResponse({ items: [] }))
+    })
+    const result = await call('acme') as { items: unknown[] }
+    expect(result.items).toEqual([])
+  })
+})
+
+describe('Query.projectQuotaGrants', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+  beforeEach(() => { fetchSpy = vi.fn(); vi.stubGlobal('fetch', fetchSpy) })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('fetches from project control plane', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ items: [] }))
+    const result = await (additionalResolvers.Query!.projectQuotaGrants as (r: null, a: { projectName: string }, c: ReturnType<typeof ctx>) => Promise<unknown>)(null, { projectName: 'my-proj' }, ctx()) as { items: unknown[] }
+    expect(result.items).toEqual([])
+    const urls: string[] = fetchSpy.mock.calls.map((c: [string]) => c[0])
+    expect(urls.some((u) => u.includes('/projects/my-proj/control-plane'))).toBe(true)
+  })
+})

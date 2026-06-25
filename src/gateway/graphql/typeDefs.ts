@@ -203,6 +203,77 @@ export const additionalTypeDefs = /* GraphQL */ `
     createdAt: String
   }
 
+  type QuotaBucket {
+    "metadata.name"
+    name: String!
+    "metadata.namespace (needed for grant creation)"
+    namespace: String!
+    "spec.resourceType"
+    resourceType: String!
+    "spec.consumerRef.kind — Organization or Project"
+    consumerKind: String!
+    "spec.consumerRef.name"
+    consumerName: String!
+    "spec.consumerRef.apiGroup"
+    consumerApiGroup: String!
+    "status.allocated"
+    allocated: Int!
+    "status.limit"
+    limit: Int!
+    "status.available"
+    available: Int!
+    "Display name: kubernetes.io/display-name annotation → hardcoded map → raw resourceType"
+    displayName: String!
+    "kubernetes.io/description annotation or spec.description from the ResourceRegistration"
+    description: String
+    "spec.type from the ResourceRegistration: Entity, Allocation, or Feature"
+    registrationType: String
+    "Owning service canonical name from labels (services.miloapis.com/owner or /service)"
+    serviceOwner: String
+    "Resolved human-readable service group name"
+    serviceDisplayName: String!
+  }
+
+  type QuotaBucketList {
+    items: [QuotaBucket!]!
+  }
+
+  type QuotaGrantAllowance {
+    "resourceType for this allowance"
+    resourceType: String!
+    "Resolved display name (same logic as QuotaBucket.displayName)"
+    displayName: String!
+    "Resolved service group name"
+    serviceDisplayName: String!
+    "Sum of all bucket amounts for this resourceType within the grant"
+    amount: Int!
+  }
+
+  type QuotaCondition {
+    type: String!
+    status: String!
+    message: String
+  }
+
+  type QuotaGrant {
+    "metadata.name"
+    name: String!
+    "metadata.namespace"
+    namespace: String!
+    "metadata.creationTimestamp"
+    createdAt: String
+    "Whether this grant was auto-created (quota.miloapis.com/auto-created label)"
+    autoCreated: Boolean!
+    "Flattened and enriched allowances (one entry per resourceType)"
+    allowances: [QuotaGrantAllowance!]!
+    "status.conditions for status badge display"
+    conditions: [QuotaCondition!]!
+  }
+
+  type QuotaGrantList {
+    items: [QuotaGrant!]!
+  }
+
   extend type Query {
     parseUserAgent(userAgent: String!): ParsedUserAgent!
     geolocateIP(ip: String!): GeoLocation
@@ -261,6 +332,14 @@ export const additionalTypeDefs = /* GraphQL */ `
     projects(limit: Int, cursor: String, search: String): ProjectList!
     "Returns a single project by name."
     project(name: String!): Project
+    "Enriched quota buckets for an org — joins AllowanceBuckets with ResourceRegistrations server-side."
+    orgQuotaBuckets(orgName: String!): QuotaBucketList!
+    "Enriched quota buckets for a project — joins AllowanceBuckets with ResourceRegistrations server-side."
+    projectQuotaBuckets(projectName: String!): QuotaBucketList!
+    "Enriched resource grants for an org with flattened, display-enriched allowances."
+    orgQuotaGrants(orgName: String!): QuotaGrantList!
+    "Enriched resource grants for a project with flattened, display-enriched allowances."
+    projectQuotaGrants(projectName: String!): QuotaGrantList!
   }
 
   extend type Mutation {
