@@ -78,6 +78,7 @@ function sessionsURL(context: ResolverContext, options: { name?: string; userID?
 }
 
 const DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
+const PROJECT_DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
 
 interface UpstreamContactGroupMembership {
   metadata?: { name?: string }
