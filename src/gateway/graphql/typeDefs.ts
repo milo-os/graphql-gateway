@@ -48,6 +48,65 @@ export const additionalTypeDefs = /* GraphQL */ `
     consumerProject: ConsumerProject!
   }
 
+  # --- Contact membership enrichment ---
+
+  type ContactRef {
+    name: String!
+    namespace: String!
+  }
+
+  type EnrichedContact {
+    name: String!
+    namespace: String!
+    email: String
+    givenName: String
+    familyName: String
+    displayName: String
+  }
+
+  type EnrichedContactGroup {
+    name: String!
+    namespace: String!
+    displayName: String
+  }
+
+  type ContactGroupMembershipEnriched {
+    "metadata.name of the ContactGroupMembership resource."
+    name: String!
+    contactRef: ContactRef!
+    "Full Contact data, null if lookup failed."
+    contact: EnrichedContact
+  }
+
+  type ContactMembershipEnriched {
+    "metadata.name of the ContactGroupMembership resource."
+    name: String!
+    contactGroupRef: ContactRef!
+    "Full ContactGroup data, null if lookup failed."
+    contactGroup: EnrichedContactGroup
+  }
+
+  type EnrichedContactGroupMembershipList {
+    items: [ContactGroupMembershipEnriched!]!
+    "Kubernetes continue token for pagination."
+    continue: String
+  }
+
+  type EnrichedContactMembershipList {
+    items: [ContactMembershipEnriched!]!
+    continue: String
+  }
+
+  # --- User batch lookup ---
+
+  type UserSummary {
+    "metadata.name of the User resource."
+    name: String!
+    email: String
+    givenName: String
+    familyName: String
+  }
+
   extend type Query {
     parseUserAgent(userAgent: String!): ParsedUserAgent!
     geolocateIP(ip: String!): GeoLocation
@@ -73,6 +132,22 @@ export const additionalTypeDefs = /* GraphQL */ `
     an empty list (the underlying 403 is logged).
     """
     sessions(userID: ID): [ExtendedSession!]!
+    """
+    Lists ContactGroupMemberships across all namespaces, enriched with full
+    Contact data for each membership. Resolves all contacts in parallel.
+    fieldSelector supports standard Kubernetes field selectors.
+    """
+    contactGroupMembershipsWithContacts(namespace: String, fieldSelector: String, limit: Int, cursor: String): EnrichedContactGroupMembershipList!
+    """
+    Lists ContactGroupMemberships in the given namespace, enriched with full
+    ContactGroup data for each membership. Resolves all contact groups in parallel.
+    """
+    contactMembershipsWithGroups(namespace: String, fieldSelector: String, limit: Int, cursor: String): EnrichedContactMembershipList!
+    """
+    Batch-fetches User summaries by name. Fetches run in parallel; individual
+    lookup failures return null for that entry (filtered from the result).
+    """
+    userSummaries(names: [String!]!): [UserSummary!]!
   }
 
   extend type Mutation {
