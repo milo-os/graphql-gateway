@@ -201,6 +201,8 @@ export const additionalTypeDefs = /* GraphQL */ `
     "Only set for invitations: Pending, Accepted, Declined."
     invitationState: String
     createdAt: String
+    "The member's user resource name. Null for invitations, which have no user yet."
+    userName: String
   }
 
   type QuotaBucket {
