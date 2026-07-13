@@ -1066,6 +1066,7 @@ export const additionalResolvers = {
         const result: {
           name: string; givenName: string | null; familyName: string | null; email: string
           roles: string[]; type: string; invitationState: string | null; createdAt: string | null
+          userName: string | null
         }[] = []
 
         if (membershipsRes.ok) {
@@ -1080,6 +1081,7 @@ export const additionalResolvers = {
               type: 'member',
               invitationState: null,
               createdAt: m.metadata?.creationTimestamp ?? null,
+              userName: m.spec?.userRef?.name ?? null,
             })
           }
         } else {
@@ -1098,6 +1100,7 @@ export const additionalResolvers = {
               type: 'invitation',
               invitationState: inv.spec?.state ?? null,
               createdAt: inv.metadata?.creationTimestamp ?? null,
+              userName: null,
             })
           }
         } else {
