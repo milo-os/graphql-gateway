@@ -458,7 +458,7 @@ describe('Query.organizations', () => {
             metadata: {
               name: 'acme',
               creationTimestamp: '2024-01-01T00:00:00Z',
-              annotations: { 'kubernetes.io/description': 'Acme Corp' },
+              annotations: { 'kubernetes.io/display-name': 'Acme Corp' },
             },
             spec: { type: 'Standard' },
             status: { conditions: [{ type: 'Ready', status: 'True' }] },

@@ -78,7 +78,7 @@ function sessionsURL(context: ResolverContext, options: { name?: string; userID?
 }
 
 const DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
-const PROJECT_DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
+const DISPLAY_NAME_ANNOTATION = 'kubernetes.io/display-name'
 
 interface UpstreamContactGroupMembership {
   metadata?: { name?: string }
@@ -237,8 +237,10 @@ async function resolveProjectDisplayNames(
           return
         }
         const project = (await response.json()) as UpstreamProject
-        const description = project.metadata?.annotations?.[DESCRIPTION_ANNOTATION]
-        if (description) displayNames.set(name, description)
+        const displayName =
+          project.metadata?.annotations?.[DISPLAY_NAME_ANNOTATION] ||
+          project.metadata?.annotations?.[DESCRIPTION_ANNOTATION]
+        if (displayName) displayNames.set(name, displayName)
       } catch (error) {
         log.warn('milo project fetch threw', {
           project: name,
@@ -596,7 +598,7 @@ function mapQuotaGrants(
 
 function mapOrganization(raw: UpstreamOrganization) {
   const annotations = raw.metadata?.annotations ?? {}
-  const displayName = annotations[PROJECT_DESCRIPTION_ANNOTATION] || raw.metadata?.name || ''
+  const displayName = annotations[DISPLAY_NAME_ANNOTATION] || raw.metadata?.name || ''
   const readyCondition = raw.status?.conditions?.find((c) => c.type === 'Ready')
   return {
     name: raw.metadata?.name ?? '',
@@ -609,7 +611,8 @@ function mapOrganization(raw: UpstreamOrganization) {
 
 function mapProjectFull(raw: UpstreamProjectFull) {
   const annotations = raw.metadata?.annotations ?? {}
-  const displayName = annotations[PROJECT_DESCRIPTION_ANNOTATION] || raw.metadata?.name || ''
+  const displayName =
+    annotations[DISPLAY_NAME_ANNOTATION] || annotations[DESCRIPTION_ANNOTATION] || raw.metadata?.name || ''
   const readyCondition = raw.status?.conditions?.find((c) => c.type === 'Ready')
   return {
     name: raw.metadata?.name ?? '',
