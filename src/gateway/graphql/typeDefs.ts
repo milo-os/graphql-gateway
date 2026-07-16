@@ -27,7 +27,7 @@ export const additionalTypeDefs = /* GraphQL */ `
   type ConsumerProject {
     "The project's machine name (metadata.name)."
     name: String!
-    "Human-readable name from the kubernetes.io/description annotation, falling back to name."
+    "Human-readable name from the kubernetes.io/display-name annotation, falling back to kubernetes.io/description, then name."
     displayName: String!
   }
 
@@ -156,7 +156,7 @@ export const additionalTypeDefs = /* GraphQL */ `
   type Organization {
     "metadata.name — the stable organization ID."
     name: String!
-    "Human-readable name from the kubernetes.io/description annotation, falling back to name."
+    "Human-readable name from the kubernetes.io/display-name annotation, falling back to name."
     displayName: String!
     "Organization type: Personal or Standard."
     type: String!
@@ -174,7 +174,7 @@ export const additionalTypeDefs = /* GraphQL */ `
   type Project {
     "metadata.name — the stable project ID."
     name: String!
-    "Human-readable name from the kubernetes.io/description annotation, falling back to name."
+    "Human-readable name from the kubernetes.io/display-name annotation, falling back to kubernetes.io/description, then name."
     displayName: String!
     "Name of the owning organization."
     organizationName: String!
@@ -201,6 +201,8 @@ export const additionalTypeDefs = /* GraphQL */ `
     "Only set for invitations: Pending, Accepted, Declined."
     invitationState: String
     createdAt: String
+    "The member's user resource name. Null for invitations, which have no user yet."
+    userName: String
   }
 
   type QuotaBucket {

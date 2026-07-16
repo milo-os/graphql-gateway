@@ -19,3 +19,4 @@ export function getHeader(context: ResolverContext, name: string): string {
 }
 
 export const DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
+export const DISPLAY_NAME_ANNOTATION = 'kubernetes.io/display-name'

@@ -1,6 +1,6 @@
 import { getOriginalFetch, getK8sServer } from '@/gateway/auth'
 import { log } from '@/shared/utils'
-import { type ResolverContext, getHeader, DESCRIPTION_ANNOTATION } from './common'
+import { type ResolverContext, getHeader, DESCRIPTION_ANNOTATION, DISPLAY_NAME_ANNOTATION } from './common'
 
 interface UpstreamOrganization {
   metadata?: {
@@ -77,7 +77,7 @@ interface UpstreamProject {
 
 function mapOrganization(raw: UpstreamOrganization) {
   const annotations = raw.metadata?.annotations ?? {}
-  const displayName = annotations[DESCRIPTION_ANNOTATION] || raw.metadata?.name || ''
+  const displayName = annotations[DISPLAY_NAME_ANNOTATION] || raw.metadata?.name || ''
   const readyCondition = raw.status?.conditions?.find((c) => c.type === 'Ready')
   return {
     name: raw.metadata?.name ?? '',
@@ -90,7 +90,8 @@ function mapOrganization(raw: UpstreamOrganization) {
 
 function mapProjectFull(raw: UpstreamProjectFull) {
   const annotations = raw.metadata?.annotations ?? {}
-  const displayName = annotations[DESCRIPTION_ANNOTATION] || raw.metadata?.name || ''
+  const displayName =
+    annotations[DISPLAY_NAME_ANNOTATION] || annotations[DESCRIPTION_ANNOTATION] || raw.metadata?.name || ''
   const readyCondition = raw.status?.conditions?.find((c) => c.type === 'Ready')
   return {
     name: raw.metadata?.name ?? '',
@@ -196,8 +197,10 @@ async function resolveProjectDisplayNames(
           return
         }
         const project = (await response.json()) as UpstreamProject
-        const description = project.metadata?.annotations?.[DESCRIPTION_ANNOTATION]
-        if (description) displayNames.set(name, description)
+        const displayName =
+          project.metadata?.annotations?.[DISPLAY_NAME_ANNOTATION] ||
+          project.metadata?.annotations?.[DESCRIPTION_ANNOTATION]
+        if (displayName) displayNames.set(name, displayName)
       } catch (error) {
         log.warn('milo project fetch threw', {
           project: name,
@@ -299,6 +302,7 @@ export const organizationsResolvers = {
         const result: {
           name: string; givenName: string | null; familyName: string | null; email: string
           roles: string[]; type: string; invitationState: string | null; createdAt: string | null
+          userName: string | null
         }[] = []
 
         if (membershipsRes.ok) {
@@ -313,6 +317,7 @@ export const organizationsResolvers = {
               type: 'member',
               invitationState: null,
               createdAt: m.metadata?.creationTimestamp ?? null,
+              userName: m.spec?.userRef?.name ?? null,
             })
           }
         } else {
@@ -331,6 +336,7 @@ export const organizationsResolvers = {
               type: 'invitation',
               invitationState: inv.spec?.state ?? null,
               createdAt: inv.metadata?.creationTimestamp ?? null,
+              userName: null,
             })
           }
         } else {

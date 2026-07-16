@@ -458,7 +458,7 @@ describe('Query.organizations', () => {
             metadata: {
               name: 'acme',
               creationTimestamp: '2024-01-01T00:00:00Z',
-              annotations: { 'kubernetes.io/description': 'Acme Corp' },
+              annotations: { 'kubernetes.io/display-name': 'Acme Corp' },
             },
             spec: { type: 'Standard' },
             status: { conditions: [{ type: 'Ready', status: 'True' }] },
@@ -608,9 +608,11 @@ describe('Query.organizationMembers', () => {
     expect(result).toHaveLength(2)
     expect(result.find((m: unknown) => (m as { type: string }).type === 'member')).toMatchObject({
       name: 'mbr-1', email: 'ada@example.com', givenName: 'Ada', roles: ['viewer'], type: 'member',
+      userName: 'user-1',
     })
     expect(result.find((m: unknown) => (m as { type: string }).type === 'invitation')).toMatchObject({
       name: 'inv-1', email: 'bob@example.com', invitationState: 'Pending', type: 'invitation',
+      userName: null,
     })
     expect(fetchSpy).toHaveBeenCalledTimes(2)
   })
