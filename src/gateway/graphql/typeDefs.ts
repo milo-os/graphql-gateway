@@ -153,6 +153,15 @@ export const additionalTypeDefs = /* GraphQL */ `
     onboardedAt: String
   }
 
+  type OrgContactInfo {
+    "Legal / company name from spec.contactInfo.businessName."
+    businessName: String
+    "Primary contact name from spec.contactInfo.name."
+    name: String
+    "Primary contact email from spec.contactInfo.email."
+    email: String
+  }
+
   type Organization {
     "metadata.name — the stable organization ID."
     name: String!
@@ -163,6 +172,18 @@ export const additionalTypeDefs = /* GraphQL */ `
     createdAt: String
     "Status of the Ready condition."
     state: String
+    "Contact details from spec.contactInfo."
+    contactInfo: OrgContactInfo
+    "True when the OnboardingComplete condition status is True."
+    onboardingComplete: Boolean!
+    "Reason from the OnboardingComplete condition."
+    onboardingReason: String
+    "Human-readable message from the OnboardingComplete condition."
+    onboardingMessage: String
+    "Members and pending invitations for this organization."
+    members: [OrgMember!]!
+    "Projects owned by this organization (via its control plane)."
+    projects(limit: Int, cursor: String): ProjectList!
   }
 
   type OrganizationList {
@@ -203,6 +224,8 @@ export const additionalTypeDefs = /* GraphQL */ `
     createdAt: String
     "The member's user resource name. Null for invitations, which have no user yet."
     userName: String
+    "Avatar URL from the membership user status. Null for invitations."
+    avatarUrl: String
   }
 
   type QuotaBucket {
@@ -306,12 +329,22 @@ export const additionalTypeDefs = /* GraphQL */ `
     Contact data for each membership. Resolves all contacts in parallel.
     fieldSelector supports standard Kubernetes field selectors.
     """
-    contactGroupMembershipsWithContacts(namespace: String, fieldSelector: String, limit: Int, cursor: String): EnrichedContactGroupMembershipList!
+    contactGroupMembershipsWithContacts(
+      namespace: String
+      fieldSelector: String
+      limit: Int
+      cursor: String
+    ): EnrichedContactGroupMembershipList!
     """
     Lists ContactGroupMemberships in the given namespace, enriched with full
     ContactGroup data for each membership. Resolves all contact groups in parallel.
     """
-    contactMembershipsWithGroups(namespace: String, fieldSelector: String, limit: Int, cursor: String): EnrichedContactMembershipList!
+    contactMembershipsWithGroups(
+      namespace: String
+      fieldSelector: String
+      limit: Int
+      cursor: String
+    ): EnrichedContactMembershipList!
     """
     Batch-fetches User summaries by name. Fetches run in parallel; individual
     lookup failures return null for that entry (filtered from the result).
