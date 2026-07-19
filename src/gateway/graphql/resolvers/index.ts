@@ -18,4 +18,7 @@ export const additionalResolvers = {
     ...sessionsResolvers.Mutation,
     ...usersResolvers.Mutation,
   },
+  Organization: {
+    ...organizationsResolvers.Organization,
+  },
 }
