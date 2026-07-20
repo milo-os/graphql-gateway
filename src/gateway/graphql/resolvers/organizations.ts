@@ -267,21 +267,24 @@ async function resolveOrganizationFields(
 }
 
 /**
- * Per owning-org: load billing bindings + accounts, then mark projects that have
- * an Active binding to an account with a default payment method.
+ * Per owning-org: load billing bindings + accounts, then work out which
+ * projects have an Active binding to an account with a default payment
+ * method.
  *
  * Failures are swallowed per-org so a single inaccessible billing namespace
- * never fails the whole project list.
+ * never fails the whole project list. Only depends on each project's
+ * `organizationName`, not on org display/company enrichment, so it can run
+ * concurrently with {@link resolveOrganizationFields} rather than after it.
  */
 async function resolveBillingFields(
   projects: MappedProject[],
   headers: Record<string, string>
-): Promise<MappedProject[]> {
-  if (projects.length === 0) return projects
+): Promise<Map<string, BillingEnrichment>> {
+  const billingByProject = new Map<string, BillingEnrichment>()
+  if (projects.length === 0) return billingByProject
 
   const fetchFn = getOriginalFetch()
   const uniqueOrgs = [...new Set(projects.map((p) => p.organizationName).filter(Boolean))]
-  const billingByProject = new Map<string, BillingEnrichment>()
 
   await Promise.all(
     uniqueOrgs.map(async (orgName) => {
@@ -345,7 +348,29 @@ async function resolveBillingFields(
     })
   )
 
-  return projects.map((project) => {
+  return billingByProject
+}
+
+/**
+ * Org display/company + billing payment status for a project list page.
+ *
+ * The two enrichment stages read disjoint upstream data (org display/company
+ * info vs. billing bindings/accounts) and neither depends on the other's
+ * result, so they run concurrently instead of one after the other.
+ */
+async function enrichProjects(
+  projects: MappedProject[],
+  headers: Record<string, string>
+): Promise<MappedProject[]> {
+  const [orgs, billingByProject] = await Promise.all([
+    resolveOrganizationFields(
+      projects.map((item) => item.organizationName),
+      headers
+    ),
+    resolveBillingFields(projects, headers),
+  ])
+
+  return attachOrganizationFields(projects, orgs).map((project) => {
     const billing = billingByProject.get(project.name)
     return {
       ...project,
@@ -353,18 +378,6 @@ async function resolveBillingFields(
       billingAccountName: billing?.billingAccountName ?? null,
     }
   })
-}
-
-/** Org display/company + billing payment status for a project list page. */
-async function enrichProjects(
-  projects: MappedProject[],
-  headers: Record<string, string>
-): Promise<MappedProject[]> {
-  const orgs = await resolveOrganizationFields(
-    projects.map((item) => item.organizationName),
-    headers
-  )
-  return resolveBillingFields(attachOrganizationFields(projects, orgs), headers)
 }
 
 function organizationsURL(params: { name?: string; limit?: number; cursor?: string } = {}) {

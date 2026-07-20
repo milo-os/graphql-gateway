@@ -1072,6 +1072,87 @@ describe('Query.projects', () => {
   })
 })
 
+describe('enrichProjects concurrency (via Query.projects)', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+  })
+
+  const deferred = <T,>() => {
+    let resolve!: (value: T) => void
+    const promise = new Promise<T>((r) => {
+      resolve = r
+    })
+    return { promise, resolve }
+  }
+
+  // Lets pending promise chains (fetch -> .json() -> Promise.all setup) settle
+  // without relying on a fixed microtask count.
+  const flush = async (times = 5) => {
+    for (let i = 0; i < times; i++) await new Promise((r) => setImmediate(r))
+  }
+
+  it('dispatches the org fetch and both billing fetches before any of them resolve', async () => {
+    const callOrder: string[] = []
+    const org = deferred<Response>()
+    const bindings = deferred<Response>()
+    const accounts = deferred<Response>()
+
+    fetchSpy = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      if (url.includes('/billingaccountbindings')) {
+        callOrder.push('bindings')
+        return bindings.promise
+      }
+      if (url.includes('/billingaccounts')) {
+        callOrder.push('accounts')
+        return accounts.promise
+      }
+      if (/\/organizations\/[^/?]+$/.test(url)) {
+        callOrder.push('org')
+        return org.promise
+      }
+      if (url.includes('/projects')) {
+        return Promise.resolve(
+          jsonResponse({
+            items: [
+              { metadata: { name: 'proj-a', annotations: {} }, spec: { ownerRef: { name: 'acme' } } },
+            ],
+            metadata: {},
+          })
+        )
+      }
+      return Promise.resolve(jsonResponse({ items: [] }))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const resultPromise = (
+      additionalResolvers.Query!.projects as (
+        r: null,
+        a: object,
+        c: ReturnType<typeof ctx>
+      ) => Promise<{ items: unknown[] }>
+    )(null, {}, ctx())
+
+    await flush()
+
+    // If the org stage were still awaited to completion before the billing
+    // stage starts (the previous, sequential behavior), only 'org' would be
+    // in callOrder at this point. Seeing all three proves both stages were
+    // dispatched up front.
+    expect(callOrder.sort()).toEqual(['accounts', 'bindings', 'org'])
+
+    org.resolve(acmeOrganization())
+    bindings.resolve(jsonResponse({ items: [] }))
+    accounts.resolve(jsonResponse({ items: [] }))
+
+    const result = await resultPromise
+    expect(result.items).toHaveLength(1)
+  })
+})
+
 describe('Query.project', () => {
   let fetchSpy: ReturnType<typeof vi.fn>
 
