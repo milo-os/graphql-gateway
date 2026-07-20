@@ -118,8 +118,44 @@ export interface MappedProject {
   name: string
   displayName: string
   organizationName: string
+  organizationDisplayName: string
+  organizationBusinessName: string | null
+  hasActiveBillingAccount: boolean
+  billingAccountName: string | null
   createdAt: string | null
   state: string | null
+}
+
+type OrgEnrichment = {
+  displayName: string
+  businessName: string | null
+}
+
+type BillingEnrichment = {
+  hasActiveBillingAccount: boolean
+  billingAccountName: string | null
+}
+
+interface UpstreamBillingAccount {
+  metadata?: { name?: string; deletionTimestamp?: string }
+  spec?: { defaultPaymentMethodRef?: { name?: string } }
+}
+
+interface UpstreamBillingAccountList {
+  items?: UpstreamBillingAccount[]
+}
+
+interface UpstreamBillingAccountBinding {
+  metadata?: { deletionTimestamp?: string }
+  spec?: {
+    billingAccountRef?: { name?: string }
+    projectRef?: { name?: string }
+  }
+  status?: { phase?: string }
+}
+
+interface UpstreamBillingAccountBindingList {
+  items?: UpstreamBillingAccountBinding[]
 }
 
 function mapOrganization(raw: UpstreamOrganization): MappedOrganization {
@@ -155,27 +191,250 @@ function mapProjectFull(raw: UpstreamProjectFull): MappedProject {
     raw.metadata?.name ||
     ''
   const readyCondition = raw.status?.conditions?.find((c) => c.type === 'Ready')
+  const organizationName = raw.spec?.ownerRef?.name ?? ''
   return {
     name: raw.metadata?.name ?? '',
     displayName,
-    organizationName: raw.spec?.ownerRef?.name ?? '',
+    organizationName,
+    // Defaults until attachOrganizationFields / a single-org enrichment runs.
+    organizationDisplayName: organizationName,
+    organizationBusinessName: null,
+    hasActiveBillingAccount: false,
+    billingAccountName: null,
     createdAt: raw.metadata?.creationTimestamp ?? null,
     state: readyCondition?.status ?? null,
   }
 }
 
-function organizationsURL(
-  params: { name?: string; limit?: number; cursor?: string; search?: string } = {}
-) {
+function orgEnrichmentFromMapped(org: MappedOrganization): OrgEnrichment {
+  return {
+    displayName: org.displayName || org.name,
+    businessName: org.contactInfo?.businessName ?? null,
+  }
+}
+
+function attachOrganizationFields(
+  projects: MappedProject[],
+  orgs: Map<string, OrgEnrichment>
+): MappedProject[] {
+  return projects.map((project) => {
+    const org = orgs.get(project.organizationName)
+    return {
+      ...project,
+      organizationDisplayName: org?.displayName ?? project.organizationName,
+      organizationBusinessName: org?.businessName ?? null,
+    }
+  })
+}
+
+/**
+ * Resolves display/company names for unique owning organizations.
+ *
+ * Mirrors resolveProjectDisplayNames: parallel GETs, per-org failures swallowed
+ * so a single inaccessible org never fails the whole project list.
+ */
+async function resolveOrganizationFields(
+  orgNames: string[],
+  headers: Record<string, string>
+): Promise<Map<string, OrgEnrichment>> {
+  const fetchFn = getOriginalFetch()
+  const result = new Map<string, OrgEnrichment>()
+  const unique = [...new Set(orgNames.filter(Boolean))]
+
+  await Promise.all(
+    unique.map(async (name) => {
+      try {
+        const response = await fetchFn(organizationsURL({ name }), { headers })
+        if (!response.ok) {
+          log.warn('milo organization fetch failed', {
+            organization: name,
+            status: response.status,
+          })
+          return
+        }
+        const mapped = mapOrganization((await response.json()) as UpstreamOrganization)
+        result.set(name, orgEnrichmentFromMapped(mapped))
+      } catch (error) {
+        log.warn('milo organization fetch threw', {
+          organization: name,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    })
+  )
+
+  return result
+}
+
+/**
+ * Per owning-org: load billing bindings + accounts, then mark projects that have
+ * an Active binding to an account with a default payment method.
+ *
+ * Failures are swallowed per-org so a single inaccessible billing namespace
+ * never fails the whole project list.
+ */
+async function resolveBillingFields(
+  projects: MappedProject[],
+  headers: Record<string, string>
+): Promise<MappedProject[]> {
+  if (projects.length === 0) return projects
+
+  const fetchFn = getOriginalFetch()
+  const uniqueOrgs = [...new Set(projects.map((p) => p.organizationName).filter(Boolean))]
+  const billingByProject = new Map<string, BillingEnrichment>()
+
+  await Promise.all(
+    uniqueOrgs.map(async (orgName) => {
+      try {
+        const [bindingsRes, accountsRes] = await Promise.all([
+          fetchFn(orgBillingBindingsURL(orgName), { headers }),
+          fetchFn(orgBillingAccountsURL(orgName), { headers }),
+        ])
+
+        if (!bindingsRes.ok) {
+          log.warn('milo billing bindings fetch failed', {
+            organization: orgName,
+            status: bindingsRes.status,
+          })
+          return
+        }
+        if (!accountsRes.ok) {
+          log.warn('milo billing accounts fetch failed', {
+            organization: orgName,
+            status: accountsRes.status,
+          })
+          return
+        }
+
+        const bindings =
+          ((await bindingsRes.json()) as UpstreamBillingAccountBindingList).items ?? []
+        const accounts = ((await accountsRes.json()) as UpstreamBillingAccountList).items ?? []
+
+        const accountsWithPayment = new Set(
+          accounts
+            .filter(
+              (account) =>
+                !account.metadata?.deletionTimestamp &&
+                Boolean(account.spec?.defaultPaymentMethodRef?.name?.trim())
+            )
+            .map((account) => account.metadata?.name)
+            .filter((name): name is string => Boolean(name))
+        )
+
+        for (const binding of bindings) {
+          if (binding.metadata?.deletionTimestamp) continue
+          const phase = binding.status?.phase
+          if (phase && phase !== 'Active') continue
+
+          const projectName = binding.spec?.projectRef?.name
+          const accountName = binding.spec?.billingAccountRef?.name
+          if (!projectName || !accountName) continue
+          if (!accountsWithPayment.has(accountName)) continue
+
+          billingByProject.set(projectName, {
+            hasActiveBillingAccount: true,
+            billingAccountName: accountName,
+          })
+        }
+      } catch (error) {
+        log.warn('milo billing enrichment threw', {
+          organization: orgName,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+    })
+  )
+
+  return projects.map((project) => {
+    const billing = billingByProject.get(project.name)
+    return {
+      ...project,
+      hasActiveBillingAccount: billing?.hasActiveBillingAccount ?? false,
+      billingAccountName: billing?.billingAccountName ?? null,
+    }
+  })
+}
+
+/** Org display/company + billing payment status for a project list page. */
+async function enrichProjects(
+  projects: MappedProject[],
+  headers: Record<string, string>
+): Promise<MappedProject[]> {
+  const orgs = await resolveOrganizationFields(
+    projects.map((item) => item.organizationName),
+    headers
+  )
+  return resolveBillingFields(attachOrganizationFields(projects, orgs), headers)
+}
+
+function organizationsURL(params: { name?: string; limit?: number; cursor?: string } = {}) {
   const server = getK8sServer()
   const base = `${server}/apis/resourcemanager.miloapis.com/v1alpha1/organizations`
   if (params.name) return `${base}/${encodeURIComponent(params.name)}`
   const query = new URLSearchParams()
   if (params.limit) query.set('limit', String(params.limit))
   if (params.cursor) query.set('continue', params.cursor)
-  if (params.search) query.set('fieldSelector', `metadata.name=${params.search}`)
   const qs = query.toString()
   return qs ? `${base}?${qs}` : base
+}
+
+function organizationMatchesSearch(org: MappedOrganization, search: string): boolean {
+  const q = search.toLowerCase()
+  return (
+    org.name.toLowerCase().includes(q) ||
+    org.displayName.toLowerCase().includes(q) ||
+    (org.contactInfo?.businessName?.toLowerCase().includes(q) ?? false) ||
+    (org.contactInfo?.email?.toLowerCase().includes(q) ?? false) ||
+    (org.contactInfo?.name?.toLowerCase().includes(q) ?? false)
+  )
+}
+
+/** Upstream page size while walking for substring search. */
+const ORG_SEARCH_PAGE_SIZE = 100
+/** Cap how many upstream pages a single search walks. */
+const ORG_SEARCH_MAX_PAGES = 20
+
+/**
+ * Substring search across name / displayName / company / contact.
+ * Walks upstream pages until `limit` matches or the page budget is exhausted.
+ */
+async function searchOrganizations(
+  args: { limit?: number; cursor?: string; search: string },
+  headers: Record<string, string>
+): Promise<{ items: MappedOrganization[]; continueToken: string | null }> {
+  const limit = args.limit ?? 50
+  const matches: MappedOrganization[] = []
+  let cursor = args.cursor
+  let nextContinue: string | null = null
+
+  for (let page = 0; page < ORG_SEARCH_MAX_PAGES && matches.length < limit; page++) {
+    const url = organizationsURL({ limit: ORG_SEARCH_PAGE_SIZE, cursor })
+    const r = await getOriginalFetch()(url, { headers })
+    if (!r.ok) {
+      log.warn('milo organizations search fetch failed', { status: r.status, url })
+      break
+    }
+    const body = (await r.json()) as UpstreamOrganizationList
+    for (const raw of body.items ?? []) {
+      const org = mapOrganization(raw)
+      if (!organizationMatchesSearch(org, args.search)) continue
+      matches.push(org)
+      if (matches.length >= limit) break
+    }
+    cursor = body.metadata?.continue ?? undefined
+    nextContinue = cursor ?? null
+    if (!cursor) {
+      nextContinue = null
+      break
+    }
+  }
+
+  return {
+    items: matches.slice(0, limit),
+    // Only expose a continue token when we filled the page and more upstream
+    // data may still exist — callers can pass it back to resume the walk.
+    continueToken: matches.length >= limit ? nextContinue : null,
+  }
 }
 
 function orgProjectsURL(orgName: string, params: { limit?: number; cursor?: string } = {}) {
@@ -189,6 +448,30 @@ function orgProjectsURL(orgName: string, params: { limit?: number; cursor?: stri
   if (params.cursor) query.set('continue', params.cursor)
   const qs = query.toString()
   return qs ? `${base}?${qs}` : base
+}
+
+function orgBillingNamespace(orgName: string) {
+  return `organization-${orgName}`
+}
+
+function orgBillingBindingsURL(orgName: string) {
+  const server = getK8sServer()
+  const ns = orgBillingNamespace(orgName)
+  return (
+    `${server}/apis/resourcemanager.miloapis.com/v1alpha1` +
+    `/organizations/${encodeURIComponent(orgName)}/control-plane` +
+    `/apis/billing.miloapis.com/v1alpha1/namespaces/${encodeURIComponent(ns)}/billingaccountbindings`
+  )
+}
+
+function orgBillingAccountsURL(orgName: string) {
+  const server = getK8sServer()
+  const ns = orgBillingNamespace(orgName)
+  return (
+    `${server}/apis/resourcemanager.miloapis.com/v1alpha1` +
+    `/organizations/${encodeURIComponent(orgName)}/control-plane` +
+    `/apis/billing.miloapis.com/v1alpha1/namespaces/${encodeURIComponent(ns)}/billingaccounts`
+  )
 }
 
 function orgMembershipsURL(orgName: string) {
@@ -301,21 +584,21 @@ async function fetchOrgProjects(
   context: ResolverContext
 ): Promise<ProjectListResult> {
   const authorization = getHeader(context, 'authorization')
+  const headers = {
+    ...(authorization ? { Authorization: authorization } : {}),
+    Accept: 'application/json',
+  }
   try {
     const url = orgProjectsURL(orgName, { limit: args.limit, cursor: args.cursor })
-    const r = await getOriginalFetch()(url, {
-      headers: {
-        ...(authorization ? { Authorization: authorization } : {}),
-        Accept: 'application/json',
-      },
-    })
+    const r = await getOriginalFetch()(url, { headers })
     if (!r.ok) {
       log.warn('milo organizationProjects fetch failed', { orgName, status: r.status })
       return { items: [], continueToken: null }
     }
     const body = (await r.json()) as UpstreamProjectList
+    const items = (body.items ?? []).map(mapProjectFull)
     return {
-      items: (body.items ?? []).map(mapProjectFull),
+      items: await enrichProjects(items, headers),
       continueToken: body.metadata?.continue ?? null,
     }
   } catch (error) {
@@ -411,18 +694,24 @@ export const organizationsResolvers = {
       context: ResolverContext
     ) => {
       const authorization = getHeader(context, 'authorization')
+      const headers = {
+        ...(authorization ? { Authorization: authorization } : {}),
+        Accept: 'application/json',
+      }
       try {
+        const search = args.search?.trim()
+        if (search) {
+          return await searchOrganizations(
+            { limit: args.limit, cursor: args.cursor, search },
+            headers
+          )
+        }
+
         const url = organizationsURL({
           limit: args.limit,
           cursor: args.cursor,
-          search: args.search,
         })
-        const r = await getOriginalFetch()(url, {
-          headers: {
-            ...(authorization ? { Authorization: authorization } : {}),
-            Accept: 'application/json',
-          },
-        })
+        const r = await getOriginalFetch()(url, { headers })
         if (!r.ok) {
           log.warn('milo organizations fetch failed', { status: r.status, url })
           return { items: [], continueToken: null }
@@ -478,21 +767,21 @@ export const organizationsResolvers = {
       context: ResolverContext
     ) => {
       const authorization = getHeader(context, 'authorization')
+      const headers = {
+        ...(authorization ? { Authorization: authorization } : {}),
+        Accept: 'application/json',
+      }
       try {
         const url = projectsListURL({ limit: args.limit, cursor: args.cursor, search: args.search })
-        const r = await getOriginalFetch()(url, {
-          headers: {
-            ...(authorization ? { Authorization: authorization } : {}),
-            Accept: 'application/json',
-          },
-        })
+        const r = await getOriginalFetch()(url, { headers })
         if (!r.ok) {
           log.warn('milo projects fetch failed', { status: r.status, url })
           return { items: [], continueToken: null }
         }
         const body = (await r.json()) as UpstreamProjectList
+        const items = (body.items ?? []).map(mapProjectFull)
         return {
-          items: (body.items ?? []).map(mapProjectFull),
+          items: await enrichProjects(items, headers),
           continueToken: body.metadata?.continue ?? null,
         }
       } catch (error) {
@@ -505,18 +794,19 @@ export const organizationsResolvers = {
 
     project: async (_root: unknown, args: { name: string }, context: ResolverContext) => {
       const authorization = getHeader(context, 'authorization')
+      const headers = {
+        ...(authorization ? { Authorization: authorization } : {}),
+        Accept: 'application/json',
+      }
       try {
-        const r = await getOriginalFetch()(projectURL(args.name), {
-          headers: {
-            ...(authorization ? { Authorization: authorization } : {}),
-            Accept: 'application/json',
-          },
-        })
+        const r = await getOriginalFetch()(projectURL(args.name), { headers })
         if (!r.ok) {
           log.warn('milo project fetch failed', { name: args.name, status: r.status })
           return null
         }
-        return mapProjectFull((await r.json()) as UpstreamProjectFull)
+        const project = mapProjectFull((await r.json()) as UpstreamProjectFull)
+        const [enriched] = await enrichProjects([project], headers)
+        return enriched
       } catch (error) {
         log.error('project resolver failed', {
           error: error instanceof Error ? error.message : String(error),

@@ -55,6 +55,100 @@ const jsonResponse = (body: unknown, status = 200) =>
     headers: { 'content-type': 'application/json' },
   })
 
+/** Single Organization resource — used when project resolvers enrich owning orgs. */
+const acmeOrganization = () =>
+  jsonResponse({
+    metadata: {
+      name: 'acme',
+      annotations: { 'kubernetes.io/display-name': 'Acme Corp' },
+    },
+    spec: {
+      type: 'Standard',
+      contactInfo: { businessName: 'Acme LLC', name: 'Ada', email: 'ada@acme.test' },
+    },
+  })
+
+/**
+ * Routes project-list / project / org GETs so enrichment lookups don't collide
+ * with the primary list response (same pattern as routedFetch for consumers).
+ */
+const projectOrgRoutedFetch = (routes: {
+  projectsList?: Response
+  projectByName?: Record<string, Response>
+  organizations?: Record<string, Response>
+  orgProjects?: Response
+  billingBindings?: Record<string, Response>
+  billingAccounts?: Record<string, Response>
+  fallback?: Response
+}) =>
+  vi.fn((input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+    if (url.includes('/billingaccountbindings')) {
+      const orgMatch = url.match(/\/organizations\/([^/]+)\/control-plane/)
+      const orgName = orgMatch ? decodeURIComponent(orgMatch[1]) : ''
+      return Promise.resolve(routes.billingBindings?.[orgName] ?? jsonResponse({ items: [] }))
+    }
+    if (url.includes('/billingaccounts')) {
+      const orgMatch = url.match(/\/organizations\/([^/]+)\/control-plane/)
+      const orgName = orgMatch ? decodeURIComponent(orgMatch[1]) : ''
+      return Promise.resolve(routes.billingAccounts?.[orgName] ?? jsonResponse({ items: [] }))
+    }
+    if (url.includes('/control-plane/') && url.includes('/projects')) {
+      return Promise.resolve(routes.orgProjects ?? jsonResponse({ items: [] }))
+    }
+    const orgMatch = url.match(/\/organizations\/([^/?]+)$/)
+    if (orgMatch) {
+      const name = decodeURIComponent(orgMatch[1])
+      return Promise.resolve(
+        routes.organizations?.[name] ?? routes.fallback ?? new Response('{}', { status: 404 })
+      )
+    }
+    const projectMatch = url.match(/\/projects\/([^/?]+)$/)
+    if (projectMatch && !url.includes('/control-plane/')) {
+      const name = decodeURIComponent(projectMatch[1])
+      return Promise.resolve(
+        routes.projectByName?.[name] ?? routes.fallback ?? new Response('{}', { status: 404 })
+      )
+    }
+    if (url.includes('/projects')) {
+      return Promise.resolve(routes.projectsList ?? jsonResponse({ items: [] }))
+    }
+    return Promise.resolve(routes.fallback ?? jsonResponse({ items: [] }))
+  })
+
+const acmeBillingWithPayment = () => ({
+  billingBindings: {
+    acme: jsonResponse({
+      items: [
+        {
+          spec: {
+            projectRef: { name: 'proj-a' },
+            billingAccountRef: { name: 'ba-1' },
+          },
+          status: { phase: 'Active' },
+        },
+        {
+          spec: {
+            projectRef: { name: 'proj-1' },
+            billingAccountRef: { name: 'ba-1' },
+          },
+          status: { phase: 'Active' },
+        },
+      ],
+    }),
+  },
+  billingAccounts: {
+    acme: jsonResponse({
+      items: [
+        {
+          metadata: { name: 'ba-1' },
+          spec: { defaultPaymentMethodRef: { name: 'pm-1' } },
+        },
+      ],
+    }),
+  },
+})
+
 const callSessions = (args: { userID?: string } = {}, context: ReturnType<typeof ctx> = ctx()) =>
   (additionalResolvers.Query!.sessions as SessionsResolver)(null, args, context)
 
@@ -561,11 +655,38 @@ describe('Query.organizations', () => {
     })
   })
 
-  it('passes fieldSelector when search is provided', async () => {
-    fetchSpy.mockResolvedValue(jsonResponse({ items: [] }))
-    await callOrganizations({ search: 'acme' })
+  it('substring-searches name, displayName, and company across upstream pages', async () => {
+    fetchSpy.mockResolvedValue(
+      jsonResponse({
+        items: [
+          {
+            metadata: {
+              name: 'other',
+              annotations: { 'kubernetes.io/display-name': 'Other Co' },
+            },
+            spec: { type: 'Standard' },
+          },
+          {
+            metadata: {
+              name: 'dtn-acme',
+              annotations: { 'kubernetes.io/display-name': 'Acme Widget' },
+            },
+            spec: {
+              type: 'Standard',
+              contactInfo: { businessName: 'Acme LLC' },
+            },
+          },
+        ],
+        metadata: {},
+      })
+    )
+    const result = (await callOrganizations({ search: 'acme', limit: 10 })) as {
+      items: { name: string; displayName: string }[]
+    }
+    expect(result.items).toHaveLength(1)
+    expect(result.items[0]).toMatchObject({ name: 'dtn-acme', displayName: 'Acme Widget' })
     expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringContaining('fieldSelector=metadata.name%3Dacme'),
+      expect.stringContaining('/organizations?limit=100'),
       expect.anything()
     )
   })
@@ -642,8 +763,8 @@ describe('Query.organizationProjects', () => {
     )(null, args, ctx())
 
   it('fetches projects via the org control plane URL', async () => {
-    fetchSpy.mockResolvedValue(
-      jsonResponse({
+    fetchSpy = projectOrgRoutedFetch({
+      orgProjects: jsonResponse({
         items: [
           {
             metadata: {
@@ -654,15 +775,31 @@ describe('Query.organizationProjects', () => {
           },
         ],
         metadata: {},
-      })
-    )
+      }),
+      organizations: { acme: acmeOrganization() },
+      ...acmeBillingWithPayment(),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
     const result = (await callOrgProjects({ orgName: 'acme' })) as {
-      items: { name: string; displayName: string; organizationName: string }[]
+      items: {
+        name: string
+        displayName: string
+        organizationName: string
+        organizationDisplayName: string
+        organizationBusinessName: string | null
+        hasActiveBillingAccount: boolean
+        billingAccountName: string | null
+      }[]
     }
     expect(result.items[0]).toMatchObject({
       name: 'proj-1',
       displayName: 'Project One',
       organizationName: 'acme',
+      organizationDisplayName: 'Acme Corp',
+      organizationBusinessName: 'Acme LLC',
+      hasActiveBillingAccount: true,
+      billingAccountName: 'ba-1',
     })
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining(
@@ -827,8 +964,8 @@ describe('Organization.members / Organization.projects', () => {
   })
 
   it('resolves nested projects from the parent organization name', async () => {
-    fetchSpy.mockResolvedValue(
-      jsonResponse({
+    fetchSpy = projectOrgRoutedFetch({
+      orgProjects: jsonResponse({
         items: [
           {
             metadata: {
@@ -839,18 +976,34 @@ describe('Organization.members / Organization.projects', () => {
           },
         ],
         metadata: {},
-      })
-    )
+      }),
+      organizations: { acme: acmeOrganization() },
+      ...acmeBillingWithPayment(),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
 
     const result = await (
       additionalResolvers.Organization!.projects as (
         p: { name: string },
         a: { limit?: number; cursor?: string },
         c: ReturnType<typeof ctx>
-      ) => Promise<{ items: { name: string; organizationName: string }[] }>
+      ) => Promise<{
+        items: {
+          name: string
+          organizationName: string
+          hasActiveBillingAccount: boolean
+        }[]
+      }>
     )({ name: 'acme' }, { limit: 5 }, ctx())
 
-    expect(result.items[0]).toMatchObject({ name: 'proj-1', organizationName: 'acme' })
+    expect(result.items[0]).toMatchObject({
+      name: 'proj-1',
+      organizationName: 'acme',
+      organizationDisplayName: 'Acme Corp',
+      organizationBusinessName: 'Acme LLC',
+      hasActiveBillingAccount: true,
+      billingAccountName: 'ba-1',
+    })
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining(
         '/organizations/acme/control-plane/apis/resourcemanager.miloapis.com/v1alpha1/projects?limit=5'
@@ -870,22 +1023,40 @@ describe('Query.projects', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('lists all projects', async () => {
-    fetchSpy.mockResolvedValue(
-      jsonResponse({
+    fetchSpy = projectOrgRoutedFetch({
+      projectsList: jsonResponse({
         items: [
           { metadata: { name: 'proj-a', annotations: {} }, spec: { ownerRef: { name: 'acme' } } },
         ],
         metadata: {},
-      })
-    )
+      }),
+      organizations: { acme: acmeOrganization() },
+      ...acmeBillingWithPayment(),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
     const result = await (
       additionalResolvers.Query!.projects as (
         r: null,
         a: object,
         c: ReturnType<typeof ctx>
-      ) => Promise<{ items: { name: string }[] }>
+      ) => Promise<{
+        items: {
+          name: string
+          organizationDisplayName: string
+          organizationBusinessName: string | null
+          hasActiveBillingAccount: boolean
+          billingAccountName: string | null
+        }[]
+      }>
     )(null, {}, ctx())
-    expect(result.items[0].name).toBe('proj-a')
+    expect(result.items[0]).toMatchObject({
+      name: 'proj-a',
+      organizationDisplayName: 'Acme Corp',
+      organizationBusinessName: 'Acme LLC',
+      hasActiveBillingAccount: true,
+      billingAccountName: 'ba-1',
+    })
   })
 
   it('returns empty list on non-ok response', async () => {
@@ -911,20 +1082,40 @@ describe('Query.project', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('fetches a single project by name', async () => {
-    fetchSpy.mockResolvedValue(
-      jsonResponse({
-        metadata: { name: 'proj-a', annotations: { 'kubernetes.io/description': 'Alpha' } },
-        spec: { ownerRef: { name: 'acme' } },
-      })
-    )
+    fetchSpy = projectOrgRoutedFetch({
+      projectByName: {
+        'proj-a': jsonResponse({
+          metadata: { name: 'proj-a', annotations: { 'kubernetes.io/description': 'Alpha' } },
+          spec: { ownerRef: { name: 'acme' } },
+        }),
+      },
+      organizations: { acme: acmeOrganization() },
+      ...acmeBillingWithPayment(),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
     const result = await (
       additionalResolvers.Query!.project as (
         r: null,
         a: { name: string },
         c: ReturnType<typeof ctx>
-      ) => Promise<{ name: string; displayName: string } | null>
+      ) => Promise<{
+        name: string
+        displayName: string
+        organizationDisplayName: string
+        organizationBusinessName: string | null
+        hasActiveBillingAccount: boolean
+        billingAccountName: string | null
+      } | null>
     )(null, { name: 'proj-a' }, ctx())
-    expect(result).toMatchObject({ name: 'proj-a', displayName: 'Alpha' })
+    expect(result).toMatchObject({
+      name: 'proj-a',
+      displayName: 'Alpha',
+      organizationDisplayName: 'Acme Corp',
+      organizationBusinessName: 'Acme LLC',
+      hasActiveBillingAccount: true,
+      billingAccountName: 'ba-1',
+    })
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining('/projects/proj-a'),
       expect.anything()
