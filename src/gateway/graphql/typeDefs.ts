@@ -199,6 +199,14 @@ export const additionalTypeDefs = /* GraphQL */ `
     displayName: String!
     "Name of the owning organization."
     organizationName: String!
+    "Owning organization's display name (kubernetes.io/display-name), falling back to organizationName."
+    organizationDisplayName: String!
+    "Owning organization's company / legal name from contactInfo.businessName."
+    organizationBusinessName: String
+    "True when the project has an Active billing-account binding to an account with a default payment method."
+    hasActiveBillingAccount: Boolean!
+    "Bound billing account name when hasActiveBillingAccount is true."
+    billingAccountName: String
     createdAt: String
     "Status of the Ready condition."
     state: String
@@ -355,7 +363,11 @@ export const additionalTypeDefs = /* GraphQL */ `
     user(id: String!): User
     "Lists UserIdentity resources scoped to the given user."
     userIdentities(userID: String!): [UserIdentity!]!
-    "Lists all organizations the caller can access."
+    """
+    Lists all organizations the caller can access. When \`search\` is set, matches
+    substring against name, displayName, company, and contact fields (walks
+    upstream pages until \`limit\` matches).
+    """
     organizations(limit: Int, cursor: String, search: String): OrganizationList!
     "Returns a single organization by name."
     organization(name: String!): Organization
