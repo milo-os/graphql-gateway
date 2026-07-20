@@ -1,0 +1,24 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: graphql-gateway-slow-operations
+spec:
+  groups:
+    - name: graphql-gateway-latency
+      rules:
+        - alert: GraphQLGatewaySlowOperation
+          expr: |
+            histogram_quantile(0.95, sum by (le, operationName) (rate(graphql_envelop_request_duration_bucket[10m]))) > 2
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              GraphQL operation {{ $labels.operationName }} has a p95
+              latency of {{ $value | humanizeDuration }}
+            description: >-
+              The {{ $labels.operationName }} operation has had a p95
+              response time above 2s for 15 minutes. This usually means an
+              upstream fan-out (one request per organization, project, or
+              user) is serializing instead of running concurrently.
+            runbook_url: "https://github.com/milo-os/graphql-gateway/blob/main/docs/runbooks/slow-operations.md"

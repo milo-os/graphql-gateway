@@ -10,3 +10,4 @@ resources:
 
   # Alerting rules
   - alerts/subgraph-errors.yaml
+  - alerts/slow-operations.yaml
