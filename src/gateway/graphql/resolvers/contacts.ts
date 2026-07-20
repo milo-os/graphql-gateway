@@ -44,6 +44,28 @@ function mapContactGroup(group: UpstreamContactGroup) {
   }
 }
 
+/**
+ * Builds the ContactGroupMembership list URL. When no namespace is given we list
+ * across ALL namespaces (the cluster-scoped path), so memberships that live
+ * outside `default` are included — callers filter by `spec.contactRef.name` /
+ * `spec.contactGroupRef.name` and expect every match regardless of the
+ * membership's own namespace. An explicit `namespace` still scopes the list.
+ */
+export function buildMembershipsListUrl(
+  server: string,
+  args: { namespace?: string; fieldSelector?: string; limit?: number; cursor?: string }
+): string {
+  const params = new URLSearchParams()
+  if (args.fieldSelector) params.set('fieldSelector', args.fieldSelector)
+  if (args.limit != null) params.set('limit', String(args.limit))
+  if (args.cursor) params.set('continue', args.cursor)
+  const paramStr = params.toString()
+  const base = args.namespace
+    ? `${server}/apis/notification.miloapis.com/v1alpha1/namespaces/${encodeURIComponent(args.namespace)}/contactgroupmemberships`
+    : `${server}/apis/notification.miloapis.com/v1alpha1/contactgroupmemberships`
+  return paramStr ? `${base}?${paramStr}` : base
+}
+
 async function fetchMemberships(
   args: { namespace?: string; fieldSelector?: string; limit?: number; cursor?: string },
   context: ResolverContext
@@ -55,15 +77,7 @@ async function fetchMemberships(
     Accept: 'application/json',
   }
   const server = getK8sServer()
-  const namespace = encodeURIComponent(args.namespace ?? 'default')
-  const params = new URLSearchParams()
-  if (args.fieldSelector) params.set('fieldSelector', args.fieldSelector)
-  if (args.limit != null) params.set('limit', String(args.limit))
-  if (args.cursor) params.set('continue', args.cursor)
-  const paramStr = params.toString()
-  const url =
-    `${server}/apis/notification.miloapis.com/v1alpha1/namespaces/${namespace}/contactgroupmemberships` +
-    (paramStr ? `?${paramStr}` : '')
+  const url = buildMembershipsListUrl(server, args)
 
   const response = await fetchFn(url, { headers })
   if (!response.ok) {
