@@ -3,11 +3,20 @@ import { log } from '@/shared/utils'
 import { type ResolverContext, getHeader, DESCRIPTION_ANNOTATION } from './common'
 
 interface UpstreamContactGroupMembership {
-  metadata?: { name?: string }
+  metadata?: { name?: string; creationTimestamp?: string }
   spec?: {
     contactRef?: { name?: string; namespace?: string }
     contactGroupRef?: { name?: string; namespace?: string }
   }
+}
+
+interface UpstreamCondition {
+  type?: string
+  status?: string
+  reason?: string
+  message?: string
+  lastTransitionTime?: string
+  observedGeneration?: number
 }
 
 interface UpstreamContactGroupMembershipList {
@@ -22,7 +31,8 @@ interface UpstreamContact {
 
 interface UpstreamContactGroup {
   metadata?: { name?: string; namespace?: string; annotations?: Record<string, string> }
-  spec?: { displayName?: string }
+  spec?: { displayName?: string; visibility?: string }
+  status?: { conditions?: UpstreamCondition[] }
 }
 
 function mapContact(contact: UpstreamContact) {
@@ -41,6 +51,19 @@ function mapContactGroup(group: UpstreamContactGroup) {
     name: group.metadata?.name ?? '',
     namespace: group.metadata?.namespace ?? '',
     displayName: group.spec?.displayName ?? null,
+    visibility: group.spec?.visibility ?? null,
+    status: group.status
+      ? {
+          conditions: (group.status.conditions ?? []).map((c) => ({
+            type: c.type ?? '',
+            status: c.status ?? '',
+            reason: c.reason ?? null,
+            message: c.message ?? null,
+            lastTransitionTime: c.lastTransitionTime ?? null,
+            observedGeneration: c.observedGeneration ?? null,
+          })),
+        }
+      : null,
   }
 }
 
@@ -173,6 +196,7 @@ export const contactsResolvers = {
             const key = ref?.namespace && ref.name ? `${ref.namespace}/${ref.name}` : ''
             return {
               name: m.metadata?.name ?? '',
+              creationTimestamp: m.metadata?.creationTimestamp ?? null,
               contactGroupRef: { name: ref?.name ?? '', namespace: ref?.namespace ?? '' },
               contactGroup: key ? (groupMap.get(key) ?? null) : null,
             }

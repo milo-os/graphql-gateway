@@ -64,10 +64,28 @@ export const additionalTypeDefs = /* GraphQL */ `
     displayName: String
   }
 
+  "A single Kubernetes-style status condition on a ContactGroup."
+  type ContactGroupCondition {
+    type: String!
+    status: String!
+    reason: String
+    message: String
+    lastTransitionTime: String
+    observedGeneration: Int
+  }
+
+  type EnrichedContactGroupStatus {
+    conditions: [ContactGroupCondition!]
+  }
+
   type EnrichedContactGroup {
     name: String!
     namespace: String!
     displayName: String
+    "Whether the group allows opt-in/opt-out membership: 'public' or 'private'."
+    visibility: String
+    "Observed status of the ContactGroup (Ready condition, provider sync)."
+    status: EnrichedContactGroupStatus
   }
 
   type ContactGroupMembershipEnriched {
@@ -81,6 +99,8 @@ export const additionalTypeDefs = /* GraphQL */ `
   type ContactMembershipEnriched {
     "metadata.name of the ContactGroupMembership resource."
     name: String!
+    "When the contact joined the group (membership metadata.creationTimestamp)."
+    creationTimestamp: String
     contactGroupRef: ContactRef!
     "Full ContactGroup data, null if lookup failed."
     contactGroup: EnrichedContactGroup
