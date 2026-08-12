@@ -12,6 +12,8 @@ spec:
           for: 5m
           labels:
             severity: warning
+            service: graphql-gateway
+            team: portals
           annotations:
             summary: >-
               GraphQL gateway subgraph {{ $labels.subgraphName }} has
@@ -28,6 +30,8 @@ spec:
           for: 10m
           labels:
             severity: critical
+            service: graphql-gateway
+            team: portals
           annotations:
             summary: >-
               GraphQL gateway subgraph {{ $labels.subgraphName }} has

@@ -12,6 +12,8 @@ spec:
           for: 15m
           labels:
             severity: warning
+            service: graphql-gateway
+            team: portals
           annotations:
             summary: >-
               GraphQL operation {{ $labels.operationName }} has a p95
