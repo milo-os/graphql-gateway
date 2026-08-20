@@ -230,6 +230,10 @@ export const additionalTypeDefs = /* GraphQL */ `
     createdAt: String
     "Status of the Ready condition."
     state: String
+    "metadata.deletionTimestamp — set while the project is terminating."
+    deletionTimestamp: String
+    "Unparsed ResourceCleanup condition message naming what deletion is waiting on."
+    resourceCleanupMessage: String
   }
 
   type ProjectList {

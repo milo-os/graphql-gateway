@@ -1056,6 +1056,62 @@ describe('Query.projects', () => {
       organizationBusinessName: 'Acme LLC',
       hasActiveBillingAccount: true,
       billingAccountName: 'ba-1',
+      deletionTimestamp: null,
+      resourceCleanupMessage: null,
+    })
+  })
+
+  it('maps deletionTimestamp and ResourceCleanup message on a deleting project', async () => {
+    fetchSpy = projectOrgRoutedFetch({
+      projectsList: jsonResponse({
+        items: [
+          {
+            metadata: {
+              name: 'proj-deleting',
+              deletionTimestamp: '2026-08-20T10:00:00Z',
+              annotations: {},
+            },
+            spec: { ownerRef: { name: 'acme' } },
+            status: {
+              conditions: [
+                { type: 'Ready', status: 'True' },
+                {
+                  type: 'ResourceCleanup',
+                  status: 'True',
+                  message:
+                    'Waiting for project resources to be removed: configmaps "default/billing-export-job" (finalizers: billing.example.com/drain-pending)',
+                },
+              ],
+            },
+          },
+        ],
+        metadata: {},
+      }),
+      organizations: { acme: acmeOrganization() },
+      ...acmeBillingWithPayment(),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await (
+      additionalResolvers.Query!.projects as (
+        r: null,
+        a: object,
+        c: ReturnType<typeof ctx>
+      ) => Promise<{
+        items: {
+          name: string
+          state: string | null
+          deletionTimestamp: string | null
+          resourceCleanupMessage: string | null
+        }[]
+      }>
+    )(null, {}, ctx())
+    expect(result.items[0]).toMatchObject({
+      name: 'proj-deleting',
+      state: 'True',
+      deletionTimestamp: '2026-08-20T10:00:00Z',
+      resourceCleanupMessage:
+        'Waiting for project resources to be removed: configmaps "default/billing-export-job" (finalizers: billing.example.com/drain-pending)',
     })
   })
 
