@@ -35,10 +35,11 @@ interface UpstreamProjectFull {
   metadata?: {
     name?: string
     creationTimestamp?: string
+    deletionTimestamp?: string
     annotations?: Record<string, string>
   }
   spec?: { ownerRef?: { name?: string; kind?: string } }
-  status?: { conditions?: Array<{ type?: string; status?: string }> }
+  status?: { conditions?: Array<{ type?: string; status?: string; message?: string }> }
 }
 
 interface UpstreamProjectList {
@@ -124,6 +125,8 @@ export interface MappedProject {
   billingAccountName: string | null
   createdAt: string | null
   state: string | null
+  deletionTimestamp: string | null
+  resourceCleanupMessage: string | null
 }
 
 type OrgEnrichment = {
@@ -191,6 +194,7 @@ function mapProjectFull(raw: UpstreamProjectFull): MappedProject {
     raw.metadata?.name ||
     ''
   const readyCondition = raw.status?.conditions?.find((c) => c.type === 'Ready')
+  const cleanupCondition = raw.status?.conditions?.find((c) => c.type === 'ResourceCleanup')
   const organizationName = raw.spec?.ownerRef?.name ?? ''
   return {
     name: raw.metadata?.name ?? '',
@@ -203,6 +207,8 @@ function mapProjectFull(raw: UpstreamProjectFull): MappedProject {
     billingAccountName: null,
     createdAt: raw.metadata?.creationTimestamp ?? null,
     state: readyCondition?.status ?? null,
+    deletionTimestamp: raw.metadata?.deletionTimestamp ?? null,
+    resourceCleanupMessage: cleanupCondition?.message?.trim() || null,
   }
 }
 
