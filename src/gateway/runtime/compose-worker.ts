@@ -55,7 +55,7 @@
 import { workerData, parentPort } from 'node:worker_threads'
 import { readFileSync } from 'node:fs'
 import * as https from 'node:https'
-import { composeSubgraphs } from '@graphql-mesh/compose-cli'
+import { getUnifiedGraphGracefully } from '@graphql-mesh/compose-cli'
 import { loadOpenAPISubgraph } from '@omnigraph/openapi'
 
 interface MTLSWorkerData {
@@ -198,8 +198,14 @@ const runComposition = async (): Promise<string> => {
     return { name: result.name, schema }
   })
 
-  const { supergraphSdl } = composeSubgraphs(subgraphs)
-  return supergraphSdl
+  // composeSubgraphs() (the raw function) returns partial/empty results plus a
+  // separate `errors` array instead of throwing - silently discarding that
+  // array means a subgraph that fails to merge produces an empty supergraph
+  // that gets treated as a successful composition. getUnifiedGraphGracefully()
+  // wraps the same call and throws when `errors` is non-empty, so a bad
+  // subgraph fails this cycle loudly and the previously cached SDL keeps
+  // serving instead of getting silently overwritten with nothing.
+  return getUnifiedGraphGracefully(subgraphs)
 }
 
 parentPort!.on('message', async (msg: { type: string }) => {
