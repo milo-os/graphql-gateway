@@ -156,21 +156,28 @@ const callDeleteSession = (args: { id: string }, context: ReturnType<typeof ctx>
   (additionalResolvers.Mutation!.deleteSession as DeleteResolver)(null, args, context)
 
 const callServiceConsumers = (
-  args: { producerProject: string },
+  args: { producerProject: string; serviceNames?: string[] | null },
   context: ReturnType<typeof ctx> = ctx()
 ) => (additionalResolvers.Query!.serviceConsumers as ServiceConsumersResolver)(null, args, context)
 
-// Routes fetch responses by URL so the consumer-list call and the per-project
-// lookups can be stubbed independently within a single resolver invocation.
+// Routes fetch responses by URL so the consumer-list call, per-project
+// lookups, and per-org lookups can be stubbed independently within a single
+// resolver invocation.
 const routedFetch = (routes: {
   consumers?: Response
   projects?: Record<string, Response>
+  organizations?: Record<string, Response>
   fallback?: Response
 }) =>
   vi.fn((input: RequestInfo | URL) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
     if (url.includes('/serviceconsumers')) {
       return Promise.resolve(routes.consumers ?? jsonResponse({ items: [] }))
+    }
+    const orgMatch = url.match(/\/organizations\/([^/?]+)$/)
+    if (orgMatch) {
+      const name = decodeURIComponent(orgMatch[1])
+      return Promise.resolve(routes.organizations?.[name] ?? new Response('{}', { status: 404 }))
     }
     const projectMatch = url.match(/\/projects\/([^/?]+)$/)
     if (projectMatch) {
@@ -408,9 +415,10 @@ describe('Query.serviceConsumers', () => {
     status: over.phase ? { phase: over.phase } : {},
   })
 
-  const project = (description?: string) =>
+  const project = (description?: string, orgName?: string) =>
     jsonResponse({
       metadata: description ? { annotations: { 'kubernetes.io/description': description } } : {},
+      ...(orgName ? { spec: { ownerRef: { name: orgName } } } : {}),
     })
 
   it('lists consumers in the producer project control plane forwarding Authorization', async () => {
@@ -431,12 +439,13 @@ describe('Query.serviceConsumers', () => {
     })
   })
 
-  it('enriches each consumer with the project display name', async () => {
+  it('enriches each consumer with the project display name and owning organization', async () => {
     fetchSpy = routedFetch({
       consumers: jsonResponse({
         items: [consumer({ name: 'sc-1', project: 'alpha', service: 'svc', phase: 'Active' })],
       }),
-      projects: { alpha: project("Alice's Project") },
+      projects: { alpha: project("Alice's Project", 'acme') },
+      organizations: { acme: acmeOrganization() },
     })
     vi.stubGlobal('fetch', fetchSpy)
 
@@ -449,7 +458,12 @@ describe('Query.serviceConsumers', () => {
         approvalDecision: null,
         approvalMessage: null,
         requestedAt: '2026-06-01T00:00:00Z',
-        consumerProject: { name: 'alpha', displayName: "Alice's Project" },
+        consumerProject: {
+          name: 'alpha',
+          displayName: "Alice's Project",
+          organizationName: 'acme',
+          organizationDisplayName: 'Acme Corp',
+        },
       },
     ])
   })
@@ -483,7 +497,12 @@ describe('Query.serviceConsumers', () => {
     vi.stubGlobal('fetch', fetchSpy)
 
     const [row] = await callServiceConsumers({ producerProject: 'p' })
-    expect(row.consumerProject).toEqual({ name: 'gamma', displayName: 'gamma' })
+    expect(row.consumerProject).toEqual({
+      name: 'gamma',
+      displayName: 'gamma',
+      organizationName: '',
+      organizationDisplayName: '',
+    })
   })
 
   it('falls back to the raw project name when the project lookup is forbidden', async () => {
@@ -494,8 +513,61 @@ describe('Query.serviceConsumers', () => {
     vi.stubGlobal('fetch', fetchSpy)
 
     const [row] = await callServiceConsumers({ producerProject: 'p' })
-    expect(row.consumerProject).toEqual({ name: 'delta', displayName: 'delta' })
+    expect(row.consumerProject).toEqual({
+      name: 'delta',
+      displayName: 'delta',
+      organizationName: '',
+      organizationDisplayName: '',
+    })
   })
+
+  it('filters to the requested services before looking up projects', async () => {
+    fetchSpy = routedFetch({
+      consumers: jsonResponse({
+        items: [
+          consumer({ name: 'sc-c1', project: 'proj-c', service: 'compute' }),
+          consumer({ name: 'sc-c2', project: 'proj-d', service: 'compute.datumapis.com' }),
+          consumer({ name: 'sc-n1', project: 'proj-n', service: 'networking' }),
+          consumer({ name: 'sc-x1', project: 'proj-x' }),
+        ],
+      }),
+      projects: {
+        'proj-c': project('Project C'),
+        'proj-d': project('Project D'),
+        'proj-n': project('Project N'),
+      },
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await callServiceConsumers({
+      producerProject: 'p',
+      serviceNames: ['compute', 'compute.datumapis.com'],
+    })
+
+    expect(result.map((r) => r.name)).toEqual(['sc-c1', 'sc-c2'])
+    const projectCalls = fetchSpy.mock.calls
+      .map(([url]) => String(url).match(/\/projects\/([^/?]+)$/)?.[1])
+      .filter(Boolean)
+    expect(projectCalls.sort()).toEqual(['proj-c', 'proj-d'])
+  })
+
+  it.each([undefined, null, []])(
+    'returns every consumer when serviceNames is %j',
+    async (serviceNames) => {
+      fetchSpy = routedFetch({
+        consumers: jsonResponse({
+          items: [
+            consumer({ name: 'sc-1', project: 'a', service: 'compute' }),
+            consumer({ name: 'sc-2', project: 'b', service: 'networking' }),
+          ],
+        }),
+      })
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const result = await callServiceConsumers({ producerProject: 'p', serviceNames })
+      expect(result.map((r) => r.name)).toEqual(['sc-1', 'sc-2'])
+    }
+  )
 
   it('fetches each unique project only once', async () => {
     fetchSpy = routedFetch({
@@ -515,6 +587,33 @@ describe('Query.serviceConsumers', () => {
     )
     expect(projectCalls).toHaveLength(1)
     expect(result.map((r) => r.consumerProject.displayName)).toEqual(['Shared', 'Shared'])
+  })
+
+  it('resolves each unique owning organization only once', async () => {
+    fetchSpy = routedFetch({
+      consumers: jsonResponse({
+        items: [
+          consumer({ name: 'sc-7', project: 'proj-a' }),
+          consumer({ name: 'sc-8', project: 'proj-b' }),
+        ],
+      }),
+      projects: {
+        'proj-a': project('Project A', 'acme'),
+        'proj-b': project('Project B', 'acme'),
+      },
+      organizations: { acme: acmeOrganization() },
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await callServiceConsumers({ producerProject: 'p' })
+    const orgCalls = fetchSpy.mock.calls.filter(([url]) =>
+      String(url).match(/\/organizations\/acme$/)
+    )
+    expect(orgCalls).toHaveLength(1)
+    expect(result.map((r) => r.consumerProject.organizationDisplayName)).toEqual([
+      'Acme Corp',
+      'Acme Corp',
+    ])
   })
 
   it('returns an empty list when the consumer list fetch fails', async () => {
@@ -1136,7 +1235,7 @@ describe('enrichProjects concurrency (via Query.projects)', () => {
     vi.clearAllMocks()
   })
 
-  const deferred = <T,>() => {
+  const deferred = <T>() => {
     let resolve!: (value: T) => void
     const promise = new Promise<T>((r) => {
       resolve = r
@@ -1174,7 +1273,10 @@ describe('enrichProjects concurrency (via Query.projects)', () => {
         return Promise.resolve(
           jsonResponse({
             items: [
-              { metadata: { name: 'proj-a', annotations: {} }, spec: { ownerRef: { name: 'acme' } } },
+              {
+                metadata: { name: 'proj-a', annotations: {} },
+                spec: { ownerRef: { name: 'acme' } },
+              },
             ],
             metadata: {},
           })

@@ -29,6 +29,10 @@ export const additionalTypeDefs = /* GraphQL */ `
     name: String!
     "Human-readable name from the kubernetes.io/display-name annotation, falling back to kubernetes.io/description, then name."
     displayName: String!
+    "The owning organization's machine name (spec.ownerRef.name)."
+    organizationName: String!
+    "Owning organization's display name (kubernetes.io/display-name), falling back to organizationName."
+    organizationDisplayName: String!
   }
 
   type ServiceConsumer {
@@ -344,8 +348,12 @@ export const additionalTypeDefs = /* GraphQL */ `
     (in the producer project's control plane) and the per-project lookups (at
     the core resourcemanager API). A list failure returns an empty list; a
     per-project lookup failure degrades that row to the raw project name.
+
+    serviceNames, when given, keeps only consumers whose spec.serviceRef.name
+    matches one of them. Filtering happens before enrichment, so project and
+    organization lookups run only for the consumers that are returned.
     """
-    serviceConsumers(producerProject: ID!): [ServiceConsumer!]!
+    serviceConsumers(producerProject: ID!, serviceNames: [String!]): [ServiceConsumer!]!
     """
     Returns sessions for the authenticated caller by default.
 

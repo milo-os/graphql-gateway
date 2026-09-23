@@ -95,6 +95,7 @@ interface UpstreamServiceConsumerList {
 
 interface UpstreamProject {
   metadata?: { annotations?: Record<string, string> }
+  spec?: { ownerRef?: { name?: string } }
 }
 
 export interface MappedOrgContactInfo {
@@ -539,20 +540,28 @@ function serviceConsumersURL(producerProject: string) {
   )
 }
 
+export interface ConsumerProjectInfo {
+  displayName: string
+  organizationName: string
+  organizationDisplayName: string
+}
+
 /**
- * Resolves the human-readable display name for each unique consumer project.
+ * Resolves the human-readable display name and owning organization for each
+ * unique consumer project.
  *
- * Returns a name -> displayName map. Per-project failures (missing annotation,
- * 403, network) are swallowed so the project simply falls back to its raw
- * name later — a single inaccessible project never fails the whole query.
- * Fetches run in parallel; there is no gateway-level dataloader.
+ * Returns a name -> info map. Per-project failures (missing annotation, 403,
+ * network) are swallowed so the project simply falls back to its raw name
+ * later — a single inaccessible project never fails the whole query. Project
+ * fetches run in parallel, then unique owning orgs are resolved via
+ * {@link resolveOrganizationFields} (also swallows per-org failures).
  */
-async function resolveProjectDisplayNames(
+async function resolveConsumerProjects(
   projectNames: string[],
   headers: Record<string, string>
-): Promise<Map<string, string>> {
+): Promise<Map<string, ConsumerProjectInfo>> {
   const fetchFn = getOriginalFetch()
-  const displayNames = new Map<string, string>()
+  const projects = new Map<string, { displayName: string; organizationName: string }>()
 
   await Promise.all(
     projectNames.map(async (name) => {
@@ -565,8 +574,12 @@ async function resolveProjectDisplayNames(
         const project = (await response.json()) as UpstreamProject
         const displayName =
           project.metadata?.annotations?.[DISPLAY_NAME_ANNOTATION] ||
-          project.metadata?.annotations?.[DESCRIPTION_ANNOTATION]
-        if (displayName) displayNames.set(name, displayName)
+          project.metadata?.annotations?.[DESCRIPTION_ANNOTATION] ||
+          name
+        projects.set(name, {
+          displayName,
+          organizationName: project.spec?.ownerRef?.name ?? '',
+        })
       } catch (error) {
         log.warn('milo project fetch threw', {
           project: name,
@@ -576,7 +589,19 @@ async function resolveProjectDisplayNames(
     })
   )
 
-  return displayNames
+  const orgNames = [...projects.values()].map((p) => p.organizationName)
+  const orgEnrichment = await resolveOrganizationFields(orgNames, headers)
+
+  const result = new Map<string, ConsumerProjectInfo>()
+  for (const [name, info] of projects) {
+    const org = orgEnrichment.get(info.organizationName)
+    result.set(name, {
+      displayName: info.displayName,
+      organizationName: info.organizationName,
+      organizationDisplayName: org?.displayName || info.organizationName,
+    })
+  }
+  return result
 }
 
 type OrgMemberResult = {
@@ -836,7 +861,7 @@ export const organizationsResolvers = {
 
     serviceConsumers: async (
       _root: unknown,
-      args: { producerProject: string },
+      args: { producerProject: string; serviceNames?: string[] | null },
       context: ResolverContext
     ) => {
       try {
@@ -861,7 +886,13 @@ export const organizationsResolvers = {
         }
 
         const body = (await response.json()) as UpstreamServiceConsumerList
-        const consumers = body.items ?? []
+        // Every service can share one producer project, so filter to the
+        // requested services before enriching — otherwise each call looks up
+        // the project behind every consumer of every service.
+        const serviceNames = args.serviceNames?.length ? new Set(args.serviceNames) : null
+        const consumers = (body.items ?? []).filter(
+          (c) => !serviceNames || serviceNames.has(c.spec?.serviceRef?.name ?? '')
+        )
 
         const projectNames = [
           ...new Set(
@@ -870,10 +901,11 @@ export const organizationsResolvers = {
               .filter((name): name is string => !!name)
           ),
         ]
-        const displayNames = await resolveProjectDisplayNames(projectNames, headers)
+        const projectInfo = await resolveConsumerProjects(projectNames, headers)
 
         return consumers.map((consumer) => {
           const projectName = consumer.spec?.consumerProjectRef?.name ?? ''
+          const info = projectInfo.get(projectName)
           return {
             name: consumer.metadata?.name ?? '',
             serviceName: consumer.spec?.serviceRef?.name ?? null,
@@ -883,7 +915,10 @@ export const organizationsResolvers = {
             requestedAt: consumer.metadata?.creationTimestamp ?? null,
             consumerProject: {
               name: projectName,
-              displayName: displayNames.get(projectName) || projectName,
+              displayName: info?.displayName || projectName,
+              organizationName: info?.organizationName ?? '',
+              organizationDisplayName:
+                info?.organizationDisplayName || info?.organizationName || '',
             },
           }
         })
