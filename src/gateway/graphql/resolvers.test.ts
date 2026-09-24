@@ -1547,3 +1547,123 @@ describe('Query.projectQuotaGrants', () => {
     expect(urls.some((u) => u.includes('/projects/my-proj/control-plane'))).toBe(true)
   })
 })
+
+describe('Query.users', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+  })
+
+  const usersList = {
+    items: [
+      {
+        metadata: { name: 'user-a', creationTimestamp: '2026-01-01T00:00:00Z' },
+        spec: { email: 'a@acme.com', givenName: 'Ada', familyName: 'A' },
+        status: { platformAccess: 'Approved' },
+      },
+      {
+        metadata: { name: 'user-b' },
+        spec: { email: 'b@acme.com' },
+        status: { platformAccess: 'Pending' },
+      },
+    ],
+    metadata: { continue: 'next-page' },
+  }
+  const fraudList = {
+    items: [
+      {
+        spec: { userRef: { name: 'user-a' } },
+        status: { compositeScore: '30', decision: 'REVIEW', lastEvaluationTime: '2026-01-01T00:00:00Z' },
+      },
+      {
+        spec: { userRef: { name: 'user-a' } },
+        status: { compositeScore: '80', decision: 'DEACTIVATE', lastEvaluationTime: '2026-02-01T00:00:00Z' },
+      },
+    ],
+  }
+
+  type UsersResult = { items: Array<Record<string, unknown>>; continueToken: string | null }
+  const call = (args: Record<string, unknown> = {}, context: unknown = ctx()): Promise<UsersResult> =>
+    (
+      additionalResolvers.Query!.users as (
+        r: unknown,
+        a: Record<string, unknown>,
+        c: unknown
+      ) => Promise<UsersResult>
+    )(null, args, context)
+
+  it('lists users with the latest fraud score joined, plus platformAccess + continueToken', async () => {
+    fetchSpy.mockImplementation((url: string) =>
+      Promise.resolve(
+        String(url).includes('/fraudevaluations') ? jsonResponse(fraudList) : jsonResponse(usersList)
+      )
+    )
+
+    const result = await call({ limit: 50 })
+
+    expect(result.continueToken).toBe('next-page')
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        name: 'user-a',
+        email: 'a@acme.com',
+        givenName: 'Ada',
+        platformAccess: 'Approved',
+        fraudScore: '80', // newest evaluation wins
+        fraudDecision: 'DEACTIVATE',
+        fraudEvaluatedAt: '2026-02-01T00:00:00Z',
+      }),
+      expect.objectContaining({
+        name: 'user-b',
+        platformAccess: 'Pending',
+        fraudScore: null,
+        fraudDecision: null,
+        fraudEvaluatedAt: null,
+      }),
+    ])
+
+    const urls = fetchSpy.mock.calls.map((c) => String(c[0]))
+    expect(urls.some((u) => u.includes('/apis/iam.miloapis.com/v1alpha1/users'))).toBe(true)
+    expect(urls.some((u) => u.includes('/apis/fraud.miloapis.com/v1alpha1/fraudevaluations'))).toBe(true)
+  })
+
+  it('applies search (email) and platformAccess as field selectors', async () => {
+    fetchSpy.mockImplementation((url: string) =>
+      Promise.resolve(
+        String(url).includes('/fraudevaluations') ? jsonResponse({ items: [] }) : jsonResponse(usersList)
+      )
+    )
+
+    await call({ search: 'a@acme.com', platformAccess: 'Approved' })
+
+    const usersUrl = fetchSpy.mock.calls.map((c) => String(c[0])).find((u) => u.includes('/users'))!
+    const decoded = decodeURIComponent(usersUrl)
+    expect(decoded).toContain('spec.email=a@acme.com')
+    expect(decoded).toContain('status.platformAccess=Approved')
+  })
+
+  it('returns an empty list on a non-2xx users response', async () => {
+    fetchSpy.mockImplementation((url: string) =>
+      Promise.resolve(
+        String(url).includes('/fraudevaluations') ? jsonResponse({ items: [] }) : jsonResponse({}, 500)
+      )
+    )
+    expect(await call({})).toEqual({ items: [], continueToken: null })
+  })
+
+  it('still returns users when the fraud fetch fails (scores null)', async () => {
+    fetchSpy.mockImplementation((url: string) =>
+      Promise.resolve(
+        String(url).includes('/fraudevaluations') ? jsonResponse({}, 403) : jsonResponse(usersList)
+      )
+    )
+    const result = await call({})
+    expect(result.items[0]).toMatchObject({ name: 'user-a', fraudScore: null })
+  })
+})
