@@ -149,6 +149,19 @@ export const additionalTypeDefs = /* GraphQL */ `
     avatarUrl: String
     lastLoginProvider: String
     nameReviewRequired: Boolean
+    "status.platformAccess — the platform access state."
+    platformAccess: String
+    "Latest fraud evaluation score — status.compositeScore (0-100). Null when never evaluated."
+    fraudScore: String
+    "Latest fraud decision — ACCEPTED | REVIEW | DEACTIVATE."
+    fraudDecision: String
+    "Latest fraud evaluation time (ISO 8601)."
+    fraudEvaluatedAt: String
+  }
+
+  type UserList {
+    items: [User!]!
+    continueToken: String
   }
 
   type UserIdentity {
@@ -382,6 +395,12 @@ export const additionalTypeDefs = /* GraphQL */ `
     lookup failures return null for that entry (filtered from the result).
     """
     userSummaries(names: [String!]!): [UserSummary!]!
+    """
+    Lists users (iam.miloapis.com) with each user's latest fraud score joined in.
+    \`search\` is an exact email match (spec.email); \`platformAccess\` filters on
+    status.platformAccess. Paginate with \`limit\` / \`cursor\`.
+    """
+    users(limit: Int, cursor: String, search: String, platformAccess: String): UserList!
     "Returns the full User resource for the authenticated caller (id='me') or by explicit ID."
     me: User
     user(id: String!): User

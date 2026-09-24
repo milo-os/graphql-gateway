@@ -13,6 +13,7 @@ interface UpstreamUser {
   }
   spec?: { email?: string; givenName?: string; familyName?: string }
   status?: {
+    platformAccess?: string
     registrationApproval?: string
     state?: string
     avatarUrl?: string
@@ -27,6 +28,75 @@ interface UpstreamUserIdentity {
 
 interface UpstreamUserIdentityList {
   items?: UpstreamUserIdentity[]
+}
+
+interface UpstreamFraudEvaluation {
+  spec?: { userRef?: { name?: string } }
+  status?: {
+    compositeScore?: string
+    decision?: string
+    lastEvaluationTime?: string
+  }
+}
+
+interface UpstreamFraudEvaluationList {
+  items?: UpstreamFraudEvaluation[]
+}
+
+function fraudEvaluationsURL() {
+  return `${getK8sServer()}/apis/fraud.miloapis.com/v1alpha1/fraudevaluations`
+}
+
+type FraudInfo = {
+  fraudScore: string | null
+  fraudDecision: string | null
+  fraudEvaluatedAt: string | null
+}
+
+/** Lists FraudEvaluations once and returns the newest one per userRef.name. */
+async function fetchLatestFraudByUser(headers: Record<string, string>): Promise<Map<string, FraudInfo>> {
+  const byUser = new Map<string, FraudInfo>()
+  try {
+    const r = await getOriginalFetch()(fraudEvaluationsURL(), { headers })
+    if (!r.ok) {
+      log.warn('milo fraudEvaluations fetch failed', { status: r.status })
+      return byUser
+    }
+    const body = (await r.json()) as UpstreamFraudEvaluationList
+    // Evaluations repeat over time; keep the newest per user. Kubernetes
+    // timestamps are ISO 8601, so lexicographic compare is chronological.
+    const latest = new Map<string, UpstreamFraudEvaluation>()
+    for (const evaluation of body.items ?? []) {
+      const userName = evaluation.spec?.userRef?.name
+      if (!userName) continue
+      const current = latest.get(userName)
+      const t = evaluation.status?.lastEvaluationTime ?? ''
+      const currentT = current?.status?.lastEvaluationTime ?? ''
+      if (!current || t > currentT) latest.set(userName, evaluation)
+    }
+    for (const [userName, evaluation] of latest) {
+      byUser.set(userName, {
+        fraudScore: evaluation.status?.compositeScore ?? null,
+        fraudDecision: evaluation.status?.decision ?? null,
+        fraudEvaluatedAt: evaluation.status?.lastEvaluationTime ?? null,
+      })
+    }
+  } catch (error) {
+    log.warn('fetchLatestFraudByUser failed', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
+  return byUser
+}
+
+function usersListURL(params: { limit?: number; cursor?: string; fieldSelector?: string }) {
+  const query = new URLSearchParams()
+  if (params.limit) query.set('limit', String(params.limit))
+  if (params.cursor) query.set('continue', params.cursor)
+  if (params.fieldSelector) query.set('fieldSelector', params.fieldSelector)
+  const qs = query.toString()
+  const base = `${getK8sServer()}/apis/iam.miloapis.com/v1alpha1/users`
+  return qs ? `${base}?${qs}` : base
 }
 
 const NAME_REVIEW_ANNOTATION = 'iam.miloapis.com/name-review-required'
@@ -47,6 +117,7 @@ function mapUser(raw: UpstreamUser) {
     timezone: annotations['preferences/timezone'] ?? null,
     newsletter: newsletterRaw != null ? newsletterRaw === 'true' : null,
     onboardedAt: annotations['onboarding/completedAt'] ?? null,
+    platformAccess: raw.status?.platformAccess ?? null,
     registrationApproval: raw.status?.registrationApproval ?? null,
     state: raw.status?.state ?? null,
     avatarUrl: raw.status?.avatarUrl ?? null,
@@ -165,6 +236,63 @@ export const usersResolvers = {
           error: error instanceof Error ? error.message : String(error),
         })
         return []
+      }
+    },
+
+    users: async (
+      _root: unknown,
+      args: { limit?: number; cursor?: string; search?: string; platformAccess?: string },
+      context: ResolverContext
+    ) => {
+      const authorization = getHeader(context, 'authorization')
+      const headers = {
+        ...(authorization ? { Authorization: authorization } : {}),
+        Accept: 'application/json',
+      }
+      try {
+        const selectors: string[] = []
+        const email = args.search?.trim()
+        if (email) selectors.push(`spec.email=${email}`)
+        if (args.platformAccess) selectors.push(`status.platformAccess=${args.platformAccess}`)
+
+        // Fetch the user page and the fraud evaluations concurrently, then join.
+        const [usersRes, fraudByUser] = await Promise.all([
+          getOriginalFetch()(
+            usersListURL({
+              limit: args.limit,
+              cursor: args.cursor,
+              fieldSelector: selectors.length ? selectors.join(',') : undefined,
+            }),
+            { headers }
+          ),
+          fetchLatestFraudByUser(headers),
+        ])
+        if (!usersRes.ok) {
+          log.warn('milo users fetch failed', { status: usersRes.status })
+          return { items: [], continueToken: null }
+        }
+        const body = (await usersRes.json()) as {
+          items?: UpstreamUser[]
+          metadata?: { continue?: string }
+        }
+        return {
+          items: (body.items ?? []).map((u) => {
+            const mapped = mapUser(u)
+            const fraud = fraudByUser.get(mapped.name)
+            return {
+              ...mapped,
+              fraudScore: fraud?.fraudScore ?? null,
+              fraudDecision: fraud?.fraudDecision ?? null,
+              fraudEvaluatedAt: fraud?.fraudEvaluatedAt ?? null,
+            }
+          }),
+          continueToken: body.metadata?.continue ?? null,
+        }
+      } catch (error) {
+        log.error('users resolver failed', {
+          error: error instanceof Error ? error.message : String(error),
+        })
+        return { items: [], continueToken: null }
       }
     },
 
