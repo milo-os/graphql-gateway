@@ -57,6 +57,7 @@ import { readFileSync } from 'node:fs'
 import * as https from 'node:https'
 import { getUnifiedGraphGracefully } from '@graphql-mesh/compose-cli'
 import { loadOpenAPISubgraph } from '@omnigraph/openapi'
+import { alignSharedTypes } from './align-shared-types'
 
 interface MTLSWorkerData {
   server: string
@@ -198,6 +199,16 @@ const runComposition = async (): Promise<string> => {
     return { name: result.name, schema }
   })
 
+  // API servers vendor different apimachinery versions, so shared types like
+  // ListMeta can disagree across subgraphs and break composition. Trim them to
+  // the fields every subgraph agrees on. See align-shared-types.ts.
+  const { subgraphs: aligned, removed } = alignSharedTypes(subgraphs)
+  for (const [field, owners] of removed) {
+    console.warn(
+      `[compose] hiding ${field}: only defined by ${owners.length} subgraph(s) (${owners.join(', ')})`
+    )
+  }
+
   // composeSubgraphs() (the raw function) returns partial/empty results plus a
   // separate `errors` array instead of throwing - silently discarding that
   // array means a subgraph that fails to merge produces an empty supergraph
@@ -205,7 +216,7 @@ const runComposition = async (): Promise<string> => {
   // wraps the same call and throws when `errors` is non-empty, so a bad
   // subgraph fails this cycle loudly and the previously cached SDL keeps
   // serving instead of getting silently overwritten with nothing.
-  return getUnifiedGraphGracefully(subgraphs)
+  return getUnifiedGraphGracefully(aligned)
 }
 
 parentPort!.on('message', async (msg: { type: string }) => {
