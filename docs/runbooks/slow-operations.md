@@ -41,6 +41,23 @@ ID) landing in the same short window is the fan-out signature. Compare
 the sum of the individual fetch durations in that window - if they're close,
 the fan-out is running sequentially rather than concurrently.
 
+`graphql_gateway_fetch_duration` only covers federated subgraph fetches.
+Gateway-local resolvers (`organizationMembers`, `organizations`, `projects`,
+`users`, `sessions`, quota, contacts) call milo through a separate fetch that
+records `graphql_gateway_local_fetch_duration_seconds` and
+`graphql_gateway_local_fetch_inflight`, labelled by K8s resource plural:
+
+```promql
+histogram_quantile(0.95, sum by (le, resource) (rate(graphql_gateway_local_fetch_duration_seconds_bucket[10m])))
+max by (resource) (max_over_time(graphql_gateway_local_fetch_inflight[10m]))
+```
+
+Local operations run through `graphql.execute`, which resolves sibling query
+fields (including aliases) concurrently. If in-flight peaks near the full
+fan-out size but each call's gateway-side duration is well above what milo
+reports for it, the requests are queuing upstream (for example API Priority
+and Fairness on the apiserver), not in the gateway.
+
 ### 3. Check list size
 
 A large organization or project list will always take longer than a small

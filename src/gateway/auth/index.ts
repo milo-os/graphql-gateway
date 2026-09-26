@@ -1,5 +1,6 @@
 import { env } from '@/gateway/config'
 import { getK8sMTLSConfig, createMTLSFetch } from '@/gateway/clients'
+import { instrumentFetch } from '@/gateway/metrics/upstream-fetch'
 import type { K8sMTLSConfig } from '@/gateway/clients'
 import { log } from '@/shared/utils'
 
@@ -13,6 +14,8 @@ let initialized = false
 // authenticate the *end user* via bearer token rather than the gateway via
 // client cert) can still reach the K8s server with a plain fetch.
 let savedOriginalFetch: typeof fetch | null = null
+// savedOriginalFetch with duration / in-flight metrics, handed to resolvers.
+let instrumentedOriginalFetch: typeof fetch | null = null
 
 /**
  * Initialize K8s authentication by loading mTLS credentials from kubeconfig.
@@ -39,6 +42,7 @@ export function initAuth(): void {
 
   // Override global fetch to use mTLS for requests to the K8s API server
   savedOriginalFetch = globalThis.fetch
+  instrumentedOriginalFetch = instrumentFetch(savedOriginalFetch)
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
 
@@ -99,14 +103,15 @@ export function getMTLSConfig(): K8sMTLSConfig {
  * cert is presented and the bearer-token authenticator wins.
  *
  * Node's TLS still validates milo's server cert via NODE_EXTRA_CA_CERTS.
+ * Calls are recorded in the graphql_gateway_local_fetch_* metrics.
  *
  * @throws Error if auth not initialized
  */
 export function getOriginalFetch(): typeof fetch {
-  if (!savedOriginalFetch) {
+  if (!instrumentedOriginalFetch) {
     throw new Error('K8s auth not initialized. Call initAuth() first.')
   }
-  return savedOriginalFetch
+  return instrumentedOriginalFetch
 }
 
 /**
