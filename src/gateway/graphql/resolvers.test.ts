@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { GraphQLError } from 'graphql'
+import {
+  GraphQLError,
+  buildSchema,
+  defaultFieldResolver,
+  execute,
+  extendSchema,
+  parse,
+  type GraphQLFieldResolver,
+} from 'graphql'
 
 // Resolvers call getOriginalFetch() to bypass the global mTLS-wrapped fetch.
 // Mock it to return whatever globalThis.fetch is at call-time so the existing
@@ -32,6 +40,7 @@ vi.mock('@/shared/utils', () => ({
 }))
 
 import { additionalResolvers } from './resolvers'
+import { additionalTypeDefs } from './typeDefs'
 
 type Resolvers = typeof additionalResolvers
 type SessionsResolver = NonNullable<Resolvers['Query']>['sessions']
@@ -1016,6 +1025,59 @@ describe('Query.organizationMembers', () => {
   it('returns empty list when fetch throws', async () => {
     fetchSpy.mockRejectedValue(new Error('network'))
     expect(await callOrgMembers('acme')).toEqual([])
+  })
+
+  // cloud-portal's OrganizationMembersBatch sends one aliased
+  // organizationMembers field per org (#57). Runs the operation through the
+  // same graphql.execute the gateway's local-schema plugin uses, and checks
+  // every org's upstream calls are dispatched before any of them resolve.
+  it('dispatches every aliased field upfront when executed as one operation', async () => {
+    const orgs = ['a', 'b', 'c', 'd', 'e']
+    const pending: Array<() => void> = []
+    fetchSpy.mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          pending.push(() => resolve(jsonResponse({ items: [] })))
+        })
+    )
+
+    const schema = extendSchema(
+      buildSchema('type Query { _: String }'),
+      parse(additionalTypeDefs),
+      {
+        assumeValidSDL: true,
+      }
+    )
+    const resolvers = additionalResolvers as Record<
+      string,
+      Record<string, GraphQLFieldResolver<unknown, unknown>>
+    >
+    const document = parse(
+      `query OrganizationMembersBatch { ${orgs
+        .map((o) => `${o}: organizationMembers(orgName: "${o}") { name }`)
+        .join(' ')} }`
+    )
+
+    const resultPromise = execute({
+      schema,
+      document,
+      contextValue: ctx(),
+      fieldResolver: (source, args, context, info) =>
+        (resolvers[info.parentType.name]?.[info.fieldName] ?? defaultFieldResolver)(
+          source,
+          args,
+          context,
+          info
+        ),
+    })
+
+    for (let i = 0; i < 5; i++) await new Promise((r) => setImmediate(r))
+    expect(fetchSpy).toHaveBeenCalledTimes(orgs.length * 2)
+
+    pending.forEach((release) => release())
+    const result = await resultPromise
+    expect(result.errors).toBeUndefined()
+    expect(Object.keys(result.data ?? {})).toEqual(orgs)
   })
 })
 
