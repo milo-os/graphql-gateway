@@ -1,5 +1,5 @@
 import { env } from '@/gateway/config'
-import { getK8sMTLSConfig, createMTLSFetch } from '@/gateway/clients'
+import { getK8sMTLSConfig, createMTLSFetch, createUserFetch } from '@/gateway/clients'
 import { instrumentFetch } from '@/gateway/metrics/upstream-fetch'
 import type { K8sMTLSConfig } from '@/gateway/clients'
 import { log } from '@/shared/utils'
@@ -9,13 +9,12 @@ let k8sServer: string | null = null
 let mtlsFetch: typeof fetch | null = null
 let mtlsConfig: K8sMTLSConfig | null = null
 let initialized = false
-// Saved before the global fetch override so callers that explicitly want to
-// bypass mTLS (e.g. the local sessions resolver, which needs milo to
-// authenticate the *end user* via bearer token rather than the gateway via
-// client cert) can still reach the K8s server with a plain fetch.
+// Saved before the global fetch override so non-K8s requests keep using it.
 let savedOriginalFetch: typeof fetch | null = null
-// savedOriginalFetch with duration / in-flight metrics, handed to resolvers.
-let instrumentedOriginalFetch: typeof fetch | null = null
+// Pooled fetch without the client cert, with duration / in-flight metrics,
+// for callers that need milo to authenticate the *end user* via bearer token
+// (the local resolvers).
+let userFetch: typeof fetch | null = null
 
 /**
  * Initialize K8s authentication by loading mTLS credentials from kubeconfig.
@@ -39,10 +38,10 @@ export function initAuth(): void {
 
   k8sServer = mtlsConfig.server
   mtlsFetch = createMTLSFetch(mtlsConfig)
+  userFetch = instrumentFetch(createUserFetch())
 
   // Override global fetch to use mTLS for requests to the K8s API server
   savedOriginalFetch = globalThis.fetch
-  instrumentedOriginalFetch = instrumentFetch(savedOriginalFetch)
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
 
@@ -93,8 +92,9 @@ export function getMTLSConfig(): K8sMTLSConfig {
 }
 
 /**
- * Get the pre-override fetch for callers that need to reach the K8s API
- * server WITHOUT presenting the gateway's client cert.
+ * Get a fetch for callers that need to reach the K8s API server WITHOUT
+ * presenting the gateway's client cert. It bypasses the global mTLS
+ * override and reuses a pooled set of keep-alive connections.
  *
  * The default global fetch routes K8s-bound requests through the mTLS agent,
  * which means K8s authenticates the request as the gateway's identity. For
@@ -108,10 +108,10 @@ export function getMTLSConfig(): K8sMTLSConfig {
  * @throws Error if auth not initialized
  */
 export function getOriginalFetch(): typeof fetch {
-  if (!instrumentedOriginalFetch) {
+  if (!userFetch) {
     throw new Error('K8s auth not initialized. Call initAuth() first.')
   }
-  return instrumentedOriginalFetch
+  return userFetch
 }
 
 /**
