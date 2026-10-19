@@ -39,6 +39,7 @@ vi.mock('@/shared/utils', () => ({
   log: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
 
+import { log } from '@/shared/utils'
 import { additionalResolvers } from './resolvers'
 import { additionalTypeDefs } from './typeDefs'
 
@@ -1730,27 +1731,34 @@ describe('Query.users', () => {
       {
         metadata: { name: 'user-a', creationTimestamp: '2026-01-01T00:00:00Z' },
         spec: { email: 'a@acme.com', givenName: 'Ada', familyName: 'A' },
-        status: { platformAccess: 'Approved' },
+        status: {
+          platformAccess: 'Approved',
+          riskAssessment: {
+            score: '0.12',
+            decision: 'ACCEPTED',
+            evaluatedAt: '2026-09-08T05:38:40Z',
+            evaluationName: 'eval-249zf',
+          },
+        },
       },
       {
+        // Never evaluated (or not yet backfilled): no riskAssessment at all.
         metadata: { name: 'user-b' },
         spec: { email: 'b@acme.com' },
         status: { platformAccess: 'Pending' },
       },
+      {
+        // Partial assessment: only a decision.
+        metadata: { name: 'user-c' },
+        spec: { email: 'c@acme.com' },
+        status: { platformAccess: 'Pending', riskAssessment: { decision: 'REVIEW' } },
+      },
+      {
+        // No status at all.
+        metadata: { name: 'user-d' },
+      },
     ],
     metadata: { continue: 'next-page' },
-  }
-  const fraudList = {
-    items: [
-      {
-        spec: { userRef: { name: 'user-a' } },
-        status: { compositeScore: '30', decision: 'REVIEW', lastEvaluationTime: '2026-01-01T00:00:00Z' },
-      },
-      {
-        spec: { userRef: { name: 'user-a' } },
-        status: { compositeScore: '80', decision: 'DEACTIVATE', lastEvaluationTime: '2026-02-01T00:00:00Z' },
-      },
-    ],
   }
 
   type UsersResult = { items: Array<Record<string, unknown>>; continueToken: string | null }
@@ -1763,12 +1771,8 @@ describe('Query.users', () => {
       ) => Promise<UsersResult>
     )(null, args, context)
 
-  it('lists users with the latest fraud score joined, plus platformAccess + continueToken', async () => {
-    fetchSpy.mockImplementation((url: string) =>
-      Promise.resolve(
-        String(url).includes('/fraudevaluations') ? jsonResponse(fraudList) : jsonResponse(usersList)
-      )
-    )
+  it('maps fraud fields from status.riskAssessment, plus platformAccess + continueToken', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse(usersList))
 
     const result = await call({ limit: 50 })
 
@@ -1779,9 +1783,9 @@ describe('Query.users', () => {
         email: 'a@acme.com',
         givenName: 'Ada',
         platformAccess: 'Approved',
-        fraudScore: '80', // newest evaluation wins
-        fraudDecision: 'DEACTIVATE',
-        fraudEvaluatedAt: '2026-02-01T00:00:00Z',
+        fraudScore: '0.12',
+        fraudDecision: 'ACCEPTED',
+        fraudEvaluatedAt: '2026-09-08T05:38:40Z',
       }),
       expect.objectContaining({
         name: 'user-b',
@@ -1790,19 +1794,35 @@ describe('Query.users', () => {
         fraudDecision: null,
         fraudEvaluatedAt: null,
       }),
+      expect.objectContaining({
+        name: 'user-c',
+        fraudScore: null,
+        fraudDecision: 'REVIEW',
+        fraudEvaluatedAt: null,
+      }),
+      expect.objectContaining({
+        name: 'user-d',
+        platformAccess: null,
+        fraudScore: null,
+        fraudDecision: null,
+        fraudEvaluatedAt: null,
+      }),
     ])
+  })
+
+  it('makes exactly one upstream request (the users LIST) and never lists fraudevaluations', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse(usersList))
+
+    await call({ limit: 50 })
 
     const urls = fetchSpy.mock.calls.map((c) => String(c[0]))
-    expect(urls.some((u) => u.includes('/apis/iam.miloapis.com/v1alpha1/users'))).toBe(true)
-    expect(urls.some((u) => u.includes('/apis/fraud.miloapis.com/v1alpha1/fraudevaluations'))).toBe(true)
+    expect(urls).toHaveLength(1)
+    expect(urls[0]).toContain('/apis/iam.miloapis.com/v1alpha1/users')
+    expect(urls.some((u) => u.includes('fraud'))).toBe(false)
   })
 
   it('applies search (email) and platformAccess as field selectors', async () => {
-    fetchSpy.mockImplementation((url: string) =>
-      Promise.resolve(
-        String(url).includes('/fraudevaluations') ? jsonResponse({ items: [] }) : jsonResponse(usersList)
-      )
-    )
+    fetchSpy.mockResolvedValue(jsonResponse(usersList))
 
     await call({ search: 'a@acme.com', platformAccess: 'Approved' })
 
@@ -1812,22 +1832,40 @@ describe('Query.users', () => {
     expect(decoded).toContain('status.platformAccess=Approved')
   })
 
-  it('returns an empty list on a non-2xx users response', async () => {
-    fetchSpy.mockImplementation((url: string) =>
-      Promise.resolve(
-        String(url).includes('/fraudevaluations') ? jsonResponse({ items: [] }) : jsonResponse({}, 500)
-      )
+  it('warns once when a non-empty page has no user with riskAssessment', async () => {
+    fetchSpy.mockResolvedValue(
+      jsonResponse({ items: [{ metadata: { name: 'user-x' } }, { metadata: { name: 'user-y' } }] })
     )
+
+    await call({})
+
+    expect(log.warn).toHaveBeenCalledTimes(1)
+    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('riskAssessment'), { pageSize: 2 })
+  })
+
+  it('does not warn when at least one user carries riskAssessment', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse(usersList))
+
+    await call({})
+
+    expect(log.warn).not.toHaveBeenCalled()
+  })
+
+  it('does not warn on an empty page', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({ items: [] }))
+
+    await call({})
+
+    expect(log.warn).not.toHaveBeenCalled()
+  })
+
+  it('returns an empty list on a non-2xx users response', async () => {
+    fetchSpy.mockResolvedValue(jsonResponse({}, 500))
     expect(await call({})).toEqual({ items: [], continueToken: null })
   })
 
-  it('still returns users when the fraud fetch fails (scores null)', async () => {
-    fetchSpy.mockImplementation((url: string) =>
-      Promise.resolve(
-        String(url).includes('/fraudevaluations') ? jsonResponse({}, 403) : jsonResponse(usersList)
-      )
-    )
-    const result = await call({})
-    expect(result.items[0]).toMatchObject({ name: 'user-a', fraudScore: null })
+  it('returns an empty list when the users fetch throws', async () => {
+    fetchSpy.mockRejectedValue(new Error('boom'))
+    expect(await call({})).toEqual({ items: [], continueToken: null })
   })
 })

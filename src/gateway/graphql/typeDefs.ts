@@ -155,11 +155,11 @@ export const additionalTypeDefs = /* GraphQL */ `
     nameReviewRequired: Boolean
     "status.platformAccess — the platform access state."
     platformAccess: String
-    "Latest fraud evaluation score — status.compositeScore (0-100). Null when never evaluated."
+    "Latest fraud evaluation score — status.riskAssessment.score. Null when never evaluated."
     fraudScore: String
-    "Latest fraud decision — ACCEPTED | REVIEW | DEACTIVATE."
+    "Latest fraud decision — status.riskAssessment.decision (ACCEPTED | REVIEW | DEACTIVATE)."
     fraudDecision: String
-    "Latest fraud evaluation time (ISO 8601)."
+    "Latest fraud evaluation time (ISO 8601) — status.riskAssessment.evaluatedAt."
     fraudEvaluatedAt: String
   }
 
@@ -404,7 +404,7 @@ export const additionalTypeDefs = /* GraphQL */ `
     """
     userSummaries(names: [String!]!): [UserSummary!]!
     """
-    Lists users (iam.miloapis.com) with each user's latest fraud score joined in.
+    Lists users (iam.miloapis.com). Fraud fields come from each User's status.riskAssessment.
     \`search\` is an exact email match (spec.email); \`platformAccess\` filters on
     status.platformAccess. Paginate with \`limit\` / \`cursor\`.
     """
