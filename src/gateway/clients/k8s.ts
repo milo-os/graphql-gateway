@@ -2,7 +2,36 @@ import { readFileSync } from 'node:fs'
 import * as https from 'node:https'
 import { KubeConfig } from '@kubernetes/client-node'
 import * as Sentry from '@sentry/node'
+import { Agent, fetch as undiciFetch } from 'undici'
 import { log } from '@/shared/utils'
+
+/**
+ * Connection pool settings for requests that authenticate as the end user.
+ *
+ * Node's global fetch keeps idle sockets for only 4s and has no per-origin
+ * connection cap, so a batch of N concurrent Milo calls (e.g. one
+ * organizationMembers alias per org) opens N new TCP + TLS connections, each
+ * with its own ndots:5 DNS search, and throws them away before the next page
+ * load. Keeping a bounded pool warm makes those calls reuse connections.
+ *
+ * keepAliveTimeout stays under the 90s idle timeout k8s apiservers set on
+ * their HTTP server, so the gateway, not Milo, closes idle sockets.
+ *
+ * The connection cap is shared by every user on the pod. It bounds bursts on
+ * Milo; when all connections are busy, further calls queue. The
+ * graphql_gateway_local_fetch_inflight gauge shows how close a pod gets.
+ *
+ * kube-proxy balances per connection, and undici reuses the first free
+ * connection, so light traffic stays on one or two Milo replicas. clientTtl
+ * replaces each connection after 5 minutes, which limits how long that skew
+ * lasts and lets new replicas pick up traffic. It does not remove the skew.
+ */
+export const USER_FETCH_AGENT_OPTIONS = {
+  keepAliveTimeout: 60_000,
+  keepAliveMaxTimeout: 60_000,
+  connections: 128,
+  clientTtl: 5 * 60_000,
+} as const
 
 export interface K8sAuthConfig {
   /** Path to kubeconfig file (required) */
@@ -81,6 +110,23 @@ export function getK8sMTLSConfig(config: K8sAuthConfig): K8sMTLSConfig {
     keyPath: user.keyFile,
     caPath,
   }
+}
+
+/**
+ * Create a fetch for K8s API requests that authenticate as the end user via
+ * a forwarded bearer token, so no client cert is presented.
+ *
+ * Uses undici's own fetch with a dedicated pooled Agent rather than passing
+ * the Agent to Node's global fetch, whose bundled undici is a different
+ * major version. undici publishes the same diagnostics channels, so
+ * Sentry/OTEL fetch spans still cover these requests.
+ *
+ * Milo's server cert is validated via NODE_EXTRA_CA_CERTS.
+ */
+export function createUserFetch(): typeof fetch {
+  const agent = new Agent(USER_FETCH_AGENT_OPTIONS)
+  return ((input: Parameters<typeof undiciFetch>[0], init?: Parameters<typeof undiciFetch>[1]) =>
+    undiciFetch(input, { ...init, dispatcher: agent })) as unknown as typeof fetch
 }
 
 /**
