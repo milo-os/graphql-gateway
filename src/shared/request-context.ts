@@ -22,10 +22,20 @@ export function getRequestContext(): RequestContext | undefined {
 
 type HeaderBag = Record<string, string | string[] | undefined> | Headers
 
-/** The inbound request id, read from the X-Request-ID header or generated when the header is absent. */
+/**
+ * Shape an inbound id must have to be trusted. It is copied onto upstream
+ * headers, including Milo's Audit-ID, so anything else is replaced with a
+ * generated id rather than forwarded.
+ */
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9._-]{1,128}$/
+
+/**
+ * The inbound request id, read from the X-Request-ID header, or generated
+ * when the header is absent or not a plain token.
+ */
 export function requestIdFromHeaders(headers: HeaderBag): string {
   const raw =
     headers instanceof Headers ? headers.get(REQUEST_ID_HEADER) : headers[REQUEST_ID_HEADER]
-  const value = Array.isArray(raw) ? raw[0] : raw
-  return value?.trim() || randomUUID()
+  const value = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? ''
+  return REQUEST_ID_PATTERN.test(value) ? value : randomUUID()
 }

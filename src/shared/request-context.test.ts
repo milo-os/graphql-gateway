@@ -34,6 +34,14 @@ describe('requestIdFromHeaders', () => {
     expect(requestIdFromHeaders({ 'x-request-id': 'portal-123' })).toBe('portal-123')
   })
 
+  it('replaces an id that is too long or carries unexpected characters', () => {
+    const uuid = /^[0-9a-f-]{36}$/
+    expect(requestIdFromHeaders({ 'x-request-id': 'a'.repeat(129) })).toMatch(uuid)
+    expect(requestIdFromHeaders({ 'x-request-id': 'id with spaces' })).toMatch(uuid)
+    expect(requestIdFromHeaders({ 'x-request-id': 'x\r\ninjected: header' })).toMatch(uuid)
+    expect(requestIdFromHeaders({ 'x-request-id': 'req_01.ABC-xyz' })).toBe('req_01.ABC-xyz')
+  })
+
   it('generates a UUID when the header is absent or empty', () => {
     const generated = requestIdFromHeaders({ 'x-request-id': '' })
     expect(generated).toMatch(/^[0-9a-f-]{36}$/)
