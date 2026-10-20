@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { sendJson, parseUrl } from './utils/'
 import { availableEndpoints, env } from './config'
 import { log } from '@/shared/utils'
+import { withRequestContext } from './utils/request-context-handler'
 import {
   isHealthCheck,
   handleHealthCheck,
@@ -55,7 +56,7 @@ const loadTlsOptions = () => {
 export const createGatewayServer = () => {
   const tlsOptions = loadTlsOptions()
 
-  const handler = async (req: IncomingMessage, res: ServerResponse) => {
+  const dispatch = async (req: IncomingMessage, res: ServerResponse) => {
     const url = parseUrl(req.url!, req.headers.host!)
     const { pathname } = url
 
@@ -94,5 +95,5 @@ export const createGatewayServer = () => {
   }
 
   log.info('Starting server with HTTPS')
-  return createServer(tlsOptions, handler)
+  return createServer(tlsOptions, withRequestContext(dispatch))
 }

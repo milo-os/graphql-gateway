@@ -1,5 +1,11 @@
 import { env } from '@/gateway/config'
-import { getK8sMTLSConfig, createMTLSFetch, createUserFetch, withDeadline } from '@/gateway/clients'
+import {
+  getK8sMTLSConfig,
+  createMTLSFetch,
+  createUserFetch,
+  withCorrelation,
+  withDeadline,
+} from '@/gateway/clients'
 import { instrumentFetch } from '@/gateway/metrics/upstream-fetch'
 import type { K8sMTLSConfig } from '@/gateway/clients'
 import { log } from '@/shared/utils'
@@ -38,8 +44,8 @@ export function initAuth(): void {
 
   k8sServer = mtlsConfig.server
   const deadline = { timeoutMs: env.upstreamTimeoutMs }
-  mtlsFetch = withDeadline(createMTLSFetch(mtlsConfig), deadline)
-  userFetch = instrumentFetch(withDeadline(createUserFetch(), deadline))
+  mtlsFetch = withCorrelation(withDeadline(createMTLSFetch(mtlsConfig), deadline))
+  userFetch = instrumentFetch(withCorrelation(withDeadline(createUserFetch(), deadline)))
 
   // Override global fetch to use mTLS for requests to the K8s API server
   savedOriginalFetch = globalThis.fetch
