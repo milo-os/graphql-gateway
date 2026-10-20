@@ -66,6 +66,15 @@ apiserver:
 sum by (resource) (rate(graphql_gateway_local_fetch_duration_seconds_count{status="timeout"}[10m]))
 ```
 
+A paginated list page that fails for any other reason also surfaces as an
+error rather than an empty page. The codes a client can branch on:
+
+| `extensions.code`  | Meaning                                                               | Client recovery                    |
+| ------------------ | --------------------------------------------------------------------- | ---------------------------------- |
+| `UPSTREAM_TIMEOUT` | No response headers within the deadline                               | Retry                              |
+| `UPSTREAM_ERROR`   | Milo answered a non-OK status (`extensions.status`) or the call threw | Show the error; retry if transient |
+| `CURSOR_EXPIRED`   | The continue token expired from the apiserver watch cache (410)       | Restart paging from the first page |
+
 Local operations run through `graphql.execute`, which resolves sibling query
 fields (including aliases) concurrently. If in-flight peaks near the full
 fan-out size but each call's gateway-side duration is well above what milo

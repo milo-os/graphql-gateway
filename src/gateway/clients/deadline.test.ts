@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { GraphQLError } from 'graphql'
-import { UpstreamTimeoutError, withDeadline } from './deadline'
+import { UpstreamTimeoutError, pathOf, withDeadline } from './deadline'
 
 const URL_ORGS = 'https://k8s.test/apis/resourcemanager.miloapis.com/v1alpha1/organizations?limit=5'
 
@@ -108,5 +108,14 @@ describe('withDeadline', () => {
 
     expect(await settled).toMatchObject({ name: 'AbortError', message: 'client went away' })
     expect(vi.getTimerCount()).toBe(0)
+  })
+})
+
+describe('pathOf', () => {
+  it('returns the pathname of a URL and a placeholder for anything that is not one', () => {
+    expect(pathOf('https://k8s.test/apis/x/v1/users?fieldSelector=spec.email=a@b.c')).toBe(
+      '/apis/x/v1/users'
+    )
+    expect(pathOf('users?fieldSelector=spec.email=a@b.c')).toBe('upstream')
   })
 })

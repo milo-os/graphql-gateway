@@ -844,6 +844,13 @@ describe('Query.organizations', () => {
     })
   })
 
+  it('reports a 410 on a first page as UPSTREAM_ERROR, since there is no cursor to expire', async () => {
+    fetchSpy.mockResolvedValue(new Response('{}', { status: 410 }))
+    await expect(callOrganizations()).rejects.toMatchObject({
+      extensions: { code: 'UPSTREAM_ERROR', status: 410 },
+    })
+  })
+
   it('keeps upstream error detail out of the client-facing message', async () => {
     fetchSpy.mockRejectedValue(new Error('connect ECONNREFUSED 10.0.0.1:443'))
     const error = (await callOrganizations().catch((e: unknown) => e)) as Error
@@ -983,6 +990,13 @@ describe('Query.organizationProjects', () => {
     fetchSpy.mockResolvedValue(new Response('{}', { status: 410 }))
     await expect(callOrgProjects({ orgName: 'acme', cursor: 'stale' })).rejects.toMatchObject({
       extensions: { code: 'CURSOR_EXPIRED', status: 410 },
+    })
+  })
+
+  it('throws UPSTREAM_ERROR when the page fetch throws', async () => {
+    fetchSpy.mockRejectedValue(new Error('network'))
+    await expect(callOrgProjects({ orgName: 'acme' })).rejects.toMatchObject({
+      extensions: { code: 'UPSTREAM_ERROR' },
     })
   })
 })
@@ -1363,6 +1377,19 @@ describe('Query.projects', () => {
         ) => Promise<unknown>
       )(null, { cursor: 'stale' }, ctx())
     ).rejects.toMatchObject({ extensions: { code: 'CURSOR_EXPIRED', status: 410 } })
+  })
+
+  it('throws UPSTREAM_ERROR when the page fetch throws', async () => {
+    fetchSpy.mockRejectedValue(new Error('network'))
+    await expect(
+      (
+        additionalResolvers.Query!.projects as (
+          r: null,
+          a: object,
+          c: ReturnType<typeof ctx>
+        ) => Promise<unknown>
+      )(null, {}, ctx())
+    ).rejects.toMatchObject({ extensions: { code: 'UPSTREAM_ERROR' } })
   })
 })
 
@@ -2019,5 +2046,71 @@ describe('Query.contactGroupMembershipsWithContacts', () => {
     await expect(call({ namespace: 'organization-acme', cursor: 'stale' })).rejects.toMatchObject({
       extensions: { code: 'CURSOR_EXPIRED', status: 410 },
     })
+  })
+})
+
+describe('Query.contactMembershipsWithGroups', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('throws UPSTREAM_ERROR with the status when the memberships page is not ok', async () => {
+    fetchSpy.mockResolvedValue(new Response('{}', { status: 500 }))
+    await expect(
+      (
+        additionalResolvers.Query!.contactMembershipsWithGroups as (
+          r: null,
+          a: { namespace?: string },
+          c: ReturnType<typeof ctx>
+        ) => Promise<unknown>
+      )(null, { namespace: 'organization-acme' }, ctx())
+    ).rejects.toMatchObject({ extensions: { code: 'UPSTREAM_ERROR', status: 500 } })
+  })
+})
+
+describe('nested page failure inside organizations { items { projects } }', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('nulls only the failed projects field and keeps the organization list', async () => {
+    const fetchSpy = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/projects')) return Promise.resolve(new Response('{}', { status: 410 }))
+      return Promise.resolve(
+        jsonResponse({
+          items: [{ metadata: { name: 'acme', annotations: {} }, spec: { type: 'Standard' } }],
+          metadata: {},
+        })
+      )
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const schema = extendSchema(buildSchema('type Query { _: String }'), parse(additionalTypeDefs), {
+      assumeValidSDL: true,
+    })
+    const resolvers = additionalResolvers as Record<
+      string,
+      Record<string, GraphQLFieldResolver<unknown, unknown>>
+    >
+    const result = await execute({
+      schema,
+      document: parse(
+        '{ organizations { items { name projects(cursor: "stale") { items { name } } } } }'
+      ),
+      contextValue: ctx(),
+      fieldResolver: (source, args, context, info) =>
+        (resolvers[info.parentType.name]?.[info.fieldName] ?? defaultFieldResolver)(
+          source,
+          args,
+          context,
+          info
+        ),
+    })
+
+    expect(result.data).toEqual({ organizations: { items: [{ name: 'acme', projects: null }] } })
+    expect(result.errors?.[0]?.extensions).toMatchObject({ code: 'CURSOR_EXPIRED' })
   })
 })

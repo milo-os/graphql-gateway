@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql'
+import { pathOf } from '@/gateway/clients/deadline'
 
 /**
  * Hive Gateway runs on graphql-yoga, which exposes incoming request headers
@@ -21,11 +22,13 @@ export function getHeader(context: ResolverContext, name: string): string {
 }
 
 /**
- * Page-level resolvers catch everything and degrade to an empty result so one
- * bad upstream call does not fail the whole operation. A typed GraphQLError
- * (for example UpstreamTimeoutError) is the exception: it already carries a
- * code the client can act on, so it must reach the response instead of being
- * logged and swallowed. Call this first in a page-level catch block.
+ * Paginated list resolvers surface a failed page as a typed GraphQLError
+ * (see failedPage and upstreamFailure); best-effort, non-paginated resolvers
+ * still catch everything and degrade to an empty result so one bad upstream
+ * call does not fail the whole operation. Either way a typed GraphQLError
+ * already carries a code the client can act on, so it must reach the
+ * response instead of being logged and swallowed. Call this first in every
+ * top-level catch block.
  */
 export function rethrowGraphQLError(error: unknown): void {
   if (error instanceof GraphQLError) throw error
@@ -33,11 +36,11 @@ export function rethrowGraphQLError(error: unknown): void {
 
 type UpstreamErrorCode = 'UPSTREAM_ERROR' | 'CURSOR_EXPIRED'
 
-const pathOf = (url: string): string => {
+const hadContinueToken = (url: string): boolean => {
   try {
-    return new URL(url).pathname
+    return new URL(url).searchParams.has('continue')
   } catch {
-    return url
+    return false
   }
 }
 
@@ -45,9 +48,10 @@ const pathOf = (url: string): string => {
 export class UpstreamError extends GraphQLError {
   constructor(
     message: string,
-    extensions: { code: UpstreamErrorCode; status?: number; path?: string }
+    extensions: { code: UpstreamErrorCode; status?: number; path?: string },
+    originalError?: Error
   ) {
-    super(message, { extensions })
+    super(message, { extensions, originalError })
     this.name = 'UpstreamError'
   }
 }
@@ -62,7 +66,9 @@ export class UpstreamError extends GraphQLError {
  */
 export function failedPage(response: Response, url: string): never {
   const path = pathOf(url)
-  if (response.status === 410) {
+  // An unread body keeps the socket out of the keep-alive pool until GC.
+  void response.body?.cancel().catch(() => {})
+  if (response.status === 410 && hadContinueToken(url)) {
     throw new UpstreamError(`Continue token expired for ${path}`, {
       code: 'CURSOR_EXPIRED',
       status: 410,
@@ -78,12 +84,16 @@ export function failedPage(response: Response, url: string): never {
 
 /**
  * Wraps an unexpected error from a page fetch (network, parse) as
- * UPSTREAM_ERROR. The original message stays in the gateway log, where the
- * caller already wrote it; it is not repeated to the client because it can
- * carry internal addresses.
+ * UPSTREAM_ERROR. The cause is kept as originalError for error tracking but
+ * its text is not repeated to the client, because it can carry internal
+ * addresses.
  */
-export function upstreamFailure(_error: unknown, what: string): UpstreamError {
-  return new UpstreamError(`${what} failed upstream`, { code: 'UPSTREAM_ERROR' })
+export function upstreamFailure(error: unknown, what: string): UpstreamError {
+  return new UpstreamError(
+    `${what} failed upstream`,
+    { code: 'UPSTREAM_ERROR' },
+    error instanceof Error ? error : undefined
+  )
 }
 
 export const DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
