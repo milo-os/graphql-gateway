@@ -229,7 +229,7 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
           // client disconnects — frees mTLS agent sockets without waiting for milo.
           init?.signal?.addEventListener('abort', () => {
             req.destroy()
-            reject(new DOMException('The operation was aborted.', 'AbortError'))
+            reject(init.signal?.reason ?? new DOMException('The operation was aborted.', 'AbortError'))
           })
 
           // Write body if present

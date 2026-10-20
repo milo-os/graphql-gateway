@@ -1,6 +1,6 @@
 import { getOriginalFetch, getK8sServer } from '@/gateway/auth'
 import { log } from '@/shared/utils'
-import { type ResolverContext, getHeader } from './common'
+import { type ResolverContext, getHeader, rethrowGraphQLError } from './common'
 
 interface UpstreamAllowanceBucket {
   metadata?: { name?: string; namespace?: string }
@@ -244,6 +244,7 @@ export const quotaResolvers = {
         if (!regsRes.ok) log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
         return { items: mapQuotaBuckets(buckets, buildRegistrationMap(regsBody)) }
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('orgQuotaBuckets resolver failed', { error: error instanceof Error ? error.message : String(error) })
         return { items: [] }
       }
@@ -264,6 +265,7 @@ export const quotaResolvers = {
         if (!regsRes.ok) log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
         return { items: mapQuotaBuckets(buckets, buildRegistrationMap(regsBody)) }
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('projectQuotaBuckets resolver failed', { error: error instanceof Error ? error.message : String(error) })
         return { items: [] }
       }
@@ -284,6 +286,7 @@ export const quotaResolvers = {
         if (!regsRes.ok) log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
         return { items: mapQuotaGrants(grants, buildRegistrationMap(regsBody)) }
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('orgQuotaGrants resolver failed', { error: error instanceof Error ? error.message : String(error) })
         return { items: [] }
       }
@@ -304,6 +307,7 @@ export const quotaResolvers = {
         if (!regsRes.ok) log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
         return { items: mapQuotaGrants(grants, buildRegistrationMap(regsBody)) }
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('projectQuotaGrants resolver failed', { error: error instanceof Error ? error.message : String(error) })
         return { items: [] }
       }

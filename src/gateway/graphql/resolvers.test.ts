@@ -39,6 +39,7 @@ vi.mock('@/shared/utils', () => ({
   log: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
 
+import { UpstreamTimeoutError } from '@/gateway/clients/deadline'
 import { additionalResolvers } from './resolvers'
 import { additionalTypeDefs } from './typeDefs'
 
@@ -335,6 +336,13 @@ describe('Query.sessions', () => {
     expect(await callSessions()).toEqual([])
   })
 
+  it('rethrows an upstream timeout instead of returning an empty list', async () => {
+    fetchSpy.mockRejectedValueOnce(
+      new UpstreamTimeoutError('https://k8s.test/apis/iam.miloapis.com/v1alpha1/sessions', 10_000)
+    )
+    await expect(callSessions()).rejects.toMatchObject({ extensions: { code: 'UPSTREAM_TIMEOUT' } })
+  })
+
   it('returns an empty list when items is missing from the upstream payload', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({}))
     expect(await callSessions()).toEqual([])
@@ -512,6 +520,22 @@ describe('Query.serviceConsumers', () => {
       organizationName: '',
       organizationDisplayName: '',
     })
+  })
+
+  it('falls back to the raw project name when the project lookup times out', async () => {
+    fetchSpy = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/serviceconsumers')) {
+        return Promise.resolve(
+          jsonResponse({ items: [consumer({ name: 'sc-5', project: 'delta' })] })
+        )
+      }
+      return Promise.reject(new UpstreamTimeoutError(url, 10_000))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const [row] = await callServiceConsumers({ producerProject: 'p' })
+    expect(row.consumerProject).toMatchObject({ name: 'delta', displayName: 'delta' })
   })
 
   it('falls back to the raw project name when the project lookup is forbidden', async () => {

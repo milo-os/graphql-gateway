@@ -1,4 +1,5 @@
 import { Gauge, Histogram, register } from 'prom-client'
+import { UpstreamTimeoutError } from '@/gateway/clients/deadline'
 
 const DURATION_METRIC = 'graphql_gateway_local_fetch_duration_seconds'
 const INFLIGHT_METRIC = 'graphql_gateway_local_fetch_inflight'
@@ -70,7 +71,7 @@ export function instrumentFetch(fetchFn: typeof fetch): typeof fetch {
       end({ status: String(response.status) })
       return response
     } catch (error) {
-      end({ status: 'error' })
+      end({ status: error instanceof UpstreamTimeoutError ? 'timeout' : 'error' })
       throw error
     } finally {
       inflight.dec({ resource })

@@ -17,6 +17,9 @@ export const env = {
   /** Polling interval for supergraph composition in milliseconds (default: 40m) */
   pollingInterval: Number(process.env.POLLING_INTERVAL) || 2_400_000,
 
+  /** Deadline for response headers on every upstream call to Milo, in milliseconds (default: 10s) */
+  upstreamTimeoutMs: Number(process.env.UPSTREAM_TIMEOUT_MS) || 10_000,
+
   /** OTLP URL for telemetry */
   otlpUrl: process.env.OTLP_URL || '',
 
