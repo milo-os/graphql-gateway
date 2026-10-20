@@ -6,7 +6,7 @@ import { usePrometheusMetrics } from '@/gateway/metrics/metrics'
 import { useGatewayLocalSchema } from '@/gateway/graphql'
 import { getSupergraph } from './composition'
 
-export { initializeGateway, isSupergraphReady } from './composition'
+export { initializeGateway, isSupergraphReady, hasCompositionGivenUp } from './composition'
 
 /**
  * Gateway runtime instance.

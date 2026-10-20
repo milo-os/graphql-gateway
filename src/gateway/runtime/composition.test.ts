@@ -9,6 +9,7 @@ const { workers, log, spawn } = vi.hoisted(() => ({
 
 class FakeWorker extends EventEmitter {
   posted: unknown[] = []
+  terminated = false
   constructor() {
     super()
     if (spawn.failNext) {
@@ -24,6 +25,11 @@ class FakeWorker extends EventEmitter {
   reply(sdl = 'type Query { ok: Boolean }') {
     this.emit('message', { sdl })
   }
+  terminate() {
+    this.terminated = true
+    this.emit('exit', 1)
+    return Promise.resolve(1)
+  }
 }
 
 vi.mock('node:worker_threads', () => ({ Worker: FakeWorker }))
@@ -37,7 +43,9 @@ const flush = () => new Promise((resolve) => setImmediate(resolve))
 
 describe('composition worker supervision', () => {
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'],
+    })
     workers.length = 0
     spawn.failNext = false
     vi.resetModules()
@@ -110,10 +118,11 @@ describe('composition worker supervision', () => {
 
     expect(workers).toHaveLength(4)
     expect(mod.isSupergraphReady()).toBe(false)
+    expect(mod.hasCompositionGivenUp()).toBe(true)
     expect(log.error).toHaveBeenCalledWith(expect.stringMatching(/giving up/i), expect.anything())
   })
 
-  it('resets the backoff once a replacement composes successfully', async () => {
+  it('resets the backoff once a replacement has composed and stayed up for a while', async () => {
     const mod = await boot()
 
     for (const delay of [1_000, 5_000, 30_000]) {
@@ -122,11 +131,71 @@ describe('composition worker supervision', () => {
     }
     workers.at(-1)!.reply()
     await flush()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    const pending = mod.composeSupergraph()
+    await flush()
+    workers.at(-1)!.reply()
+    await pending
 
     workers.at(-1)!.emit('exit', 1)
     await vi.advanceTimersByTimeAsync(1_000)
 
     expect(workers).toHaveLength(5)
+    expect(mod.isSupergraphReady()).toBe(true)
+  })
+
+  it('keeps escalating the backoff when a replacement crashes right after composing', async () => {
+    await boot()
+
+    workers[0]!.emit('exit', 1)
+    await vi.advanceTimersByTimeAsync(1_000)
+    workers[1]!.reply()
+    await flush()
+
+    workers[1]!.emit('exit', 1)
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(workers).toHaveLength(2)
+    await vi.advanceTimersByTimeAsync(4_000)
+    expect(workers).toHaveLength(3)
+  })
+
+  it('rejects the pending compose when the worker exits mid-compose, then recomposes on the replacement', async () => {
+    const mod = await boot()
+    const pending = mod.composeSupergraph()
+    await flush()
+
+    workers[0]!.emit('exit', 1)
+
+    await expect(pending).rejects.toThrow(/exited/)
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(workers).toHaveLength(2)
+    expect(workers[1]!.posted).toEqual([{ type: 'compose' }])
+  })
+
+  it('terminates a worker that never answers a compose and replaces it', async () => {
+    const mod = await boot()
+    const pending = mod.composeSupergraph().catch((error: unknown) => error)
+    await flush()
+
+    await vi.advanceTimersByTimeAsync(3 * 60_000)
+
+    expect(workers[0]!.terminated).toBe(true)
+    expect(await pending).toMatchObject({ message: expect.stringMatching(/timed out|exited/) })
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(workers).toHaveLength(2)
+    expect(mod.isSupergraphReady()).toBe(true)
+  })
+
+  it('rejects a compose reply that carries no sdl string and keeps the previous schema', async () => {
+    const mod = await boot()
+    const before = mod.getSupergraph()
+    const pending = mod.composeSupergraph()
+    await flush()
+
+    workers[0]!.emit('message', {})
+
+    await expect(pending).rejects.toThrow(/sdl/)
+    expect(mod.getSupergraph()).toBe(before)
     expect(mod.isSupergraphReady()).toBe(true)
   })
 })

@@ -21,12 +21,30 @@ let composeWorker: Worker | null = null
 
 /**
  * Delay before each attempt to replace a worker that exited. Once the list
- * is exhausted the gateway stops trying and reports itself not ready, so the
- * readiness probe fails and Kubernetes replaces the pod instead of letting it
- * serve a frozen supergraph forever. A successful compose resets the count.
+ * is exhausted the gateway stops trying and reports itself not ready and not
+ * live: readiness takes the pod out of the Service, and the failing liveness
+ * probe makes the kubelet restart the container, instead of letting it serve
+ * a frozen supergraph forever. The count resets only after a replacement has
+ * composed and then stayed up for STABLE_WINDOW_MS, so a worker that crashes
+ * right after every compose still escalates instead of restarting every
+ * second and re-running a full composition each time.
+ *
+ * Startup is deliberately fail-fast: if the first compose fails,
+ * initializeGateway rejects and the process exits, leaving the container
+ * restart policy to retry. This machinery covers a worker that dies later.
  */
 const RESPAWN_BACKOFF_MS = [1_000, 5_000, 30_000]
+const STABLE_WINDOW_MS = 10 * 60_000
 let respawnAttempts = 0
+let workerSpawnedAt = 0
+let givenUp = false
+
+/**
+ * A worker that never answers a compose would leave isComposing true forever
+ * and every later cycle skipped, with the readiness probe still green. After
+ * this long the worker is terminated, which runs the normal restart path.
+ */
+const COMPOSE_TIMEOUT_MS = 3 * 60_000
 
 /**
  * Reject function for the currently in-flight composeSupergraph() Promise.
@@ -65,9 +83,10 @@ const startWorker = (): Worker => {
     execArgv,
     workerData: { server, certPath, keyPath, caPath },
   })
+  workerSpawnedAt = Date.now()
 
   worker.on('error', (err) => {
-    log.error(`Composition worker error: ${err}`)
+    log.error('Composition worker error', { error: err.message, stack: err.stack })
     isComposing = false
     // Reject any in-flight composeSupergraph() Promise so the caller
     // (initializeGateway or the polling setInterval) is notified immediately
@@ -78,7 +97,7 @@ const startWorker = (): Worker => {
 
   worker.on('exit', (code) => {
     const err = new Error(`Composition worker exited unexpectedly with code ${code}`)
-    log.error(err.message)
+    log.error('Composition worker exited unexpectedly', { code })
     isComposing = false
     pendingReject?.(err)
     pendingReject = null
@@ -102,7 +121,8 @@ const scheduleRespawn = (): void => {
   const delayMs = RESPAWN_BACKOFF_MS[respawnAttempts]
   if (delayMs === undefined) {
     isReady = false
-    log.error('Composition worker kept exiting; giving up and reporting not ready', {
+    givenUp = true
+    log.error('Composition worker kept exiting; giving up and reporting not ready and not live', {
       attempts: respawnAttempts,
     })
     return
@@ -124,8 +144,10 @@ const scheduleRespawn = (): void => {
     // Recompose right away rather than serving the pre-crash schema until
     // the next poll, which is 40 minutes out by default. Success resets the
     // backoff; failure is logged and the poll loop retries as usual.
-    composeSupergraph().catch((error) => {
-      log.error(`Compose after worker restart failed: ${error}`)
+    composeSupergraph().catch((error: unknown) => {
+      log.error('Compose after worker restart failed', {
+        error: error instanceof Error ? error.message : String(error),
+      })
     })
   }, delayMs)
 }
@@ -153,27 +175,44 @@ export const composeSupergraph = (): Promise<string> => {
   isComposing = true
   log.info('Composing supergraph from OpenAPI specs...')
 
+  const worker = composeWorker
   return new Promise((resolve, reject) => {
-    pendingReject = reject
+    const timer = setTimeout(() => {
+      log.error('Composition worker did not answer in time; terminating it', {
+        timeoutMs: COMPOSE_TIMEOUT_MS,
+      })
+      // terminate() emits 'exit', whose handler rejects this promise and
+      // schedules the replacement.
+      void worker.terminate()
+    }, COMPOSE_TIMEOUT_MS)
 
-    const handler = (result: { sdl?: string; error?: string }) => {
+    pendingReject = (err) => {
+      clearTimeout(timer)
+      reject(err)
+    }
+
+    const handler = (result: { sdl?: unknown; error?: unknown }) => {
+      clearTimeout(timer)
       pendingReject = null
       isComposing = false
 
       if (result.error) {
-        log.error(`Supergraph composition failed: ${result.error}`)
-        reject(new Error(result.error))
+        log.error('Supergraph composition failed', { error: String(result.error) })
+        reject(new Error(String(result.error)))
+      } else if (typeof result.sdl !== 'string' || result.sdl.length === 0) {
+        log.error('Composition worker replied without an sdl string; keeping the previous schema')
+        reject(new Error('Composition worker replied without an sdl string'))
       } else {
-        supergraphSdl = result.sdl!
+        supergraphSdl = result.sdl
         isReady = true
-        respawnAttempts = 0
+        if (Date.now() - workerSpawnedAt >= STABLE_WINDOW_MS) respawnAttempts = 0
         log.info('Supergraph composed successfully')
-        resolve(result.sdl!)
+        resolve(result.sdl)
       }
     }
 
-    composeWorker!.once('message', handler)
-    composeWorker!.postMessage({ type: 'compose' })
+    worker.once('message', handler)
+    worker.postMessage({ type: 'compose' })
   })
 }
 
@@ -196,6 +235,9 @@ export const getSupergraph = (): string => {
 /** True once the supergraph has been composed at least once successfully */
 export const isSupergraphReady = (): boolean => isReady
 
+/** True once the worker restart schedule is exhausted; the liveness probe fails on it. */
+export const hasCompositionGivenUp = (): boolean => givenUp
+
 /**
  * Start background polling to keep the supergraph SDL fresh.
  *
@@ -208,7 +250,9 @@ const startPolling = (): void => {
     try {
       await composeSupergraph()
     } catch (error) {
-      log.error(`Failed to refresh supergraph: ${error}`)
+      log.error('Failed to refresh supergraph', {
+        error: error instanceof Error ? error.message : String(error),
+      })
     }
   }, env.pollingInterval)
 }

@@ -85,5 +85,5 @@ The gateway is deployed to Kubernetes using the manifests in `config/base/`. Key
   - Check the detailed guide on how to setup `codegen` and use the gateway from a client application, including **Parent Resources** setup.
 
 - **Health Endpoints**:
-  - `/healthcheck` - Liveness probe
-  - `/readiness` - Readiness probe (checks if K8s auth is initialized)
+  - `/healthcheck` - Liveness probe (fails once the composition worker's restart schedule is exhausted)
+  - `/readiness` - Readiness probe (K8s auth initialized and the supergraph composed at least once)
