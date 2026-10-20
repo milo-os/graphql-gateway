@@ -34,24 +34,26 @@ export class UpstreamTimeoutError extends GraphQLError {
 /**
  * Wraps a fetch so every call has a deadline for response headers.
  *
- * The deadline covers time-to-headers only, matching what the local fetch
- * duration metric measures. Body reads stay bounded by the apiserver's own
- * request timeout. When the deadline passes the inner request is aborted with
- * an UpstreamTimeoutError as the reason, and the call rejects with that error
+ * On the undici path the deadline covers time-to-headers, matching what the
+ * local fetch duration metric measures, and body reads stay bounded by the
+ * apiserver's own request timeout. The mTLS fetch in k8s.ts buffers the whole
+ * body before it resolves, so there the deadline covers the full exchange.
+ * When the deadline passes the inner request is aborted with an
+ * UpstreamTimeoutError as the reason, and the call rejects with that error
  * whether or not the inner fetch honours the signal. A caller-supplied signal
- * still works: its reason wins if it fires first.
+ * (on init, or carried by a Request input) still works: its reason wins if it
+ * fires first, and a signal that is already aborted short-circuits the call.
  */
 export function withDeadline(fetchFn: typeof fetch, { timeoutMs }: DeadlineOptions): typeof fetch {
   return ((input: RequestInfo | URL, init?: RequestInit) => {
-    const controller = new AbortController()
-    const callerSignal = init?.signal ?? undefined
-    const onCallerAbort = () => controller.abort(callerSignal?.reason)
-
+    const callerSignal = init?.signal ?? (input instanceof Request ? input.signal : undefined)
     if (callerSignal?.aborted) {
-      controller.abort(callerSignal.reason)
-    } else {
-      callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
+      return Promise.reject(callerSignal.reason)
     }
+
+    const controller = new AbortController()
+    const onCallerAbort = () => controller.abort(callerSignal?.reason)
+    callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
 
     let timer: ReturnType<typeof setTimeout> | undefined
     const deadline = new Promise<never>((_, reject) => {

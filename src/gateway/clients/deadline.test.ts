@@ -61,6 +61,31 @@ describe('withDeadline', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
+  it('rejects at once with the caller reason when the signal is already aborted', async () => {
+    const inner = vi.fn(async () => new Response('{}'))
+    const fetchFn = withDeadline(inner as unknown as typeof fetch, { timeoutMs: 100 })
+    const caller = new AbortController()
+    caller.abort(new DOMException('gone before start', 'AbortError'))
+
+    await expect(fetchFn(URL_ORGS, { signal: caller.signal })).rejects.toMatchObject({
+      message: 'gone before start',
+    })
+    expect(inner).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('honours the signal carried by a Request input when init has none', async () => {
+    const fetchFn = withDeadline(hangingFetch() as unknown as typeof fetch, { timeoutMs: 100 })
+    const caller = new AbortController()
+
+    const settled = fetchFn(new Request(URL_ORGS, { signal: caller.signal })).catch(
+      (error: unknown) => error
+    )
+    caller.abort(new DOMException('client went away', 'AbortError'))
+
+    expect(await settled).toMatchObject({ name: 'AbortError', message: 'client went away' })
+  })
+
   it('keeps the caller abort reason when the caller aborts before the deadline', async () => {
     const fetchFn = withDeadline(hangingFetch() as unknown as typeof fetch, { timeoutMs: 100 })
     const caller = new AbortController()

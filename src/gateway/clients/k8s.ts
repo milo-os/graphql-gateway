@@ -173,7 +173,7 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
     const headers: Record<string, string> =
       rawHeaders instanceof Headers
         ? Object.fromEntries(rawHeaders.entries())
-        : (rawHeaders as Record<string, string>) ?? {}
+        : ((rawHeaders as Record<string, string>) ?? {})
 
     return Sentry.startSpan(
       {
@@ -188,6 +188,15 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
       },
       (span) =>
         new Promise<Response>((resolve, reject) => {
+          // A listener added to an already-aborted signal never fires, so
+          // check up front instead of sending a request nobody waits for.
+          if (init?.signal?.aborted) {
+            reject(
+              init.signal.reason ?? new DOMException('The operation was aborted.', 'AbortError')
+            )
+            return
+          }
+
           const options: https.RequestOptions = {
             hostname: parsedUrl.hostname,
             port: parsedUrl.port || 443,
@@ -229,7 +238,9 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
           // client disconnects — frees mTLS agent sockets without waiting for milo.
           init?.signal?.addEventListener('abort', () => {
             req.destroy()
-            reject(init.signal?.reason ?? new DOMException('The operation was aborted.', 'AbortError'))
+            reject(
+              init.signal?.reason ?? new DOMException('The operation was aborted.', 'AbortError')
+            )
           })
 
           // Write body if present
@@ -238,7 +249,7 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
           }
 
           req.end()
-        }),
+        })
     )
   }
 }

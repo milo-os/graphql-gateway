@@ -1,5 +1,11 @@
 import { config as sharedConfig } from '@/shared/config'
 
+/** Parses a duration from the environment, falling back when it is unset, non-numeric, zero or negative. */
+const positiveMillis = (raw: string | undefined, fallback: number): number => {
+  const parsed = Number(raw)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
 /**
  * Environment configuration for the gateway.
  * All values can be overridden via environment variables.
@@ -18,7 +24,7 @@ export const env = {
   pollingInterval: Number(process.env.POLLING_INTERVAL) || 2_400_000,
 
   /** Deadline for response headers on every upstream call to Milo, in milliseconds (default: 10s) */
-  upstreamTimeoutMs: Number(process.env.UPSTREAM_TIMEOUT_MS) || 10_000,
+  upstreamTimeoutMs: positiveMillis(process.env.UPSTREAM_TIMEOUT_MS, 10_000),
 
   /** OTLP URL for telemetry */
   otlpUrl: process.env.OTLP_URL || '',
