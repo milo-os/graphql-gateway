@@ -52,6 +52,20 @@ histogram_quantile(0.95, sum by (le, resource) (rate(graphql_gateway_local_fetch
 max by (resource) (max_over_time(graphql_gateway_local_fetch_inflight[10m]))
 ```
 
+Every call on this path has a deadline (`UPSTREAM_TIMEOUT_MS`, 10s by
+default): response headers on the user-token path, the whole response on the
+mTLS path used for federated subgraph calls. A call that hits it is recorded
+with `status="timeout"`. In a page-level resolver the operation then fails with
+`extensions.code = UPSTREAM_TIMEOUT` instead of returning an empty list;
+per-item enrichment (an org's display name on a project row, a contact on a
+membership row) still degrades that item to null by design. A rising timeout
+count with normal milo-side latency means a hung connection, not a slow
+apiserver:
+
+```promql
+sum by (resource) (rate(graphql_gateway_local_fetch_duration_seconds_count{status="timeout"}[10m]))
+```
+
 Local operations run through `graphql.execute`, which resolves sibling query
 fields (including aliases) concurrently. If in-flight peaks near the full
 fan-out size but each call's gateway-side duration is well above what milo

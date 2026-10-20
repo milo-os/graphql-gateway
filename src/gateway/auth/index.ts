@@ -1,5 +1,5 @@
 import { env } from '@/gateway/config'
-import { getK8sMTLSConfig, createMTLSFetch, createUserFetch } from '@/gateway/clients'
+import { getK8sMTLSConfig, createMTLSFetch, createUserFetch, withDeadline } from '@/gateway/clients'
 import { instrumentFetch } from '@/gateway/metrics/upstream-fetch'
 import type { K8sMTLSConfig } from '@/gateway/clients'
 import { log } from '@/shared/utils'
@@ -37,8 +37,9 @@ export function initAuth(): void {
   mtlsConfig = getK8sMTLSConfig({ kubeconfigPath: env.kubeconfigPath })
 
   k8sServer = mtlsConfig.server
-  mtlsFetch = createMTLSFetch(mtlsConfig)
-  userFetch = instrumentFetch(createUserFetch())
+  const deadline = { timeoutMs: env.upstreamTimeoutMs }
+  mtlsFetch = withDeadline(createMTLSFetch(mtlsConfig), deadline)
+  userFetch = instrumentFetch(withDeadline(createUserFetch(), deadline))
 
   // Override global fetch to use mTLS for requests to the K8s API server
   savedOriginalFetch = globalThis.fetch
@@ -54,7 +55,10 @@ export function initAuth(): void {
   }) as typeof fetch
 
   initialized = true
-  log.info('K8s mTLS auth initialized', { server: k8sServer })
+  log.info('K8s mTLS auth initialized', {
+    server: k8sServer,
+    upstreamTimeoutMs: env.upstreamTimeoutMs,
+  })
 }
 
 /**

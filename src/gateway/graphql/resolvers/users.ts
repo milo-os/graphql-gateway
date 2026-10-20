@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql'
 import { getOriginalFetch, getK8sServer } from '@/gateway/auth'
 import { log } from '@/shared/utils'
-import { type ResolverContext, getHeader } from './common'
+import { type ResolverContext, getHeader, rethrowGraphQLError } from './common'
 
 interface UpstreamUser {
   metadata?: {
@@ -162,6 +162,7 @@ export const usersResolvers = {
         }
         return mapUser((await r.json()) as UpstreamUser)
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('me resolver failed', { error: error instanceof Error ? error.message : String(error) })
         return null
       }
@@ -179,6 +180,7 @@ export const usersResolvers = {
         }
         return mapUser((await r.json()) as UpstreamUser)
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('user resolver failed', { error: error instanceof Error ? error.message : String(error) })
         return null
       }
@@ -221,6 +223,9 @@ export const usersResolvers = {
                 familyName: user.spec?.familyName ?? null,
               }
             } catch (error) {
+              // userSummaries is the page: a timed-out lookup must surface,
+              // not silently shorten the list.
+              rethrowGraphQLError(error)
               log.warn('milo user fetch threw', {
                 name,
                 error: error instanceof Error ? error.message : String(error),
@@ -232,6 +237,7 @@ export const usersResolvers = {
 
         return results.filter((u): u is NonNullable<typeof u> => u !== null)
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('userSummaries resolver failed', {
           error: error instanceof Error ? error.message : String(error),
         })
@@ -289,6 +295,7 @@ export const usersResolvers = {
           continueToken: body.metadata?.continue ?? null,
         }
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('users resolver failed', {
           error: error instanceof Error ? error.message : String(error),
         })
@@ -309,6 +316,7 @@ export const usersResolvers = {
         const body = (await r.json()) as UpstreamUserIdentityList
         return (body.items ?? []).map(mapUserIdentity)
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('userIdentities resolver failed', { error: error instanceof Error ? error.message : String(error) })
         return []
       }

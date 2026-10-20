@@ -3,7 +3,7 @@ import { parseUserAgent } from '@/gateway/services/user-agent'
 import { lookupIp } from '@/gateway/services/geolocation'
 import { getK8sServer, getOriginalFetch } from '@/gateway/auth'
 import { log } from '@/shared/utils'
-import { type ResolverContext, getHeader } from './common'
+import { type ResolverContext, getHeader, rethrowGraphQLError } from './common'
 
 interface UpstreamSession {
   metadata?: {
@@ -88,6 +88,7 @@ export const sessionsResolvers = {
         const body = (await response.json()) as UpstreamSessionList
         return (body.items ?? []).map(enrichSession)
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('Sessions resolver failed', {
           error: error instanceof Error ? error.message : String(error),
         })

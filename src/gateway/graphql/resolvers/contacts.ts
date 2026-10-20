@@ -1,6 +1,6 @@
 import { getOriginalFetch, getK8sServer } from '@/gateway/auth'
 import { log } from '@/shared/utils'
-import { type ResolverContext, getHeader, DESCRIPTION_ANNOTATION } from './common'
+import { type ResolverContext, getHeader, DESCRIPTION_ANNOTATION, rethrowGraphQLError } from './common'
 
 interface UpstreamContactGroupMembership {
   metadata?: { name?: string; creationTimestamp?: string }
@@ -155,6 +155,7 @@ export const contactsResolvers = {
           }),
         }
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('contactGroupMembershipsWithContacts resolver failed', { error: error instanceof Error ? error.message : String(error) })
         return { items: [] }
       }
@@ -203,6 +204,7 @@ export const contactsResolvers = {
           }),
         }
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('contactMembershipsWithGroups resolver failed', { error: error instanceof Error ? error.message : String(error) })
         return { items: [] }
       }

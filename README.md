@@ -20,13 +20,14 @@ This project provides a **GraphQL gateway** that sits in front of Milo APIServer
 
 ### Environment Variables
 
-| Variable              | Description                                        | Default              |
-| --------------------- | -------------------------------------------------- | -------------------- |
-| `PORT`                | Port the gateway listens on                        | `4000`               |
-| `KUBECONFIG`          | Path to kubeconfig file for K8s authentication     | Required             |
-| `POLLING_INTERVAL`    | Interval (ms) between supergraph recomposition     | `1_200_000` (20 min) |
-| `LOGGING`             | Log level (`debug`, `info`, `warn`, `error`)       | `info`               |
-| `NODE_EXTRA_CA_CERTS` | Path to CA certificate for trusting K8s API server | Required for mTLS    |
+| Variable              | Description                                                                                  | Default              |
+| --------------------- | -------------------------------------------------------------------------------------------- | -------------------- |
+| `PORT`                | Port the gateway listens on                                                                  | `4000`               |
+| `KUBECONFIG`          | Path to kubeconfig file for K8s authentication                                               | Required             |
+| `POLLING_INTERVAL`    | Interval (ms) between supergraph recomposition                                               | `1_200_000` (20 min) |
+| `LOGGING`             | Log level (`debug`, `info`, `warn`, `error`)                                                 | `info`               |
+| `UPSTREAM_TIMEOUT_MS` | Deadline (ms) per Milo call: headers on the user-token path, whole response on the mTLS path | `10000` (10s)        |
+| `NODE_EXTRA_CA_CERTS` | Path to CA certificate for trusting K8s API server                                           | Required for mTLS    |
 
 ### Project Scripts
 

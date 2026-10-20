@@ -39,6 +39,7 @@ vi.mock('@/shared/utils', () => ({
   log: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
 }))
 
+import { UpstreamTimeoutError } from '@/gateway/clients/deadline'
 import { additionalResolvers } from './resolvers'
 import { additionalTypeDefs } from './typeDefs'
 
@@ -335,6 +336,13 @@ describe('Query.sessions', () => {
     expect(await callSessions()).toEqual([])
   })
 
+  it('rethrows an upstream timeout instead of returning an empty list', async () => {
+    fetchSpy.mockRejectedValueOnce(
+      new UpstreamTimeoutError('https://k8s.test/apis/iam.miloapis.com/v1alpha1/sessions', 10_000)
+    )
+    await expect(callSessions()).rejects.toMatchObject({ extensions: { code: 'UPSTREAM_TIMEOUT' } })
+  })
+
   it('returns an empty list when items is missing from the upstream payload', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({}))
     expect(await callSessions()).toEqual([])
@@ -512,6 +520,22 @@ describe('Query.serviceConsumers', () => {
       organizationName: '',
       organizationDisplayName: '',
     })
+  })
+
+  it('falls back to the raw project name when the project lookup times out', async () => {
+    fetchSpy = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/serviceconsumers')) {
+        return Promise.resolve(
+          jsonResponse({ items: [consumer({ name: 'sc-5', project: 'delta' })] })
+        )
+      }
+      return Promise.reject(new UpstreamTimeoutError(url, 10_000))
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const [row] = await callServiceConsumers({ producerProject: 'p' })
+    expect(row.consumerProject).toMatchObject({ name: 'delta', displayName: 'delta' })
   })
 
   it('falls back to the raw project name when the project lookup is forbidden', async () => {
@@ -1744,17 +1768,28 @@ describe('Query.users', () => {
     items: [
       {
         spec: { userRef: { name: 'user-a' } },
-        status: { compositeScore: '30', decision: 'REVIEW', lastEvaluationTime: '2026-01-01T00:00:00Z' },
+        status: {
+          compositeScore: '30',
+          decision: 'REVIEW',
+          lastEvaluationTime: '2026-01-01T00:00:00Z',
+        },
       },
       {
         spec: { userRef: { name: 'user-a' } },
-        status: { compositeScore: '80', decision: 'DEACTIVATE', lastEvaluationTime: '2026-02-01T00:00:00Z' },
+        status: {
+          compositeScore: '80',
+          decision: 'DEACTIVATE',
+          lastEvaluationTime: '2026-02-01T00:00:00Z',
+        },
       },
     ],
   }
 
   type UsersResult = { items: Array<Record<string, unknown>>; continueToken: string | null }
-  const call = (args: Record<string, unknown> = {}, context: unknown = ctx()): Promise<UsersResult> =>
+  const call = (
+    args: Record<string, unknown> = {},
+    context: unknown = ctx()
+  ): Promise<UsersResult> =>
     (
       additionalResolvers.Query!.users as (
         r: unknown,
@@ -1766,7 +1801,9 @@ describe('Query.users', () => {
   it('lists users with the latest fraud score joined, plus platformAccess + continueToken', async () => {
     fetchSpy.mockImplementation((url: string) =>
       Promise.resolve(
-        String(url).includes('/fraudevaluations') ? jsonResponse(fraudList) : jsonResponse(usersList)
+        String(url).includes('/fraudevaluations')
+          ? jsonResponse(fraudList)
+          : jsonResponse(usersList)
       )
     )
 
@@ -1794,13 +1831,17 @@ describe('Query.users', () => {
 
     const urls = fetchSpy.mock.calls.map((c) => String(c[0]))
     expect(urls.some((u) => u.includes('/apis/iam.miloapis.com/v1alpha1/users'))).toBe(true)
-    expect(urls.some((u) => u.includes('/apis/fraud.miloapis.com/v1alpha1/fraudevaluations'))).toBe(true)
+    expect(urls.some((u) => u.includes('/apis/fraud.miloapis.com/v1alpha1/fraudevaluations'))).toBe(
+      true
+    )
   })
 
   it('applies search (email) and platformAccess as field selectors', async () => {
     fetchSpy.mockImplementation((url: string) =>
       Promise.resolve(
-        String(url).includes('/fraudevaluations') ? jsonResponse({ items: [] }) : jsonResponse(usersList)
+        String(url).includes('/fraudevaluations')
+          ? jsonResponse({ items: [] })
+          : jsonResponse(usersList)
       )
     )
 
@@ -1815,7 +1856,9 @@ describe('Query.users', () => {
   it('returns an empty list on a non-2xx users response', async () => {
     fetchSpy.mockImplementation((url: string) =>
       Promise.resolve(
-        String(url).includes('/fraudevaluations') ? jsonResponse({ items: [] }) : jsonResponse({}, 500)
+        String(url).includes('/fraudevaluations')
+          ? jsonResponse({ items: [] })
+          : jsonResponse({}, 500)
       )
     )
     expect(await call({})).toEqual({ items: [], continueToken: null })
@@ -1829,5 +1872,52 @@ describe('Query.users', () => {
     )
     const result = await call({})
     expect(result.items[0]).toMatchObject({ name: 'user-a', fraudScore: null })
+  })
+})
+
+describe('Query.userSummaries', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const call = (names: string[]) =>
+    (
+      additionalResolvers.Query!.userSummaries as (
+        r: null,
+        a: { names: string[] },
+        c: ReturnType<typeof ctx>
+      ) => Promise<unknown>
+    )(null, { names }, ctx())
+
+  it('rethrows an upstream timeout for a user lookup instead of dropping the user', async () => {
+    fetchSpy.mockImplementation((input: RequestInfo | URL) =>
+      String(input).endsWith('/users/u1')
+        ? Promise.resolve(
+            jsonResponse({ metadata: { name: 'u1' }, spec: { email: 'u1@acme.test' } })
+          )
+        : Promise.reject(new UpstreamTimeoutError(String(input), 10_000))
+    )
+
+    await expect(call(['u1', 'u2'])).rejects.toMatchObject({
+      extensions: { code: 'UPSTREAM_TIMEOUT' },
+    })
+  })
+
+  it('still drops a user whose lookup fails for an ordinary reason', async () => {
+    fetchSpy.mockImplementation((input: RequestInfo | URL) =>
+      String(input).endsWith('/users/u1')
+        ? Promise.resolve(
+            jsonResponse({ metadata: { name: 'u1' }, spec: { email: 'u1@acme.test' } })
+          )
+        : Promise.resolve(new Response('nope', { status: 403 }))
+    )
+
+    expect(await call(['u1', 'u2'])).toEqual([
+      { name: 'u1', email: 'u1@acme.test', givenName: null, familyName: null },
+    ])
   })
 })

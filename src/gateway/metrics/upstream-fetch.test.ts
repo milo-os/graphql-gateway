@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { register } from 'prom-client'
 import { instrumentFetch, k8sResourceFromURL } from './upstream-fetch'
+import { UpstreamTimeoutError } from '@/gateway/clients/deadline'
 
 const K8S = 'https://k8s.test'
 
@@ -83,6 +84,19 @@ describe('instrumentFetch', () => {
         method: 'delete',
       })
     ).rejects.toThrow('boom')
+    expect(await sampleCount(labels)).toBe(before + 1)
+    expect(await inflightValue('organizations')).toBe(0)
+  })
+
+  it('records status "timeout" when the fetch rejects with an upstream timeout', async () => {
+    const url = `${K8S}/apis/resourcemanager.miloapis.com/v1alpha1/organizations/acme`
+    const fetchFn = instrumentFetch(
+      vi.fn().mockRejectedValue(new UpstreamTimeoutError(url, 10_000))
+    )
+    const labels = { resource: 'organizations', method: 'GET', status: 'timeout' }
+    const before = await sampleCount(labels)
+
+    await expect(fetchFn(url)).rejects.toMatchObject({ extensions: { code: 'UPSTREAM_TIMEOUT' } })
     expect(await sampleCount(labels)).toBe(before + 1)
     expect(await inflightValue('organizations')).toBe(0)
   })

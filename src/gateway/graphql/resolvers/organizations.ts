@@ -5,6 +5,7 @@ import {
   getHeader,
   DESCRIPTION_ANNOTATION,
   DISPLAY_NAME_ANNOTATION,
+  rethrowGraphQLError,
 } from './common'
 
 interface UpstreamOrganization {
@@ -646,6 +647,7 @@ async function fetchOrgProjects(
       continueToken: body.metadata?.continue ?? null,
     }
   } catch (error) {
+    rethrowGraphQLError(error)
     log.error('organizationProjects resolver failed', {
       error: error instanceof Error ? error.message : String(error),
     })
@@ -713,6 +715,7 @@ async function fetchOrgMembers(
 
     return result
   } catch (error) {
+    rethrowGraphQLError(error)
     log.error('organizationMembers resolver failed', {
       error: error instanceof Error ? error.message : String(error),
     })
@@ -766,6 +769,7 @@ export const organizationsResolvers = {
           continueToken: body.metadata?.continue ?? null,
         }
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('organizations resolver failed', {
           error: error instanceof Error ? error.message : String(error),
         })
@@ -789,6 +793,7 @@ export const organizationsResolvers = {
         }
         return mapOrganization((await r.json()) as UpstreamOrganization)
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('organization resolver failed', {
           error: error instanceof Error ? error.message : String(error),
         })
@@ -829,6 +834,7 @@ export const organizationsResolvers = {
           continueToken: body.metadata?.continue ?? null,
         }
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('projects resolver failed', {
           error: error instanceof Error ? error.message : String(error),
         })
@@ -852,6 +858,7 @@ export const organizationsResolvers = {
         const [enriched] = await enrichProjects([project], headers)
         return enriched
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('project resolver failed', {
           error: error instanceof Error ? error.message : String(error),
         })
@@ -923,6 +930,7 @@ export const organizationsResolvers = {
           }
         })
       } catch (error) {
+        rethrowGraphQLError(error)
         log.error('ServiceConsumers resolver failed', {
           error: error instanceof Error ? error.message : String(error),
         })
