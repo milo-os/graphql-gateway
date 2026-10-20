@@ -1,15 +1,20 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { workers, log } = vi.hoisted(() => ({
+const { workers, log, spawn } = vi.hoisted(() => ({
   workers: [] as FakeWorker[],
   log: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  spawn: { failNext: false },
 }))
 
 class FakeWorker extends EventEmitter {
   posted: unknown[] = []
   constructor() {
     super()
+    if (spawn.failNext) {
+      spawn.failNext = false
+      throw new Error('cannot spawn')
+    }
     workers.push(this)
   }
   postMessage(message: unknown) {
@@ -34,6 +39,7 @@ describe('composition worker supervision', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] })
     workers.length = 0
+    spawn.failNext = false
     vi.resetModules()
   })
   afterEach(() => {
@@ -50,7 +56,7 @@ describe('composition worker supervision', () => {
     return mod
   }
 
-  it('spawns a replacement after the worker exits and composes with it', async () => {
+  it('spawns a replacement after the worker exits and recomposes with it at once', async () => {
     const mod = await boot()
     expect(workers).toHaveLength(1)
 
@@ -58,11 +64,24 @@ describe('composition worker supervision', () => {
     await vi.advanceTimersByTimeAsync(1_000)
 
     expect(workers).toHaveLength(2)
-    const pending = mod.composeSupergraph()
-    await flush()
     expect(workers[1]!.posted).toEqual([{ type: 'compose' }])
     workers[1]!.reply('type Query { fresh: Boolean }')
-    await expect(pending).resolves.toContain('fresh')
+    await flush()
+    expect(mod.getSupergraph()).toContain('fresh')
+    expect(mod.isSupergraphReady()).toBe(true)
+  })
+
+  it('schedules another attempt when spawning the replacement throws', async () => {
+    const mod = await boot()
+
+    spawn.failNext = true
+    workers[0]!.emit('exit', 1)
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(workers).toHaveLength(1)
+
+    await vi.advanceTimersByTimeAsync(5_000)
+    expect(workers).toHaveLength(2)
+    expect(workers[1]!.posted).toEqual([{ type: 'compose' }])
     expect(mod.isSupergraphReady()).toBe(true)
   })
 
@@ -101,10 +120,8 @@ describe('composition worker supervision', () => {
       workers.at(-1)!.emit('exit', 1)
       await vi.advanceTimersByTimeAsync(delay)
     }
-    const pending = mod.composeSupergraph()
-    await flush()
     workers.at(-1)!.reply()
-    await pending
+    await flush()
 
     workers.at(-1)!.emit('exit', 1)
     await vi.advanceTimersByTimeAsync(1_000)

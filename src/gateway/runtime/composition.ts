@@ -110,7 +110,23 @@ const scheduleRespawn = (): void => {
   respawnAttempts += 1
   log.warn('Restarting composition worker', { attempt: respawnAttempts, delayMs })
   setTimeout(() => {
-    composeWorker = startWorker()
+    try {
+      composeWorker = startWorker()
+    } catch (error) {
+      // Thrown inside a timer this would be an uncaught exception and take
+      // the process down; treat it like another failed attempt instead.
+      log.error('Failed to restart composition worker', {
+        error: error instanceof Error ? error.message : String(error),
+      })
+      scheduleRespawn()
+      return
+    }
+    // Recompose right away rather than serving the pre-crash schema until
+    // the next poll, which is 40 minutes out by default. Success resets the
+    // backoff; failure is logged and the poll loop retries as usual.
+    composeSupergraph().catch((error) => {
+      log.error(`Compose after worker restart failed: ${error}`)
+    })
   }, delayMs)
 }
 
