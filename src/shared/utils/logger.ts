@@ -1,5 +1,7 @@
 import type { LogLevel } from '@/shared/types'
 import { config } from '@/shared/config'
+import { trace } from '@opentelemetry/api'
+import { getRequestContext } from '@/shared/request-context'
 
 const LOG_LEVELS: Record<LogLevel, number> = {
   debug: 0,
@@ -10,9 +12,22 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 
 const currentLevel = LOG_LEVELS[config.logLevel]
 
+/**
+ * Ids of the call being served, merged into every line's data payload so a
+ * support ticket can be followed from the portal through this log to Milo.
+ */
+const correlation = (): { requestId?: string; traceId?: string } | undefined => {
+  const requestId = getRequestContext()?.requestId
+  const traceId = trace.getActiveSpan()?.spanContext().traceId
+  if (!requestId && !traceId) return undefined
+  return { ...(requestId ? { requestId } : {}), ...(traceId ? { traceId } : {}) }
+}
+
 const formatMessage = (level: string, message: string, data?: object): string => {
   const timestamp = new Date().toISOString()
-  const dataStr = data ? ` ${JSON.stringify(data)}` : ''
+  const ids = correlation()
+  const payload = data || ids ? { ...data, ...ids } : undefined
+  const dataStr = payload ? ` ${JSON.stringify(payload)}` : ''
   return `${timestamp} [${level.toUpperCase()}] ${message}${dataStr}`
 }
 
