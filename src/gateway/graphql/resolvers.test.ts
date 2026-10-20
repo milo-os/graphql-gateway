@@ -844,6 +844,13 @@ describe('Query.organizations', () => {
     })
   })
 
+  it('keeps upstream error detail out of the client-facing message', async () => {
+    fetchSpy.mockRejectedValue(new Error('connect ECONNREFUSED 10.0.0.1:443'))
+    const error = (await callOrganizations().catch((e: unknown) => e)) as Error
+    expect(error.message).not.toContain('10.0.0.1')
+    expect(error.message).toMatch(/organizations/)
+  })
+
   it('throws instead of returning a shortened list when a mid-walk search page fails', async () => {
     fetchSpy
       .mockResolvedValueOnce(

@@ -76,10 +76,14 @@ export function failedPage(response: Response, url: string): never {
   })
 }
 
-/** Wraps an unexpected error from a page fetch (network, parse) as UPSTREAM_ERROR. */
-export function upstreamFailure(error: unknown, what: string): UpstreamError {
-  const message = error instanceof Error ? error.message : String(error)
-  return new UpstreamError(`${what} failed: ${message}`, { code: 'UPSTREAM_ERROR' })
+/**
+ * Wraps an unexpected error from a page fetch (network, parse) as
+ * UPSTREAM_ERROR. The original message stays in the gateway log, where the
+ * caller already wrote it; it is not repeated to the client because it can
+ * carry internal addresses.
+ */
+export function upstreamFailure(_error: unknown, what: string): UpstreamError {
+  return new UpstreamError(`${what} failed upstream`, { code: 'UPSTREAM_ERROR' })
 }
 
 export const DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
