@@ -3,7 +3,7 @@ import { getRequestContext, requestIdFromHeaders, runWithRequestContext } from '
 
 describe('runWithRequestContext', () => {
   it('makes the context visible to async continuations started inside it', async () => {
-    const seen = await runWithRequestContext({ requestId: 'req-1' }, async () => {
+    const seen = await runWithRequestContext({ requestId: 'req-1', auditId: 'a-1' }, async () => {
       await new Promise((resolve) => setTimeout(resolve, 1))
       return getRequestContext()?.requestId
     })
@@ -16,11 +16,11 @@ describe('runWithRequestContext', () => {
 
   it('keeps concurrent requests apart', async () => {
     const [a, b] = await Promise.all([
-      runWithRequestContext({ requestId: 'a' }, async () => {
+      runWithRequestContext({ requestId: 'a', auditId: 'a-a' }, async () => {
         await new Promise((resolve) => setTimeout(resolve, 2))
         return getRequestContext()?.requestId
       }),
-      runWithRequestContext({ requestId: 'b' }, async () => {
+      runWithRequestContext({ requestId: 'b', auditId: 'a-b' }, async () => {
         await new Promise((resolve) => setTimeout(resolve, 1))
         return getRequestContext()?.requestId
       }),

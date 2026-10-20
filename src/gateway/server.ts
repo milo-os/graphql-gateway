@@ -4,11 +4,7 @@ import { join } from 'node:path'
 import { sendJson, parseUrl } from './utils/'
 import { availableEndpoints, env } from './config'
 import { log } from '@/shared/utils'
-import {
-  REQUEST_ID_HEADER,
-  requestIdFromHeaders,
-  runWithRequestContext,
-} from '@/shared/request-context'
+import { withRequestContext } from './utils/request-context-handler'
 import {
   isHealthCheck,
   handleHealthCheck,
@@ -98,16 +94,6 @@ export const createGatewayServer = () => {
     })
   }
 
-  // Every request runs inside a request context so log lines and upstream
-  // calls made anywhere below carry the portal's X-Request-ID. The header is
-  // written back onto the request so Hive Gateway's own request-id plugin
-  // picks up the same value instead of generating a second one.
-  const handler = (req: IncomingMessage, res: ServerResponse) => {
-    const requestId = requestIdFromHeaders(req.headers)
-    req.headers[REQUEST_ID_HEADER] = requestId
-    return runWithRequestContext({ requestId }, () => dispatch(req, res))
-  }
-
   log.info('Starting server with HTTPS')
-  return createServer(tlsOptions, handler)
+  return createServer(tlsOptions, withRequestContext(dispatch))
 }

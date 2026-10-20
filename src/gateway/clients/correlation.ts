@@ -2,8 +2,10 @@ import { context, propagation, type TextMapSetter } from '@opentelemetry/api'
 import { REQUEST_ID_HEADER, getRequestContext } from '@/shared/request-context'
 
 /**
- * Milo's apiserver stamps this header on the audit event for the call, so a
- * portal request id becomes searchable in Milo's audit log.
+ * Milo's apiserver stamps this header on the audit event for the call. The
+ * value is the gateway-generated audit id from the request context, logged
+ * next to the portal's request id, so an audit event can be traced back to a
+ * portal request without letting a caller pick the audit id.
  */
 export const AUDIT_ID_HEADER = 'audit-id'
 
@@ -12,10 +14,13 @@ const setOnHeaders: TextMapSetter<Headers> = {
 }
 
 /**
- * Wraps a fetch so every outbound call carries the inbound request id and the
- * active trace. Hive Gateway already does this for federated subgraph calls;
- * this covers the gateway-local resolvers, which call Milo through their own
- * fetch. Headers the caller set are left alone.
+ * Wraps a fetch so every outbound call carries the request id, the audit id
+ * and the active trace. Hive Gateway already sets x-request-id on federated
+ * subgraph calls (to the same value, since the server writes it back onto the
+ * inbound request); this covers the gateway-local resolvers too and adds the
+ * audit id. The two correlation headers always come from the request context
+ * so a resolver cannot forward a client-chosen value by accident. Other
+ * caller headers are left alone.
  */
 export function withCorrelation(fetchFn: typeof fetch): typeof fetch {
   return ((input: RequestInfo | URL, init?: RequestInit) => {
@@ -23,10 +28,10 @@ export function withCorrelation(fetchFn: typeof fetch): typeof fetch {
       init?.headers ?? (input instanceof Request ? input.headers : undefined)
     )
 
-    const requestId = getRequestContext()?.requestId
-    if (requestId) {
-      if (!headers.has(REQUEST_ID_HEADER)) headers.set(REQUEST_ID_HEADER, requestId)
-      if (!headers.has(AUDIT_ID_HEADER)) headers.set(AUDIT_ID_HEADER, requestId)
+    const ctx = getRequestContext()
+    if (ctx) {
+      headers.set(REQUEST_ID_HEADER, ctx.requestId)
+      headers.set(AUDIT_ID_HEADER, ctx.auditId)
     }
 
     if (!headers.has('traceparent')) {

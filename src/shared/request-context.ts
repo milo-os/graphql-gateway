@@ -6,6 +6,12 @@ export const REQUEST_ID_HEADER = 'x-request-id'
 export interface RequestContext {
   /** Id of the inbound request: the portal's X-Request-ID, or one the gateway generated. */
   requestId: string
+  /**
+   * Gateway-generated id sent to Milo as Audit-ID. Never the inbound value: a
+   * caller could otherwise choose an id that collides with another request's
+   * audit events. The gateway log line carries both, which is the link.
+   */
+  auditId: string
 }
 
 const storage = new AsyncLocalStorage<RequestContext>()
@@ -38,4 +44,9 @@ export function requestIdFromHeaders(headers: HeaderBag): string {
     headers instanceof Headers ? headers.get(REQUEST_ID_HEADER) : headers[REQUEST_ID_HEADER]
   const value = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? ''
   return REQUEST_ID_PATTERN.test(value) ? value : randomUUID()
+}
+
+/** The context for one inbound request: its (validated) request id and a fresh audit id. */
+export function createRequestContext(headers: HeaderBag): RequestContext {
+  return { requestId: requestIdFromHeaders(headers), auditId: randomUUID() }
 }

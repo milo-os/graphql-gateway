@@ -27,27 +27,43 @@ describe('withCorrelation', () => {
     propagation.disable()
   })
 
-  it('stamps x-request-id and Audit-ID from the request context', async () => {
+  it('stamps x-request-id and the gateway-generated Audit-ID from the request context', async () => {
     const { inner, headersOfCall } = capture()
     const fetchFn = withCorrelation(inner as unknown as typeof fetch)
 
-    await runWithRequestContext({ requestId: 'req-42' }, () => fetchFn(URL_ORGS))
+    await runWithRequestContext({ requestId: 'req-42', auditId: 'audit-7' }, () =>
+      fetchFn(URL_ORGS)
+    )
 
     expect(headersOfCall().get('x-request-id')).toBe('req-42')
-    expect(headersOfCall().get('audit-id')).toBe('req-42')
+    expect(headersOfCall().get('audit-id')).toBe('audit-7')
   })
 
-  it('keeps headers the caller already set', async () => {
+  it('overrides correlation headers a caller set but keeps its other headers', async () => {
     const { inner, headersOfCall } = capture()
     const fetchFn = withCorrelation(inner as unknown as typeof fetch)
 
-    await runWithRequestContext({ requestId: 'req-42' }, () =>
-      fetchFn(URL_ORGS, { headers: { Authorization: 'Bearer t', 'x-request-id': 'mine' } })
+    await runWithRequestContext({ requestId: 'req-42', auditId: 'audit-7' }, () =>
+      fetchFn(URL_ORGS, {
+        headers: { Authorization: 'Bearer t', 'x-request-id': 'mine', 'audit-id': 'forged' },
+      })
     )
 
     expect(headersOfCall().get('authorization')).toBe('Bearer t')
-    expect(headersOfCall().get('x-request-id')).toBe('mine')
-    expect(headersOfCall().get('audit-id')).toBe('req-42')
+    expect(headersOfCall().get('x-request-id')).toBe('req-42')
+    expect(headersOfCall().get('audit-id')).toBe('audit-7')
+  })
+
+  it('reads headers off a Request input and leaves the caller objects untouched', async () => {
+    const { inner, headersOfCall } = capture()
+    const fetchFn = withCorrelation(inner as unknown as typeof fetch)
+    const request = new Request(URL_ORGS, { headers: { Authorization: 'Bearer t' } })
+
+    await runWithRequestContext({ requestId: 'req-42', auditId: 'audit-7' }, () => fetchFn(request))
+
+    expect(headersOfCall().get('authorization')).toBe('Bearer t')
+    expect(headersOfCall().get('x-request-id')).toBe('req-42')
+    expect(request.headers.has('x-request-id')).toBe(false)
   })
 
   it('adds no correlation headers outside of a request', async () => {
