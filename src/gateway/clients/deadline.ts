@@ -5,11 +5,16 @@ export interface DeadlineOptions {
   timeoutMs: number
 }
 
-const pathOf = (url: string): string => {
+/**
+ * The pathname of an upstream URL, for error messages and extensions. Falls
+ * back to a placeholder rather than the raw input, which could carry a query
+ * string with a field selector such as an email address.
+ */
+export const pathOf = (url: string): string => {
   try {
     return new URL(url).pathname
   } catch {
-    return url
+    return 'upstream'
   }
 }
 

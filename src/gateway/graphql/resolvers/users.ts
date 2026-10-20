@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql'
 import { getOriginalFetch, getK8sServer } from '@/gateway/auth'
 import { log } from '@/shared/utils'
-import { type ResolverContext, getHeader, rethrowGraphQLError } from './common'
+import { type ResolverContext, getHeader, rethrowGraphQLError, failedPage, upstreamFailure } from './common'
 
 interface UpstreamUser {
   metadata?: {
@@ -262,20 +262,18 @@ export const usersResolvers = {
         if (args.platformAccess) selectors.push(`status.platformAccess=${args.platformAccess}`)
 
         // Fetch the user page and the fraud evaluations concurrently, then join.
+        const usersUrl = usersListURL({
+          limit: args.limit,
+          cursor: args.cursor,
+          fieldSelector: selectors.length ? selectors.join(',') : undefined,
+        })
         const [usersRes, fraudByUser] = await Promise.all([
-          getOriginalFetch()(
-            usersListURL({
-              limit: args.limit,
-              cursor: args.cursor,
-              fieldSelector: selectors.length ? selectors.join(',') : undefined,
-            }),
-            { headers }
-          ),
+          getOriginalFetch()(usersUrl, { headers }),
           fetchLatestFraudByUser(headers),
         ])
         if (!usersRes.ok) {
           log.warn('milo users fetch failed', { status: usersRes.status })
-          return { items: [], continueToken: null }
+          failedPage(usersRes, usersUrl)
         }
         const body = (await usersRes.json()) as {
           items?: UpstreamUser[]
@@ -299,7 +297,7 @@ export const usersResolvers = {
         log.error('users resolver failed', {
           error: error instanceof Error ? error.message : String(error),
         })
-        return { items: [], continueToken: null }
+        throw upstreamFailure(error, 'users')
       }
     },
 

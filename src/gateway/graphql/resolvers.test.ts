@@ -823,16 +823,54 @@ describe('Query.organizations', () => {
     )
   })
 
-  it('returns empty list on non-ok response', async () => {
+  it('throws UPSTREAM_ERROR with the status when the page fetch is not ok', async () => {
     fetchSpy.mockResolvedValue(new Response('{}', { status: 403 }))
-    const result = (await callOrganizations()) as { items: unknown[] }
-    expect(result.items).toEqual([])
+    await expect(callOrganizations()).rejects.toMatchObject({
+      extensions: { code: 'UPSTREAM_ERROR', status: 403 },
+    })
   })
 
-  it('returns empty list when fetch throws', async () => {
+  it('throws CURSOR_EXPIRED when milo answers 410 Gone for the continue token', async () => {
+    fetchSpy.mockResolvedValue(new Response('{}', { status: 410 }))
+    await expect(callOrganizations({ cursor: 'stale' })).rejects.toMatchObject({
+      extensions: { code: 'CURSOR_EXPIRED', status: 410 },
+    })
+  })
+
+  it('throws UPSTREAM_ERROR when the page fetch throws', async () => {
     fetchSpy.mockRejectedValue(new Error('network'))
-    const result = (await callOrganizations()) as { items: unknown[] }
-    expect(result.items).toEqual([])
+    await expect(callOrganizations()).rejects.toMatchObject({
+      extensions: { code: 'UPSTREAM_ERROR' },
+    })
+  })
+
+  it('reports a 410 on a first page as UPSTREAM_ERROR, since there is no cursor to expire', async () => {
+    fetchSpy.mockResolvedValue(new Response('{}', { status: 410 }))
+    await expect(callOrganizations()).rejects.toMatchObject({
+      extensions: { code: 'UPSTREAM_ERROR', status: 410 },
+    })
+  })
+
+  it('keeps upstream error detail out of the client-facing message', async () => {
+    fetchSpy.mockRejectedValue(new Error('connect ECONNREFUSED 10.0.0.1:443'))
+    const error = (await callOrganizations().catch((e: unknown) => e)) as Error
+    expect(error.message).not.toContain('10.0.0.1')
+    expect(error.message).toMatch(/organizations/)
+  })
+
+  it('throws instead of returning a shortened list when a mid-walk search page fails', async () => {
+    fetchSpy
+      .mockResolvedValueOnce(
+        jsonResponse({
+          items: [{ metadata: { name: 'acme-1', annotations: {} }, spec: { type: 'Standard' } }],
+          metadata: { continue: 'page-2' },
+        })
+      )
+      .mockResolvedValueOnce(new Response('{}', { status: 500 }))
+
+    await expect(callOrganizations({ search: 'acme', limit: 10 })).rejects.toMatchObject({
+      extensions: { code: 'UPSTREAM_ERROR', status: 500 },
+    })
   })
 })
 
@@ -941,10 +979,25 @@ describe('Query.organizationProjects', () => {
     )
   })
 
-  it('returns empty list on failure', async () => {
+  it('throws UPSTREAM_ERROR with the status when the page fetch is not ok', async () => {
     fetchSpy.mockResolvedValue(new Response('{}', { status: 403 }))
-    const result = (await callOrgProjects({ orgName: 'acme' })) as { items: unknown[] }
-    expect(result.items).toEqual([])
+    await expect(callOrgProjects({ orgName: 'acme' })).rejects.toMatchObject({
+      extensions: { code: 'UPSTREAM_ERROR', status: 403 },
+    })
+  })
+
+  it('throws CURSOR_EXPIRED when milo answers 410 Gone for the continue token', async () => {
+    fetchSpy.mockResolvedValue(new Response('{}', { status: 410 }))
+    await expect(callOrgProjects({ orgName: 'acme', cursor: 'stale' })).rejects.toMatchObject({
+      extensions: { code: 'CURSOR_EXPIRED', status: 410 },
+    })
+  })
+
+  it('throws UPSTREAM_ERROR when the page fetch throws', async () => {
+    fetchSpy.mockRejectedValue(new Error('network'))
+    await expect(callOrgProjects({ orgName: 'acme' })).rejects.toMatchObject({
+      extensions: { code: 'UPSTREAM_ERROR' },
+    })
   })
 })
 
@@ -1300,16 +1353,43 @@ describe('Query.projects', () => {
     })
   })
 
-  it('returns empty list on non-ok response', async () => {
+  it('throws UPSTREAM_ERROR with the status when the page fetch is not ok', async () => {
     fetchSpy.mockResolvedValue(new Response('{}', { status: 500 }))
-    const result = await (
-      additionalResolvers.Query!.projects as (
-        r: null,
-        a: object,
-        c: ReturnType<typeof ctx>
-      ) => Promise<{ items: unknown[] }>
-    )(null, {}, ctx())
-    expect(result.items).toEqual([])
+    await expect(
+      (
+        additionalResolvers.Query!.projects as (
+          r: null,
+          a: object,
+          c: ReturnType<typeof ctx>
+        ) => Promise<unknown>
+      )(null, {}, ctx())
+    ).rejects.toMatchObject({ extensions: { code: 'UPSTREAM_ERROR', status: 500 } })
+  })
+
+  it('throws CURSOR_EXPIRED when milo answers 410 Gone for the continue token', async () => {
+    fetchSpy.mockResolvedValue(new Response('{}', { status: 410 }))
+    await expect(
+      (
+        additionalResolvers.Query!.projects as (
+          r: null,
+          a: object,
+          c: ReturnType<typeof ctx>
+        ) => Promise<unknown>
+      )(null, { cursor: 'stale' }, ctx())
+    ).rejects.toMatchObject({ extensions: { code: 'CURSOR_EXPIRED', status: 410 } })
+  })
+
+  it('throws UPSTREAM_ERROR when the page fetch throws', async () => {
+    fetchSpy.mockRejectedValue(new Error('network'))
+    await expect(
+      (
+        additionalResolvers.Query!.projects as (
+          r: null,
+          a: object,
+          c: ReturnType<typeof ctx>
+        ) => Promise<unknown>
+      )(null, {}, ctx())
+    ).rejects.toMatchObject({ extensions: { code: 'UPSTREAM_ERROR' } })
   })
 })
 
@@ -1853,7 +1933,7 @@ describe('Query.users', () => {
     expect(decoded).toContain('status.platformAccess=Approved')
   })
 
-  it('returns an empty list on a non-2xx users response', async () => {
+  it('throws UPSTREAM_ERROR with the status on a non-2xx users response', async () => {
     fetchSpy.mockImplementation((url: string) =>
       Promise.resolve(
         String(url).includes('/fraudevaluations')
@@ -1861,7 +1941,20 @@ describe('Query.users', () => {
           : jsonResponse({}, 500)
       )
     )
-    expect(await call({})).toEqual({ items: [], continueToken: null })
+    await expect(call({})).rejects.toMatchObject({
+      extensions: { code: 'UPSTREAM_ERROR', status: 500 },
+    })
+  })
+
+  it('throws CURSOR_EXPIRED when milo answers 410 Gone for the continue token', async () => {
+    fetchSpy.mockImplementation((url: string) =>
+      Promise.resolve(
+        String(url).includes('/fraudevaluations') ? jsonResponse({ items: [] }) : jsonResponse({}, 410)
+      )
+    )
+    await expect(call({ cursor: 'stale' })).rejects.toMatchObject({
+      extensions: { code: 'CURSOR_EXPIRED', status: 410 },
+    })
   })
 
   it('still returns users when the fraud fetch fails (scores null)', async () => {
@@ -1919,5 +2012,105 @@ describe('Query.userSummaries', () => {
     expect(await call(['u1', 'u2'])).toEqual([
       { name: 'u1', email: 'u1@acme.test', givenName: null, familyName: null },
     ])
+  })
+})
+
+
+describe('Query.contactGroupMembershipsWithContacts', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const call = (args: { namespace?: string; cursor?: string } = {}) =>
+    (
+      additionalResolvers.Query!.contactGroupMembershipsWithContacts as (
+        r: null,
+        a: typeof args,
+        c: ReturnType<typeof ctx>
+      ) => Promise<unknown>
+    )(null, args, ctx())
+
+  it('throws UPSTREAM_ERROR with the status when the memberships page is not ok', async () => {
+    fetchSpy.mockResolvedValue(new Response('{}', { status: 500 }))
+    await expect(call({ namespace: 'organization-acme' })).rejects.toMatchObject({
+      extensions: { code: 'UPSTREAM_ERROR', status: 500 },
+    })
+  })
+
+  it('throws CURSOR_EXPIRED when milo answers 410 Gone for the continue token', async () => {
+    fetchSpy.mockResolvedValue(new Response('{}', { status: 410 }))
+    await expect(call({ namespace: 'organization-acme', cursor: 'stale' })).rejects.toMatchObject({
+      extensions: { code: 'CURSOR_EXPIRED', status: 410 },
+    })
+  })
+})
+
+describe('Query.contactMembershipsWithGroups', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('throws UPSTREAM_ERROR with the status when the memberships page is not ok', async () => {
+    fetchSpy.mockResolvedValue(new Response('{}', { status: 500 }))
+    await expect(
+      (
+        additionalResolvers.Query!.contactMembershipsWithGroups as (
+          r: null,
+          a: { namespace?: string },
+          c: ReturnType<typeof ctx>
+        ) => Promise<unknown>
+      )(null, { namespace: 'organization-acme' }, ctx())
+    ).rejects.toMatchObject({ extensions: { code: 'UPSTREAM_ERROR', status: 500 } })
+  })
+})
+
+describe('nested page failure inside organizations { items { projects } }', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('nulls only the failed projects field and keeps the organization list', async () => {
+    const fetchSpy = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/projects')) return Promise.resolve(new Response('{}', { status: 410 }))
+      return Promise.resolve(
+        jsonResponse({
+          items: [{ metadata: { name: 'acme', annotations: {} }, spec: { type: 'Standard' } }],
+          metadata: {},
+        })
+      )
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const schema = extendSchema(buildSchema('type Query { _: String }'), parse(additionalTypeDefs), {
+      assumeValidSDL: true,
+    })
+    const resolvers = additionalResolvers as Record<
+      string,
+      Record<string, GraphQLFieldResolver<unknown, unknown>>
+    >
+    const result = await execute({
+      schema,
+      document: parse(
+        '{ organizations { items { name projects(cursor: "stale") { items { name } } } } }'
+      ),
+      contextValue: ctx(),
+      fieldResolver: (source, args, context, info) =>
+        (resolvers[info.parentType.name]?.[info.fieldName] ?? defaultFieldResolver)(
+          source,
+          args,
+          context,
+          info
+        ),
+    })
+
+    expect(result.data).toEqual({ organizations: { items: [{ name: 'acme', projects: null }] } })
+    expect(result.errors?.[0]?.extensions).toMatchObject({ code: 'CURSOR_EXPIRED' })
   })
 })

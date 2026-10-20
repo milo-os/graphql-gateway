@@ -219,8 +219,12 @@ export const additionalTypeDefs = /* GraphQL */ `
     onboardingMessage: String
     "Members and pending invitations for this organization."
     members: [OrgMember!]!
-    "Projects owned by this organization (via its control plane)."
-    projects(limit: Int, cursor: String): ProjectList!
+    """
+    Projects owned by this organization (via its control plane). Nullable so a
+    failed page (expired cursor, upstream error) annotates this field with an
+    error instead of propagating up and nulling the whole organization list.
+    """
+    projects(limit: Int, cursor: String): ProjectList
   }
 
   type OrganizationList {

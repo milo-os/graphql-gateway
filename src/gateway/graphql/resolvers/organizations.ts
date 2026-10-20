@@ -6,6 +6,8 @@ import {
   DESCRIPTION_ANNOTATION,
   DISPLAY_NAME_ANNOTATION,
   rethrowGraphQLError,
+  failedPage,
+  upstreamFailure,
 } from './common'
 
 interface UpstreamOrganization {
@@ -433,7 +435,7 @@ async function searchOrganizations(
     const r = await getOriginalFetch()(url, { headers })
     if (!r.ok) {
       log.warn('milo organizations search fetch failed', { status: r.status, url })
-      break
+      failedPage(r, url)
     }
     const body = (await r.json()) as UpstreamOrganizationList
     for (const raw of body.items ?? []) {
@@ -638,7 +640,7 @@ async function fetchOrgProjects(
     const r = await getOriginalFetch()(url, { headers })
     if (!r.ok) {
       log.warn('milo organizationProjects fetch failed', { orgName, status: r.status })
-      return { items: [], continueToken: null }
+      failedPage(r, url)
     }
     const body = (await r.json()) as UpstreamProjectList
     const items = (body.items ?? []).map(mapProjectFull)
@@ -651,7 +653,7 @@ async function fetchOrgProjects(
     log.error('organizationProjects resolver failed', {
       error: error instanceof Error ? error.message : String(error),
     })
-    return { items: [], continueToken: null }
+    throw upstreamFailure(error, 'organizationProjects')
   }
 }
 
@@ -761,7 +763,7 @@ export const organizationsResolvers = {
         const r = await getOriginalFetch()(url, { headers })
         if (!r.ok) {
           log.warn('milo organizations fetch failed', { status: r.status, url })
-          return { items: [], continueToken: null }
+          failedPage(r, url)
         }
         const body = (await r.json()) as UpstreamOrganizationList
         return {
@@ -773,7 +775,7 @@ export const organizationsResolvers = {
         log.error('organizations resolver failed', {
           error: error instanceof Error ? error.message : String(error),
         })
-        return { items: [], continueToken: null }
+        throw upstreamFailure(error, 'organizations')
       }
     },
 
@@ -825,7 +827,7 @@ export const organizationsResolvers = {
         const r = await getOriginalFetch()(url, { headers })
         if (!r.ok) {
           log.warn('milo projects fetch failed', { status: r.status, url })
-          return { items: [], continueToken: null }
+          failedPage(r, url)
         }
         const body = (await r.json()) as UpstreamProjectList
         const items = (body.items ?? []).map(mapProjectFull)
@@ -838,7 +840,7 @@ export const organizationsResolvers = {
         log.error('projects resolver failed', {
           error: error instanceof Error ? error.message : String(error),
         })
-        return { items: [], continueToken: null }
+        throw upstreamFailure(error, 'projects')
       }
     },
 
