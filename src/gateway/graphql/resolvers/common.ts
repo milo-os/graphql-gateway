@@ -31,5 +31,56 @@ export function rethrowGraphQLError(error: unknown): void {
   if (error instanceof GraphQLError) throw error
 }
 
+type UpstreamErrorCode = 'UPSTREAM_ERROR' | 'CURSOR_EXPIRED'
+
+const pathOf = (url: string): string => {
+  try {
+    return new URL(url).pathname
+  } catch {
+    return url
+  }
+}
+
+/** A list page that could not be fetched. Carries a code the client can branch on. */
+export class UpstreamError extends GraphQLError {
+  constructor(
+    message: string,
+    extensions: { code: UpstreamErrorCode; status?: number; path?: string }
+  ) {
+    super(message, { extensions })
+    this.name = 'UpstreamError'
+  }
+}
+
+/**
+ * Turns a non-OK list response into a thrown error. A failed page must reach
+ * the client as an error: returning an empty page with no continue token is
+ * indistinguishable from the end of the list, so the portal stops paging and
+ * the user sees a truncated list. 410 Gone is the apiserver saying the
+ * continue token expired from the watch cache; the client should restart
+ * from the first page.
+ */
+export function failedPage(response: Response, url: string): never {
+  const path = pathOf(url)
+  if (response.status === 410) {
+    throw new UpstreamError(`Continue token expired for ${path}`, {
+      code: 'CURSOR_EXPIRED',
+      status: 410,
+      path,
+    })
+  }
+  throw new UpstreamError(`Upstream request to ${path} failed with ${response.status}`, {
+    code: 'UPSTREAM_ERROR',
+    status: response.status,
+    path,
+  })
+}
+
+/** Wraps an unexpected error from a page fetch (network, parse) as UPSTREAM_ERROR. */
+export function upstreamFailure(error: unknown, what: string): UpstreamError {
+  const message = error instanceof Error ? error.message : String(error)
+  return new UpstreamError(`${what} failed: ${message}`, { code: 'UPSTREAM_ERROR' })
+}
+
 export const DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
 export const DISPLAY_NAME_ANNOTATION = 'kubernetes.io/display-name'

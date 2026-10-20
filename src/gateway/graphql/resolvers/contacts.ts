@@ -1,6 +1,13 @@
 import { getOriginalFetch, getK8sServer } from '@/gateway/auth'
 import { log } from '@/shared/utils'
-import { type ResolverContext, getHeader, DESCRIPTION_ANNOTATION, rethrowGraphQLError } from './common'
+import {
+  type ResolverContext,
+  getHeader,
+  DESCRIPTION_ANNOTATION,
+  rethrowGraphQLError,
+  failedPage,
+  upstreamFailure,
+} from './common'
 
 interface UpstreamContactGroupMembership {
   metadata?: { name?: string; creationTimestamp?: string }
@@ -105,7 +112,7 @@ async function fetchMemberships(
   const response = await fetchFn(url, { headers })
   if (!response.ok) {
     log.warn('milo contactgroupmemberships fetch failed', { status: response.status, url, hasAuthorization: !!authorization })
-    return { headers, memberships: [], continueToken: null }
+    failedPage(response, url)
   }
   const body = (await response.json()) as UpstreamContactGroupMembershipList
   return { headers, memberships: body.items ?? [], continueToken: body.metadata?.continue ?? null }
@@ -157,7 +164,7 @@ export const contactsResolvers = {
       } catch (error) {
         rethrowGraphQLError(error)
         log.error('contactGroupMembershipsWithContacts resolver failed', { error: error instanceof Error ? error.message : String(error) })
-        return { items: [] }
+        throw upstreamFailure(error, 'contactGroupMembershipsWithContacts')
       }
     },
 
@@ -206,7 +213,7 @@ export const contactsResolvers = {
       } catch (error) {
         rethrowGraphQLError(error)
         log.error('contactMembershipsWithGroups resolver failed', { error: error instanceof Error ? error.message : String(error) })
-        return { items: [] }
+        throw upstreamFailure(error, 'contactMembershipsWithGroups')
       }
     },
   },
