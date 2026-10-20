@@ -61,6 +61,19 @@ describe('withDeadline', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
+  it('settles with the caller reason even when the inner fetch ignores the signal', async () => {
+    const ignoresSignal = vi.fn(() => new Promise<Response>(() => {}))
+    const fetchFn = withDeadline(ignoresSignal as unknown as typeof fetch, { timeoutMs: 100 })
+    const caller = new AbortController()
+
+    const settled = fetchFn(URL_ORGS, { signal: caller.signal }).catch((error: unknown) => error)
+    caller.abort(new DOMException('client went away', 'AbortError'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(await settled).toMatchObject({ name: 'AbortError', message: 'client went away' })
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('rejects at once with the caller reason when the signal is already aborted', async () => {
     const inner = vi.fn(async () => new Response('{}'))
     const fetchFn = withDeadline(inner as unknown as typeof fetch, { timeoutMs: 100 })

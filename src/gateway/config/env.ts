@@ -1,9 +1,27 @@
 import { config as sharedConfig } from '@/shared/config'
+import { log } from '@/shared/utils'
 
-/** Parses a duration from the environment, falling back when it is unset, non-numeric, zero or negative. */
-const positiveMillis = (raw: string | undefined, fallback: number): number => {
-  const parsed = Number(raw)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+/** Largest delay setTimeout accepts; anything above it silently wraps to 1ms. */
+const MAX_TIMER_MS = 2_147_483_647
+
+/**
+ * Parses a millisecond duration from the environment. Falls back when the
+ * value is unset, non-numeric, zero or negative, and clamps values beyond
+ * what a timer can hold. Both cases are logged so a typo in the unit does
+ * not pass unnoticed.
+ */
+export const positiveMillis = (raw: string | undefined, fallback: number): number => {
+  if (raw === undefined || raw === '') return fallback
+  const parsed = Math.floor(Number(raw))
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    log.warn('Ignoring invalid duration from environment', { raw, fallback })
+    return fallback
+  }
+  if (parsed > MAX_TIMER_MS) {
+    log.warn('Clamping duration from environment', { raw, clampedTo: MAX_TIMER_MS })
+    return MAX_TIMER_MS
+  }
+  return parsed
 }
 
 /**

@@ -52,11 +52,17 @@ export function withDeadline(fetchFn: typeof fetch, { timeoutMs }: DeadlineOptio
     }
 
     const controller = new AbortController()
-    const onCallerAbort = () => controller.abort(callerSignal?.reason)
-    callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
-
     let timer: ReturnType<typeof setTimeout> | undefined
-    const deadline = new Promise<never>((_, reject) => {
+    let onCallerAbort: (() => void) | undefined
+
+    // Settles the call independently of the inner fetch, so a caller abort or
+    // the deadline wins even against a fetch that ignores its signal.
+    const settled = new Promise<never>((_, reject) => {
+      onCallerAbort = () => {
+        controller.abort(callerSignal?.reason)
+        reject(callerSignal?.reason)
+      }
+      callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
       timer = setTimeout(() => {
         const error = new UpstreamTimeoutError(urlOf(input), timeoutMs)
         controller.abort(error)
@@ -66,10 +72,10 @@ export function withDeadline(fetchFn: typeof fetch, { timeoutMs }: DeadlineOptio
 
     const cleanup = () => {
       clearTimeout(timer)
-      callerSignal?.removeEventListener('abort', onCallerAbort)
+      if (onCallerAbort) callerSignal?.removeEventListener('abort', onCallerAbort)
     }
 
-    return Promise.race([fetchFn(input, { ...init, signal: controller.signal }), deadline]).finally(
+    return Promise.race([fetchFn(input, { ...init, signal: controller.signal }), settled]).finally(
       cleanup
     )
   }) as typeof fetch

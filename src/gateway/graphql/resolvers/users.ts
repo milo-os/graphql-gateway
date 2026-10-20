@@ -223,6 +223,9 @@ export const usersResolvers = {
                 familyName: user.spec?.familyName ?? null,
               }
             } catch (error) {
+              // userSummaries is the page: a timed-out lookup must surface,
+              // not silently shorten the list.
+              rethrowGraphQLError(error)
               log.warn('milo user fetch threw', {
                 name,
                 error: error instanceof Error ? error.message : String(error),

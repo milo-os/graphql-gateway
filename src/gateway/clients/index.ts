@@ -1,3 +1,4 @@
 export { getK8sMTLSConfig, createMTLSFetch, createUserFetch } from './k8s'
 export type { K8sAuthConfig, K8sMTLSConfig } from './k8s'
-export * from './deadline'
+export { withDeadline, UpstreamTimeoutError } from './deadline'
+export type { DeadlineOptions } from './deadline'

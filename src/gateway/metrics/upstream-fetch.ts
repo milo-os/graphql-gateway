@@ -15,7 +15,9 @@ const duration =
     name: DURATION_METRIC,
     help: 'Time until response headers for upstream requests made by gateway-local resolvers.',
     labelNames: ['resource', 'method', 'status'],
-    buckets: [0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+    // Extends past the 10s default deadline so a timed-out call and a call
+    // whose body kept streaming can still be told apart.
+    buckets: [0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 15, 30, 60],
   })
 
 const inflight =
