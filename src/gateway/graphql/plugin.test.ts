@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parse } from 'graphql'
+import { register } from 'prom-client'
 import { isLocallyExecutable } from './plugin'
 
 describe('isLocallyExecutable', () => {
@@ -142,5 +143,57 @@ describe('isLocallyExecutable', () => {
     `)
     expect(isLocallyExecutable(doc, 'Local')).toBe(true)
     expect(isLocallyExecutable(doc, 'Federated')).toBe(false)
+  })
+})
+
+describe('graphql_gateway_mixed_operations_total', () => {
+  const mixedCount = async (operationName: string) => {
+    const metric = await register.getSingleMetric('graphql_gateway_mixed_operations_total')!.get()
+    return metric.values.find((v) => v.labels.operationName === operationName)?.value ?? 0
+  }
+
+  it('counts a mixed operation by its operation name', async () => {
+    const doc = parse(/* GraphQL */ `
+      query MixedOperation {
+        sessions {
+          id
+        }
+        listResourcemanagerMiloapisComV1alpha1OrganizationMembershipForAllNamespaces {
+          metadata {
+            continue
+          }
+        }
+      }
+    `)
+    const before = await mixedCount('MixedOperation')
+
+    expect(isLocallyExecutable(doc, 'MixedOperation')).toBe(false)
+    expect(await mixedCount('MixedOperation')).toBe(before + 1)
+  })
+
+  it('does not count purely local or purely federated operations', async () => {
+    const local = parse(/* GraphQL */ `
+      query PureLocal {
+        sessions {
+          id
+        }
+      }
+    `)
+    const federated = parse(/* GraphQL */ `
+      query PureFederated {
+        listResourcemanagerMiloapisComV1alpha1OrganizationMembershipForAllNamespaces {
+          metadata {
+            continue
+          }
+        }
+      }
+    `)
+    const beforeLocal = await mixedCount('PureLocal')
+    const beforeFederated = await mixedCount('PureFederated')
+
+    expect(isLocallyExecutable(local, 'PureLocal')).toBe(true)
+    expect(isLocallyExecutable(federated, 'PureFederated')).toBe(false)
+    expect(await mixedCount('PureLocal')).toBe(beforeLocal)
+    expect(await mixedCount('PureFederated')).toBe(beforeFederated)
   })
 })
