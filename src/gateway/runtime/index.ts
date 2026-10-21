@@ -4,13 +4,13 @@ import { unifiedGraphHandler } from '@graphql-hive/router-runtime'
 import { env } from '@/gateway/config'
 import { usePrometheusMetrics } from '@/gateway/metrics/metrics'
 import { useGatewayLocalSchema } from '@/gateway/graphql'
-import { getSupergraph } from './composition'
+import { getSupergraph } from './supergraph'
 
-export { initializeGateway, isSupergraphReady, hasCompositionGivenUp } from './composition'
+export { initializeGateway, isSupergraphReady } from './supergraph'
 
 /**
  * Gateway runtime instance.
- * Uses the cached supergraph SDL which is refreshed by background polling.
+ * Uses the SDL committed under `supergraph/`, loaded once at boot.
  */
 export const gateway = createGatewayRuntime({
   supergraph: getSupergraph,

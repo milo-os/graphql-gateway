@@ -38,8 +38,8 @@ export const env = {
   /** Path to the KUBECONFIG file (required) */
   kubeconfigPath: process.env.KUBECONFIG || '',
 
-  /** Polling interval for supergraph composition in milliseconds (default: 40m) */
-  pollingInterval: Number(process.env.POLLING_INTERVAL) || 2_400_000,
+  /** Path to the committed supergraph SDL (default: ./supergraph/supergraph.graphql) */
+  supergraphPath: process.env.SUPERGRAPH_PATH || '',
 
   /** Deadline for response headers on every upstream call to Milo, in milliseconds (default: 10s) */
   upstreamTimeoutMs: positiveMillis(process.env.UPSTREAM_TIMEOUT_MS, 10_000),

@@ -17,8 +17,9 @@
  * each shared apimachinery output type down to the fields that every subgraph
  * defining it agrees on. A field becomes visible once all servers serve it.
  *
- * This file is imported by the compose worker, so it must follow the same
- * import restrictions (no `@/` path aliases).
+ * This file is imported by the snapshot script
+ * (`scripts/compose-supergraph.ts`), so it must follow the same import
+ * restrictions (no `@/` path aliases).
  */
 import { type GraphQLSchema, isObjectType, isInterfaceType } from 'graphql'
 import { mapSchema, MapperKind } from '@graphql-tools/utils'

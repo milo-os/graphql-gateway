@@ -1,33 +1,33 @@
 # GraphQL Gateway for Milo APIServer
 
-This project provides a **GraphQL gateway** that sits in front of Milo APIServer REST/OpenAPI services and exposes a unified GraphQL API. It uses **Hive Gateway** with dynamic supergraph composition from OpenAPI specs at runtime.
+This project provides a **GraphQL gateway** that sits in front of Milo APIServer REST/OpenAPI services and exposes a unified GraphQL API. It uses **Hive Gateway** with a supergraph composed in CI from OpenAPI specs and committed to `supergraph/supergraph.graphql`.
 
 > **Status**: This gateway is in an **initial, non‑production stage**. It is intended **only for local testing by the Datum team** and **is not production ready**.
 
 ## Architecture
 
-- **Dynamic Supergraph Composition**: The gateway dynamically fetches OpenAPI specs from the Milo APIServer and composes a unified GraphQL supergraph at runtime.
+- **Build-time Supergraph Composition**: A scheduled workflow composes the supergraph from the staging OpenAPI discovery document and opens a PR when the SDL changes. Every replica serves the committed bytes.
 - **mTLS Authentication**: Uses client certificates (mTLS) to authenticate with the Kubernetes API server.
-- **Polling**: The supergraph is recomposed periodically based on the `POLLING_INTERVAL` environment variable.
+- **Drift Guard**: At boot the gateway compares the committed path list with the live `/openapi/v3` document and logs a warning when they differ. It never blocks startup.
 
 ### What Hive Gateway is
 
 - **Hive Gateway**: a production-ready GraphQL gateway/router from the GraphQL Hive ecosystem.
 - It:
-  - Dynamically composes a supergraph from OpenAPI specs fetched from Milo APIServer.
+  - Serves the supergraph SDL composed in CI from the Milo APIServer OpenAPI specs.
   - Executes incoming GraphQL operations by delegating to the underlying Milo APIs.
   - Handles concerns like header propagation, TLS, caching, and observability.
 
 ### Environment Variables
 
-| Variable              | Description                                                                                  | Default              |
-| --------------------- | -------------------------------------------------------------------------------------------- | -------------------- |
-| `PORT`                | Port the gateway listens on                                                                  | `4000`               |
-| `KUBECONFIG`          | Path to kubeconfig file for K8s authentication                                               | Required             |
-| `POLLING_INTERVAL`    | Interval (ms) between supergraph recomposition                                               | `1_200_000` (20 min) |
-| `LOGGING`             | Log level (`debug`, `info`, `warn`, `error`)                                                 | `info`               |
-| `UPSTREAM_TIMEOUT_MS` | Deadline (ms) per Milo call: headers on the user-token path, whole response on the mTLS path | `10000` (10s)        |
-| `NODE_EXTRA_CA_CERTS` | Path to CA certificate for trusting K8s API server                                           | Required for mTLS    |
+| Variable              | Description                                                                                  | Default                           |
+| --------------------- | -------------------------------------------------------------------------------------------- | --------------------------------- |
+| `PORT`                | Port the gateway listens on                                                                  | `4000`                            |
+| `KUBECONFIG`          | Path to kubeconfig file for K8s authentication                                               | Required                          |
+| `SUPERGRAPH_PATH`     | Path to the committed supergraph SDL                                                         | `./supergraph/supergraph.graphql` |
+| `LOGGING`             | Log level (`debug`, `info`, `warn`, `error`)                                                 | `info`                            |
+| `UPSTREAM_TIMEOUT_MS` | Deadline (ms) per Milo call: headers on the user-token path, whole response on the mTLS path | `10000` (10s)                     |
+| `NODE_EXTRA_CA_CERTS` | Path to CA certificate for trusting K8s API server                                           | Required for mTLS                 |
 
 ### Project Scripts
 
@@ -44,6 +44,9 @@ Defined in `package.json`:
 
 - **`npm run lint`**
   - Runs ESLint on the codebase.
+
+- **`npm run supergraph:compose -- --server <url> --token <token>`**
+  - Composes `supergraph/supergraph.graphql` and `supergraph/paths.json` from a live API server. See [Supergraph Snapshot](#supergraph-snapshot).
 
 ### Local Testing
 
@@ -67,6 +70,25 @@ A comprehensive local testing script is provided at `scripts/local-test.sh`. Thi
 ./scripts/local-test.sh
 ```
 
+The gateway serves the committed snapshot, so a local run does not compose. If the local cluster's APIs differ from the snapshot, re-run `npm run supergraph:compose` against the port-forward and restore the files afterwards.
+
+### Supergraph Snapshot
+
+`supergraph/supergraph.graphql` is the SDL every replica serves and `supergraph/paths.json` records the OpenAPI paths it was composed from. Both are generated by `scripts/compose-supergraph.ts` and committed together.
+
+`.github/workflows/compose-supergraph.yaml` runs the script daily against staging and opens or updates the `compose-supergraph` PR when the output changes. It authenticates with `datum-cloud/setup-datumctl-action` using the `STAGING_DATUMCTL_CREDENTIALS` repository secret.
+
+To compose manually:
+
+```bash
+export DATUM_TOKEN="$(datumctl auth get-token --output=token)"
+npm run supergraph:compose -- \
+  --server https://api.staging.env.datum.net \
+  --endpoint 'https://milo-apiserver.datum-system.svc.cluster.local:6443{context.headers.x-resource-endpoint-prefix}'
+```
+
+The `--endpoint` template is baked into the SDL transports. The workflow passes the in-cluster service URL so the committed snapshot is not tied to the staging ingress.
+
 ### Kubernetes Deployment
 
 The gateway is deployed to Kubernetes using the manifests in `config/base/`. Key components:
@@ -86,5 +108,5 @@ The gateway is deployed to Kubernetes using the manifests in `config/base/`. Key
   - Check the detailed guide on how to setup `codegen` and use the gateway from a client application, including **Parent Resources** setup.
 
 - **Health Endpoints**:
-  - `/healthcheck` - Liveness probe (fails once the composition worker's restart schedule is exhausted)
-  - `/readiness` - Readiness probe (K8s auth initialized and the supergraph composed at least once)
+  - `/healthcheck` - Liveness probe (the HTTPS server is accepting requests)
+  - `/readiness` - Readiness probe (K8s auth initialized and the committed supergraph snapshot loaded)
