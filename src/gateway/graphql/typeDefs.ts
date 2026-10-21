@@ -199,6 +199,16 @@ export const additionalTypeDefs = /* GraphQL */ `
     email: String
   }
 
+  "A single Kubernetes-style status condition on a Project or Organization."
+  type Condition {
+    type: String!
+    status: String!
+    reason: String
+    message: String
+    lastTransitionTime: String
+    observedGeneration: Int
+  }
+
   type Organization {
     "metadata.name — the stable organization ID."
     name: String!
@@ -208,15 +218,17 @@ export const additionalTypeDefs = /* GraphQL */ `
     type: String!
     createdAt: String
     "Status of the Ready condition."
-    state: String
+    state: String @deprecated(reason: "Use conditions")
     "Contact details from spec.contactInfo."
     contactInfo: OrgContactInfo
     "True when the OnboardingComplete condition status is True."
-    onboardingComplete: Boolean!
+    onboardingComplete: Boolean! @deprecated(reason: "Use conditions")
     "Reason from the OnboardingComplete condition."
-    onboardingReason: String
+    onboardingReason: String @deprecated(reason: "Use conditions")
     "Human-readable message from the OnboardingComplete condition."
-    onboardingMessage: String
+    onboardingMessage: String @deprecated(reason: "Use conditions")
+    "All status conditions reported by Milo, unfiltered."
+    conditions: [Condition!]!
     "Members and pending invitations for this organization."
     members: [OrgMember!]!
     """
@@ -250,11 +262,13 @@ export const additionalTypeDefs = /* GraphQL */ `
     billingAccountName: String
     createdAt: String
     "Status of the Ready condition."
-    state: String
+    state: String @deprecated(reason: "Use conditions")
     "metadata.deletionTimestamp — set while the project is terminating."
     deletionTimestamp: String
     "Unparsed ResourceCleanup condition message naming what deletion is waiting on."
-    resourceCleanupMessage: String
+    resourceCleanupMessage: String @deprecated(reason: "Use conditions")
+    "All status conditions reported by Milo, unfiltered."
+    conditions: [Condition!]!
   }
 
   type ProjectList {

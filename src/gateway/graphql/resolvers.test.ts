@@ -1488,6 +1488,87 @@ describe('Query.projects', () => {
     })
   })
 
+  it('maps every status condition, including Suspended, without filtering', async () => {
+    fetchSpy = projectOrgRoutedFetch({
+      projectsList: jsonResponse({
+        items: [
+          {
+            metadata: { name: 'proj-suspended', annotations: {} },
+            spec: { ownerRef: { name: 'acme' } },
+            status: {
+              conditions: [
+                {
+                  type: 'Ready',
+                  status: 'True',
+                  reason: 'Ready',
+                  lastTransitionTime: '2026-08-20T09:00:00Z',
+                  observedGeneration: 3,
+                },
+                { type: 'ResourceCleanup', status: 'False', reason: 'CleanupComplete' },
+                {
+                  type: 'Suspended',
+                  status: 'True',
+                  reason: 'BillingSuspended',
+                  message: 'Project is suspended for billing reasons',
+                },
+              ],
+            },
+          },
+        ],
+        metadata: {},
+      }),
+      organizations: { acme: acmeOrganization() },
+      ...acmeBillingWithPayment(),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await (
+      additionalResolvers.Query!.projects as (
+        r: null,
+        a: object,
+        c: ReturnType<typeof ctx>
+      ) => Promise<{
+        items: {
+          name: string
+          conditions: {
+            type: string
+            status: string
+            reason: string | null
+            message: string | null
+            lastTransitionTime: string | null
+            observedGeneration: number | null
+          }[]
+        }[]
+      }>
+    )(null, {}, ctx())
+    expect(result.items[0].conditions).toEqual([
+      {
+        type: 'Ready',
+        status: 'True',
+        reason: 'Ready',
+        message: null,
+        lastTransitionTime: '2026-08-20T09:00:00Z',
+        observedGeneration: 3,
+      },
+      {
+        type: 'ResourceCleanup',
+        status: 'False',
+        reason: 'CleanupComplete',
+        message: null,
+        lastTransitionTime: null,
+        observedGeneration: null,
+      },
+      {
+        type: 'Suspended',
+        status: 'True',
+        reason: 'BillingSuspended',
+        message: 'Project is suspended for billing reasons',
+        lastTransitionTime: null,
+        observedGeneration: null,
+      },
+    ])
+  })
+
   it('throws UPSTREAM_ERROR with the status when the page fetch is not ok', async () => {
     fetchSpy.mockResolvedValue(new Response('{}', { status: 500 }))
     await expect(

@@ -19,6 +19,15 @@ export interface LoaderResult<T> {
   error?: unknown
 }
 
+export interface UpstreamCondition {
+  type?: string
+  status?: string
+  reason?: string
+  message?: string
+  lastTransitionTime?: string
+  observedGeneration?: number
+}
+
 export interface UpstreamOrganization {
   metadata?: {
     name?: string
@@ -34,7 +43,7 @@ export interface UpstreamOrganization {
     }
   }
   status?: {
-    conditions?: Array<{ type?: string; status?: string; reason?: string; message?: string }>
+    conditions?: UpstreamCondition[]
   }
 }
 
@@ -51,7 +60,7 @@ export interface UpstreamProjectFull {
     annotations?: Record<string, string>
   }
   spec?: { ownerRef?: { name?: string; kind?: string } }
-  status?: { conditions?: Array<{ type?: string; status?: string; message?: string }> }
+  status?: { conditions?: UpstreamCondition[] }
 }
 
 export interface UpstreamProjectList {
@@ -87,6 +96,15 @@ export interface MappedOrgContactInfo {
   email: string | null
 }
 
+export interface MappedCondition {
+  type: string
+  status: string
+  reason: string | null
+  message: string | null
+  lastTransitionTime: string | null
+  observedGeneration: number | null
+}
+
 export interface MappedOrganization {
   name: string
   displayName: string
@@ -97,6 +115,7 @@ export interface MappedOrganization {
   onboardingComplete: boolean
   onboardingReason: string | null
   onboardingMessage: string | null
+  conditions: MappedCondition[]
 }
 
 export interface MappedProject {
@@ -111,11 +130,32 @@ export interface MappedProject {
   state: string | null
   deletionTimestamp: string | null
   resourceCleanupMessage: string | null
+  conditions: MappedCondition[]
 }
 
 export interface BillingEnrichment {
   hasActiveBillingAccount: boolean
   billingAccountName: string | null
+}
+
+type CompleteCondition = UpstreamCondition & { type: string; status: string }
+
+function isCompleteCondition(condition: UpstreamCondition): condition is CompleteCondition {
+  return Boolean(condition.type && condition.status)
+}
+
+// A condition without a type cannot be selected by name, and a missing status
+// is not one of Kubernetes' True/False/Unknown values. Drop both rather than
+// exposing them as empty strings behind non-null schema fields.
+function mapConditions(conditions: UpstreamCondition[] | undefined): MappedCondition[] {
+  return (conditions ?? []).filter(isCompleteCondition).map((condition) => ({
+    type: condition.type,
+    status: condition.status,
+    reason: condition.reason ?? null,
+    message: condition.message ?? null,
+    lastTransitionTime: condition.lastTransitionTime ?? null,
+    observedGeneration: condition.observedGeneration ?? null,
+  }))
 }
 
 export function mapOrganization(raw: UpstreamOrganization): MappedOrganization {
@@ -140,6 +180,7 @@ export function mapOrganization(raw: UpstreamOrganization): MappedOrganization {
     onboardingComplete: onboardingCondition?.status === 'True',
     onboardingReason: onboardingCondition?.reason ?? null,
     onboardingMessage: onboardingCondition?.message ?? null,
+    conditions: mapConditions(raw.status?.conditions),
   }
 }
 
@@ -166,6 +207,7 @@ export function mapProjectFull(raw: UpstreamProjectFull): MappedProject {
     state: readyCondition?.status ?? null,
     deletionTimestamp: raw.metadata?.deletionTimestamp ?? null,
     resourceCleanupMessage: cleanupCondition?.message?.trim() || null,
+    conditions: mapConditions(raw.status?.conditions),
   }
 }
 
