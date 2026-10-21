@@ -2576,4 +2576,94 @@ describe('per-item enrichment failures', () => {
     expect(result.errors?.[0]?.extensions).toMatchObject({ code: 'FORBIDDEN', status: 403 })
     expect(result.errors?.[0]?.path).toEqual(['projects', 'items', 0, 'hasActiveBillingAccount'])
   })
+
+  it('reports false, not null, for a readable org with no active billing binding', async () => {
+    vi.stubGlobal(
+      'fetch',
+      projectOrgRoutedFetch({
+        projectsList: jsonResponse({
+          items: [
+            { metadata: { name: 'proj-a', annotations: {} }, spec: { ownerRef: { name: 'acme' } } },
+          ],
+          metadata: {},
+        }),
+        organizations: { acme: acmeOrganization() },
+      })
+    )
+
+    const result = await executeProjects(
+      '{ projects { items { name hasActiveBillingAccount billingAccountName } } }'
+    )
+
+    expect(result.data).toEqual({
+      projects: {
+        items: [{ name: 'proj-a', hasActiveBillingAccount: false, billingAccountName: null }],
+      },
+    })
+    expect(result.errors).toBeUndefined()
+  })
+
+  it('cancels the unread bindings body when the accounts fetch fails', async () => {
+    let cancelled = false
+    const bindingsBody = new ReadableStream({
+      cancel: () => {
+        cancelled = true
+      },
+    })
+    vi.stubGlobal(
+      'fetch',
+      projectOrgRoutedFetch({
+        projectsList: jsonResponse({
+          items: [
+            { metadata: { name: 'proj-a', annotations: {} }, spec: { ownerRef: { name: 'acme' } } },
+          ],
+          metadata: {},
+        }),
+        organizations: { acme: acmeOrganization() },
+        billingBindings: { acme: new Response(bindingsBody, { status: 200 }) },
+        billingAccounts: { acme: new Response('forbidden', { status: 403 }) },
+      })
+    )
+
+    await executeProjects('{ projects { items { name } } }')
+
+    expect(cancelled).toBe(true)
+  })
+
+  it('reports NOT_FOUND on the consumer project when the project was deleted', async () => {
+    vi.stubGlobal(
+      'fetch',
+      routedFetch({
+        consumers: jsonResponse({
+          items: [{ metadata: { name: 'sc-1' }, spec: { consumerProjectRef: { name: 'gone' } } }],
+        }),
+      })
+    )
+
+    const result = await executeProjects(
+      '{ serviceConsumers(producerProject: "p") { name consumerProject { name displayName organizationName organizationDisplayName } } }'
+    )
+
+    expect(result.data).toEqual({
+      serviceConsumers: [
+        {
+          name: 'sc-1',
+          consumerProject: {
+            name: 'gone',
+            displayName: 'gone',
+            organizationName: '',
+            organizationDisplayName: null,
+          },
+        },
+      ],
+    })
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors?.[0]?.extensions).toMatchObject({ code: 'NOT_FOUND', status: 404 })
+    expect(result.errors?.[0]?.path).toEqual([
+      'serviceConsumers',
+      0,
+      'consumerProject',
+      'organizationDisplayName',
+    ])
+  })
 })
