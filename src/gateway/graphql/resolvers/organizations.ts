@@ -3,52 +3,22 @@ import { log } from '@/shared/utils'
 import {
   type ResolverContext,
   getHeader,
-  DESCRIPTION_ANNOTATION,
-  DISPLAY_NAME_ANNOTATION,
   rethrowGraphQLError,
   failedPage,
   upstreamFailure,
 } from './common'
-
-interface UpstreamOrganization {
-  metadata?: {
-    name?: string
-    creationTimestamp?: string
-    annotations?: Record<string, string>
-  }
-  spec?: {
-    type?: string
-    contactInfo?: {
-      businessName?: string
-      name?: string
-      email?: string
-    }
-  }
-  status?: {
-    conditions?: Array<{ type?: string; status?: string; reason?: string; message?: string }>
-  }
-}
-
-interface UpstreamOrganizationList {
-  items?: UpstreamOrganization[]
-  metadata?: { continue?: string }
-}
-
-interface UpstreamProjectFull {
-  metadata?: {
-    name?: string
-    creationTimestamp?: string
-    deletionTimestamp?: string
-    annotations?: Record<string, string>
-  }
-  spec?: { ownerRef?: { name?: string; kind?: string } }
-  status?: { conditions?: Array<{ type?: string; status?: string; message?: string }> }
-}
-
-interface UpstreamProjectList {
-  items?: UpstreamProjectFull[]
-  metadata?: { continue?: string }
-}
+import {
+  type BillingEnrichment,
+  type MappedOrganization,
+  type MappedProject,
+  type RequestLoaders,
+  type UpstreamOrganizationList,
+  type UpstreamProjectList,
+  getRequestLoaders,
+  mapOrganization,
+  mapProjectFull,
+  organizationsURL,
+} from './loaders'
 
 interface UpstreamOrganizationMembership {
   metadata?: { name?: string; creationTimestamp?: string }
@@ -96,124 +66,9 @@ interface UpstreamServiceConsumerList {
   items?: UpstreamServiceConsumer[]
 }
 
-interface UpstreamProject {
-  metadata?: { annotations?: Record<string, string> }
-  spec?: { ownerRef?: { name?: string } }
-}
-
-export interface MappedOrgContactInfo {
-  businessName: string | null
-  name: string | null
-  email: string | null
-}
-
-export interface MappedOrganization {
-  name: string
-  displayName: string
-  type: string
-  createdAt: string | null
-  state: string | null
-  contactInfo: MappedOrgContactInfo | null
-  onboardingComplete: boolean
-  onboardingReason: string | null
-  onboardingMessage: string | null
-}
-
-export interface MappedProject {
-  name: string
-  displayName: string
-  organizationName: string
-  organizationDisplayName: string
-  organizationBusinessName: string | null
-  hasActiveBillingAccount: boolean
-  billingAccountName: string | null
-  createdAt: string | null
-  state: string | null
-  deletionTimestamp: string | null
-  resourceCleanupMessage: string | null
-}
-
 type OrgEnrichment = {
   displayName: string
   businessName: string | null
-}
-
-type BillingEnrichment = {
-  hasActiveBillingAccount: boolean
-  billingAccountName: string | null
-}
-
-interface UpstreamBillingAccount {
-  metadata?: { name?: string; deletionTimestamp?: string }
-  spec?: { defaultPaymentMethodRef?: { name?: string } }
-}
-
-interface UpstreamBillingAccountList {
-  items?: UpstreamBillingAccount[]
-}
-
-interface UpstreamBillingAccountBinding {
-  metadata?: { deletionTimestamp?: string }
-  spec?: {
-    billingAccountRef?: { name?: string }
-    projectRef?: { name?: string }
-  }
-  status?: { phase?: string }
-}
-
-interface UpstreamBillingAccountBindingList {
-  items?: UpstreamBillingAccountBinding[]
-}
-
-function mapOrganization(raw: UpstreamOrganization): MappedOrganization {
-  const annotations = raw.metadata?.annotations ?? {}
-  const displayName = annotations[DISPLAY_NAME_ANNOTATION] || raw.metadata?.name || ''
-  const readyCondition = raw.status?.conditions?.find((c) => c.type === 'Ready')
-  const onboardingCondition = raw.status?.conditions?.find((c) => c.type === 'OnboardingComplete')
-  const contact = raw.spec?.contactInfo
-  return {
-    name: raw.metadata?.name ?? '',
-    displayName,
-    type: raw.spec?.type ?? '',
-    createdAt: raw.metadata?.creationTimestamp ?? null,
-    state: readyCondition?.status ?? null,
-    contactInfo: contact
-      ? {
-          businessName: contact.businessName?.trim() || null,
-          name: contact.name ?? null,
-          email: contact.email ?? null,
-        }
-      : null,
-    onboardingComplete: onboardingCondition?.status === 'True',
-    onboardingReason: onboardingCondition?.reason ?? null,
-    onboardingMessage: onboardingCondition?.message ?? null,
-  }
-}
-
-function mapProjectFull(raw: UpstreamProjectFull): MappedProject {
-  const annotations = raw.metadata?.annotations ?? {}
-  const displayName =
-    annotations[DISPLAY_NAME_ANNOTATION] ||
-    annotations[DESCRIPTION_ANNOTATION] ||
-    raw.metadata?.name ||
-    ''
-  const readyCondition = raw.status?.conditions?.find((c) => c.type === 'Ready')
-  const cleanupCondition = raw.status?.conditions?.find((c) => c.type === 'ResourceCleanup')
-  const organizationName = raw.spec?.ownerRef?.name ?? ''
-  return {
-    name: raw.metadata?.name ?? '',
-    displayName,
-    organizationName,
-    // Defaults until attachOrganizationFields / a single-org enrichment runs.
-    organizationDisplayName: organizationName,
-    organizationBusinessName: null,
-    hasActiveBillingAccount: false,
-    billingAccountName: null,
-    createdAt: raw.metadata?.creationTimestamp ?? null,
-    state: readyCondition?.status ?? null,
-    deletionTimestamp: raw.metadata?.deletionTimestamp ?? null,
-    resourceCleanupMessage: cleanupCondition?.message?.trim() || null,
-  }
 }
 
 function orgEnrichmentFromMapped(org: MappedOrganization): OrgEnrichment {
@@ -240,36 +95,21 @@ function attachOrganizationFields(
 /**
  * Resolves display/company names for unique owning organizations.
  *
- * Mirrors resolveProjectDisplayNames: parallel GETs, per-org failures swallowed
- * so a single inaccessible org never fails the whole project list.
+ * The loader dedupes org names across every alias in the request, so ten
+ * projects owned by three orgs cost three GETs rather than ten. Per-org
+ * failures are swallowed so one inaccessible org never fails the list.
  */
 async function resolveOrganizationFields(
   orgNames: string[],
-  headers: Record<string, string>
+  loaders: RequestLoaders
 ): Promise<Map<string, OrgEnrichment>> {
-  const fetchFn = getOriginalFetch()
   const result = new Map<string, OrgEnrichment>()
   const unique = [...new Set(orgNames.filter(Boolean))]
 
   await Promise.all(
     unique.map(async (name) => {
-      try {
-        const response = await fetchFn(organizationsURL({ name }), { headers })
-        if (!response.ok) {
-          log.warn('milo organization fetch failed', {
-            organization: name,
-            status: response.status,
-          })
-          return
-        }
-        const mapped = mapOrganization((await response.json()) as UpstreamOrganization)
-        result.set(name, orgEnrichmentFromMapped(mapped))
-      } catch (error) {
-        log.warn('milo organization fetch threw', {
-          organization: name,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
+      const { value } = await loaders.organization(name)
+      if (value) result.set(name, orgEnrichmentFromMapped(value))
     })
   )
 
@@ -281,80 +121,24 @@ async function resolveOrganizationFields(
  * projects have an Active binding to an account with a default payment
  * method.
  *
- * Failures are swallowed per-org so a single inaccessible billing namespace
- * never fails the whole project list. Only depends on each project's
- * `organizationName`, not on org display/company enrichment, so it can run
- * concurrently with {@link resolveOrganizationFields} rather than after it.
+ * The billing loader keys by project but fetches each org's binding list
+ * once, so projects sharing an org share that fetch. Failures are swallowed
+ * per project so a single inaccessible billing namespace never fails the
+ * whole list. Only depends on each project's `organizationName`, not on org
+ * display/company enrichment, so it can run concurrently with
+ * {@link resolveOrganizationFields}.
  */
 async function resolveBillingFields(
   projects: MappedProject[],
-  headers: Record<string, string>
+  loaders: RequestLoaders
 ): Promise<Map<string, BillingEnrichment>> {
   const billingByProject = new Map<string, BillingEnrichment>()
-  if (projects.length === 0) return billingByProject
-
-  const fetchFn = getOriginalFetch()
-  const uniqueOrgs = [...new Set(projects.map((p) => p.organizationName).filter(Boolean))]
 
   await Promise.all(
-    uniqueOrgs.map(async (orgName) => {
-      try {
-        const [bindingsRes, accountsRes] = await Promise.all([
-          fetchFn(orgBillingBindingsURL(orgName), { headers }),
-          fetchFn(orgBillingAccountsURL(orgName), { headers }),
-        ])
-
-        if (!bindingsRes.ok) {
-          log.warn('milo billing bindings fetch failed', {
-            organization: orgName,
-            status: bindingsRes.status,
-          })
-          return
-        }
-        if (!accountsRes.ok) {
-          log.warn('milo billing accounts fetch failed', {
-            organization: orgName,
-            status: accountsRes.status,
-          })
-          return
-        }
-
-        const bindings =
-          ((await bindingsRes.json()) as UpstreamBillingAccountBindingList).items ?? []
-        const accounts = ((await accountsRes.json()) as UpstreamBillingAccountList).items ?? []
-
-        const accountsWithPayment = new Set(
-          accounts
-            .filter(
-              (account) =>
-                !account.metadata?.deletionTimestamp &&
-                Boolean(account.spec?.defaultPaymentMethodRef?.name?.trim())
-            )
-            .map((account) => account.metadata?.name)
-            .filter((name): name is string => Boolean(name))
-        )
-
-        for (const binding of bindings) {
-          if (binding.metadata?.deletionTimestamp) continue
-          const phase = binding.status?.phase
-          if (phase && phase !== 'Active') continue
-
-          const projectName = binding.spec?.projectRef?.name
-          const accountName = binding.spec?.billingAccountRef?.name
-          if (!projectName || !accountName) continue
-          if (!accountsWithPayment.has(accountName)) continue
-
-          billingByProject.set(projectName, {
-            hasActiveBillingAccount: true,
-            billingAccountName: accountName,
-          })
-        }
-      } catch (error) {
-        log.warn('milo billing enrichment threw', {
-          organization: orgName,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
+    projects.map(async (project) => {
+      if (!project.organizationName) return
+      const { value } = await loaders.billing(project.name, project.organizationName)
+      if (value) billingByProject.set(project.name, value)
     })
   )
 
@@ -370,14 +154,14 @@ async function resolveBillingFields(
  */
 async function enrichProjects(
   projects: MappedProject[],
-  headers: Record<string, string>
+  loaders: RequestLoaders
 ): Promise<MappedProject[]> {
   const [orgs, billingByProject] = await Promise.all([
     resolveOrganizationFields(
       projects.map((item) => item.organizationName),
-      headers
+      loaders
     ),
-    resolveBillingFields(projects, headers),
+    resolveBillingFields(projects, loaders),
   ])
 
   return attachOrganizationFields(projects, orgs).map((project) => {
@@ -388,17 +172,6 @@ async function enrichProjects(
       billingAccountName: billing?.billingAccountName ?? null,
     }
   })
-}
-
-function organizationsURL(params: { name?: string; limit?: number; cursor?: string } = {}) {
-  const server = getK8sServer()
-  const base = `${server}/apis/resourcemanager.miloapis.com/v1alpha1/organizations`
-  if (params.name) return `${base}/${encodeURIComponent(params.name)}`
-  const query = new URLSearchParams()
-  if (params.limit) query.set('limit', String(params.limit))
-  if (params.cursor) query.set('continue', params.cursor)
-  const qs = query.toString()
-  return qs ? `${base}?${qs}` : base
 }
 
 function organizationMatchesSearch(org: MappedOrganization, search: string): boolean {
@@ -473,30 +246,6 @@ function orgProjectsURL(orgName: string, params: { limit?: number; cursor?: stri
   return qs ? `${base}?${qs}` : base
 }
 
-function orgBillingNamespace(orgName: string) {
-  return `organization-${orgName}`
-}
-
-function orgBillingBindingsURL(orgName: string) {
-  const server = getK8sServer()
-  const ns = orgBillingNamespace(orgName)
-  return (
-    `${server}/apis/resourcemanager.miloapis.com/v1alpha1` +
-    `/organizations/${encodeURIComponent(orgName)}/control-plane` +
-    `/apis/billing.miloapis.com/v1alpha1/namespaces/${encodeURIComponent(ns)}/billingaccountbindings`
-  )
-}
-
-function orgBillingAccountsURL(orgName: string) {
-  const server = getK8sServer()
-  const ns = orgBillingNamespace(orgName)
-  return (
-    `${server}/apis/resourcemanager.miloapis.com/v1alpha1` +
-    `/organizations/${encodeURIComponent(orgName)}/control-plane` +
-    `/apis/billing.miloapis.com/v1alpha1/namespaces/${encodeURIComponent(ns)}/billingaccounts`
-  )
-}
-
 function orgMembershipsURL(orgName: string) {
   const server = getK8sServer()
   return (
@@ -524,13 +273,6 @@ function projectsListURL(params: { limit?: number; cursor?: string; search?: str
   return qs ? `${base}?${qs}` : base
 }
 
-// The Project object itself is read at the core resourcemanager API (no
-// control-plane prefix) — that's where its annotations live.
-function projectURL(name: string) {
-  const server = getK8sServer()
-  return `${server}/apis/resourcemanager.miloapis.com/v1alpha1/projects/${encodeURIComponent(name)}`
-}
-
 // ServiceConsumers live in the producer project's control plane, not at the
 // core level — hence the /projects/<producer>/control-plane prefix. The list
 // is cluster-scoped within that control plane (no namespace).
@@ -555,45 +297,29 @@ export interface ConsumerProjectInfo {
  *
  * Returns a name -> info map. Per-project failures (missing annotation, 403,
  * network) are swallowed so the project simply falls back to its raw name
- * later — a single inaccessible project never fails the whole query. Project
- * fetches run in parallel, then unique owning orgs are resolved via
- * {@link resolveOrganizationFields} (also swallows per-org failures).
+ * later — a single inaccessible project never fails the whole query. The
+ * project and org loaders dedupe aliases across the request, then unique
+ * owning orgs are resolved via {@link resolveOrganizationFields}.
  */
 async function resolveConsumerProjects(
   projectNames: string[],
-  headers: Record<string, string>
+  loaders: RequestLoaders
 ): Promise<Map<string, ConsumerProjectInfo>> {
-  const fetchFn = getOriginalFetch()
   const projects = new Map<string, { displayName: string; organizationName: string }>()
 
   await Promise.all(
     projectNames.map(async (name) => {
-      try {
-        const response = await fetchFn(projectURL(name), { headers })
-        if (!response.ok) {
-          log.warn('milo project fetch failed', { project: name, status: response.status })
-          return
-        }
-        const project = (await response.json()) as UpstreamProject
-        const displayName =
-          project.metadata?.annotations?.[DISPLAY_NAME_ANNOTATION] ||
-          project.metadata?.annotations?.[DESCRIPTION_ANNOTATION] ||
-          name
-        projects.set(name, {
-          displayName,
-          organizationName: project.spec?.ownerRef?.name ?? '',
-        })
-      } catch (error) {
-        log.warn('milo project fetch threw', {
-          project: name,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      }
+      const { value: project } = await loaders.project(name)
+      if (!project) return
+      projects.set(name, {
+        displayName: project.displayName,
+        organizationName: project.organizationName,
+      })
     })
   )
 
   const orgNames = [...projects.values()].map((p) => p.organizationName)
-  const orgEnrichment = await resolveOrganizationFields(orgNames, headers)
+  const orgEnrichment = await resolveOrganizationFields(orgNames, loaders)
 
   const result = new Map<string, ConsumerProjectInfo>()
   for (const [name, info] of projects) {
@@ -645,7 +371,7 @@ async function fetchOrgProjects(
     const body = (await r.json()) as UpstreamProjectList
     const items = (body.items ?? []).map(mapProjectFull)
     return {
-      items: await enrichProjects(items, headers),
+      items: await enrichProjects(items, getRequestLoaders(context)),
       continueToken: body.metadata?.continue ?? null,
     }
   } catch (error) {
@@ -780,20 +506,10 @@ export const organizationsResolvers = {
     },
 
     organization: async (_root: unknown, args: { name: string }, context: ResolverContext) => {
-      const authorization = getHeader(context, 'authorization')
       try {
-        const url = organizationsURL({ name: args.name })
-        const r = await getOriginalFetch()(url, {
-          headers: {
-            ...(authorization ? { Authorization: authorization } : {}),
-            Accept: 'application/json',
-          },
-        })
-        if (!r.ok) {
-          log.warn('milo organization fetch failed', { name: args.name, status: r.status })
-          return null
-        }
-        return mapOrganization((await r.json()) as UpstreamOrganization)
+        const { value, error } = await getRequestLoaders(context).organization(args.name)
+        if (error !== undefined) throw error
+        return value
       } catch (error) {
         rethrowGraphQLError(error)
         log.error('organization resolver failed', {
@@ -832,7 +548,7 @@ export const organizationsResolvers = {
         const body = (await r.json()) as UpstreamProjectList
         const items = (body.items ?? []).map(mapProjectFull)
         return {
-          items: await enrichProjects(items, headers),
+          items: await enrichProjects(items, getRequestLoaders(context)),
           continueToken: body.metadata?.continue ?? null,
         }
       } catch (error) {
@@ -845,19 +561,12 @@ export const organizationsResolvers = {
     },
 
     project: async (_root: unknown, args: { name: string }, context: ResolverContext) => {
-      const authorization = getHeader(context, 'authorization')
-      const headers = {
-        ...(authorization ? { Authorization: authorization } : {}),
-        Accept: 'application/json',
-      }
+      const loaders = getRequestLoaders(context)
       try {
-        const r = await getOriginalFetch()(projectURL(args.name), { headers })
-        if (!r.ok) {
-          log.warn('milo project fetch failed', { name: args.name, status: r.status })
-          return null
-        }
-        const project = mapProjectFull((await r.json()) as UpstreamProjectFull)
-        const [enriched] = await enrichProjects([project], headers)
+        const { value: project, error } = await loaders.project(args.name)
+        if (error !== undefined) throw error
+        if (!project) return null
+        const [enriched] = await enrichProjects([project], loaders)
         return enriched
       } catch (error) {
         rethrowGraphQLError(error)
@@ -910,7 +619,7 @@ export const organizationsResolvers = {
               .filter((name): name is string => !!name)
           ),
         ]
-        const projectInfo = await resolveConsumerProjects(projectNames, headers)
+        const projectInfo = await resolveConsumerProjects(projectNames, getRequestLoaders(context))
 
         return consumers.map((consumer) => {
           const projectName = consumer.spec?.consumerProjectRef?.name ?? ''

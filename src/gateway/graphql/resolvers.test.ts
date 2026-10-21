@@ -41,6 +41,7 @@ vi.mock('@/shared/utils', () => ({
 
 import { UpstreamTimeoutError } from '@/gateway/clients/deadline'
 import { additionalResolvers } from './resolvers'
+import { REQUEST_LOADER_CONCURRENCY, getRequestLoaders } from './resolvers/loaders'
 import { additionalTypeDefs } from './typeDefs'
 
 type Resolvers = typeof additionalResolvers
@@ -914,6 +915,140 @@ describe('Query.organization', () => {
   })
 })
 
+describe('request-scoped loaders', () => {
+  let fetchSpy: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+  })
+
+  const callOrganization = (context: ReturnType<typeof ctx>, name: string): Promise<unknown> =>
+    (
+      additionalResolvers.Query!.organization as (
+        r: null,
+        a: { name: string },
+        c: ReturnType<typeof ctx>
+      ) => Promise<unknown>
+    )(null, { name }, context)
+
+  // Lets pending promise chains settle without relying on a fixed microtask count.
+  const flush = async (times = 5) => {
+    for (let i = 0; i < times; i++) await new Promise((r) => setImmediate(r))
+  }
+
+  const orgResponse = (displayName: string) =>
+    jsonResponse({
+      metadata: { name: 'acme', annotations: { 'kubernetes.io/display-name': displayName } },
+      spec: { type: 'Standard' },
+    })
+
+  it('serves a repeated lookup in one request from a single fetch', async () => {
+    fetchSpy.mockResolvedValue(orgResponse('Acme Corp'))
+    const context = ctx()
+
+    const first = (await callOrganization(context, 'acme')) as { displayName: string }
+    const second = (await callOrganization(context, 'acme')) as { displayName: string }
+
+    expect(first.displayName).toBe('Acme Corp')
+    expect(second.displayName).toBe('Acme Corp')
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps one request out of another when the bearer token differs', async () => {
+    fetchSpy.mockImplementation((_url: RequestInfo | URL, init?: RequestInit) =>
+      Promise.resolve(orgResponse(new Headers(init?.headers).get('authorization') ?? ''))
+    )
+
+    const first = (await callOrganization(ctx({ authorization: 'Bearer first' }), 'acme')) as {
+      displayName: string
+    }
+    const second = (await callOrganization(ctx({ authorization: 'Bearer second' }), 'acme')) as {
+      displayName: string
+    }
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+    expect(first.displayName).toBe('Bearer first')
+    expect(second.displayName).toBe('Bearer second')
+  })
+
+  it('coalesces one failing in-flight lookup for every caller in the request', async () => {
+    let release!: (response: Response) => void
+    fetchSpy.mockReturnValue(
+      new Promise<Response>((resolve) => {
+        release = resolve
+      })
+    )
+    const context = ctx()
+
+    const results = Promise.all([
+      callOrganization(context, 'acme'),
+      callOrganization(context, 'acme'),
+    ])
+    await flush()
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+
+    release(new Response('forbidden', { status: 403 }))
+    expect(await results).toEqual([null, null])
+
+    // The recorded outcome stands for the request: a later alias reuses the
+    // failure instead of hammering an upstream that just refused it.
+    await callOrganization(context, 'acme')
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('records the upstream status so a 403 stays distinguishable from a 404', async () => {
+    const loaders = getRequestLoaders(ctx())
+    fetchSpy.mockResolvedValueOnce(new Response('forbidden', { status: 403 }))
+    fetchSpy.mockResolvedValueOnce(new Response('{}', { status: 404 }))
+
+    await expect(loaders.organization('acme')).resolves.toEqual({ value: null, status: 403 })
+    await expect(loaders.organization('gone')).resolves.toEqual({ value: null, status: 404 })
+  })
+
+  it('caps the upstream requests one request keeps in flight', async () => {
+    let inFlight = 0
+    let peak = 0
+    const releases: Array<() => void> = []
+    fetchSpy.mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          inFlight += 1
+          peak = Math.max(peak, inFlight)
+          releases.push(() => {
+            inFlight -= 1
+            resolve(orgResponse('Acme Corp'))
+          })
+        })
+    )
+
+    const loaders = getRequestLoaders(ctx())
+    const lookups = [
+      ...Array.from({ length: 12 }, (_, i) => loaders.organization(`org-${i}`)),
+      ...Array.from({ length: 12 }, (_, i) => loaders.project(`proj-${i}`)),
+    ]
+
+    await flush()
+    // Both loaders share one budget, so distinct org and project lookups do not
+    // add up to twice the concurrency.
+    expect(fetchSpy).toHaveBeenCalledTimes(REQUEST_LOADER_CONCURRENCY)
+
+    while (releases.length > 0) {
+      const batch = releases.splice(0)
+      batch.forEach((release) => release())
+      await flush()
+    }
+
+    await expect(Promise.all(lookups)).resolves.toHaveLength(24)
+    expect(fetchSpy).toHaveBeenCalledTimes(24)
+    expect(peak).toBeLessThanOrEqual(REQUEST_LOADER_CONCURRENCY)
+  })
+})
+
 describe('Query.organizationProjects', () => {
   let fetchSpy: ReturnType<typeof vi.fn>
 
@@ -1537,6 +1672,75 @@ describe('Query.project', () => {
       ) => Promise<unknown>
     )(null, { name: 'gone' }, ctx())
     expect(result).toBeNull()
+  })
+
+  // FleetHealthProjectOrgs sends up to 50 aliased project() fields in one
+  // operation (#68). Each alias used to resolve its owning organization on
+  // its own, so ten aliases across three orgs cost ten org GETs.
+  it('shares one organization fetch per org across ten aliased project fields', async () => {
+    const orgNames = ['acme', 'globex', 'initech']
+    const projectNames = Array.from({ length: 10 }, (_, i) => `proj-${i + 1}`)
+    const projects = Object.fromEntries(
+      projectNames.map((name, i) => [
+        name,
+        jsonResponse({
+          metadata: { name, annotations: { 'kubernetes.io/description': `Project ${name}` } },
+          spec: { ownerRef: { name: orgNames[i % orgNames.length] } },
+        }),
+      ])
+    )
+    const organizations = Object.fromEntries(
+      orgNames.map((name) => [
+        name,
+        jsonResponse({
+          metadata: { name, annotations: { 'kubernetes.io/display-name': name.toUpperCase() } },
+          spec: { type: 'Standard' },
+        }),
+      ])
+    )
+
+    fetchSpy = projectOrgRoutedFetch({ projectByName: projects, organizations })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const schema = extendSchema(
+      buildSchema('type Query { _: String }'),
+      parse(additionalTypeDefs),
+      { assumeValidSDL: true }
+    )
+    const resolvers = additionalResolvers as Record<
+      string,
+      Record<string, GraphQLFieldResolver<unknown, unknown>>
+    >
+    const document = parse(
+      `query FleetHealthProjectOrgs { ${projectNames
+        .map((name, i) => `p${i}: project(name: "${name}") { name }`)
+        .join(' ')} }`
+    )
+
+    const result = await execute({
+      schema,
+      document,
+      contextValue: ctx(),
+      fieldResolver: (source, args, context, info) =>
+        (resolvers[info.parentType.name]?.[info.fieldName] ?? defaultFieldResolver)(
+          source,
+          args,
+          context,
+          info
+        ),
+    })
+
+    expect(result.errors).toBeUndefined()
+    expect(Object.keys(result.data ?? {})).toEqual(projectNames.map((_, i) => `p${i}`))
+
+    const callsTo = (pattern: RegExp) =>
+      fetchSpy.mock.calls
+        .map(([url]) => String(url).match(pattern)?.[1])
+        .filter((name): name is string => Boolean(name))
+    expect(callsTo(/\/projects\/([^/?]+)$/).sort()).toEqual(projectNames.sort())
+    expect(callsTo(/\/organizations\/([^/?]+)$/).sort()).toEqual([...orgNames].sort())
+    // Ten projects, three orgs, and each org's two billing lists once.
+    expect(fetchSpy).toHaveBeenCalledTimes(10 + 3 + 3 * 2)
   })
 })
 

@@ -15,6 +15,7 @@ import { Counter, register } from 'prom-client'
 import { log } from '@/shared/utils'
 import { additionalTypeDefs } from './typeDefs'
 import { additionalResolvers } from './resolvers'
+import { attachRequestLoaders } from './resolvers/loaders'
 
 /**
  * Top-level Query / Mutation field names that are resolved locally by the
@@ -146,6 +147,9 @@ export const useGatewayLocalSchema = (): Plugin => {
     },
 
     onExecute({ args, setExecuteFn }) {
+      // One loader bag per GraphQL context, which yoga scopes to one inbound
+      // request. Aliased fields in the same operation share deduped lookups.
+      attachRequestLoaders(args.contextValue)
       if (isLocallyExecutable(args.document, args.operationName)) {
         setExecuteFn(defaultExecute)
       }
