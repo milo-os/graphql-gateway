@@ -7,6 +7,7 @@ import {
   extendSchema,
   parse,
   type GraphQLFieldResolver,
+  type GraphQLObjectType,
 } from 'graphql'
 
 // Resolvers call getOriginalFetch() to bypass the global mTLS-wrapped fetch.
@@ -727,6 +728,24 @@ describe('Query.organizations', () => {
       onboardingReason: 'Complete',
       onboardingMessage: 'Organization is fully onboarded',
       contactInfo: { businessName: 'Acme LLC', name: 'Ada', email: 'ada@acme.test' },
+      conditions: [
+        {
+          type: 'Ready',
+          status: 'True',
+          reason: null,
+          message: null,
+          lastTransitionTime: null,
+          observedGeneration: null,
+        },
+        {
+          type: 'OnboardingComplete',
+          status: 'True',
+          reason: 'Complete',
+          message: 'Organization is fully onboarded',
+          lastTransitionTime: null,
+          observedGeneration: null,
+        },
+      ],
     })
     expect(result.continueToken).toBe('tok123')
     expect(fetchSpy).toHaveBeenCalledWith(
@@ -1353,6 +1372,89 @@ describe('Query.projects', () => {
     })
   })
 
+  it('maps every well-formed status condition, including Suspended', async () => {
+    fetchSpy = projectOrgRoutedFetch({
+      projectsList: jsonResponse({
+        items: [
+          {
+            metadata: { name: 'proj-suspended', annotations: {} },
+            spec: { ownerRef: { name: 'acme' } },
+            status: {
+              conditions: [
+                {
+                  type: 'Ready',
+                  status: 'True',
+                  reason: 'Ready',
+                  lastTransitionTime: '2026-08-20T09:00:00Z',
+                  observedGeneration: 3,
+                },
+                { type: 'ResourceCleanup', status: 'False', reason: 'CleanupComplete' },
+                {
+                  type: 'Suspended',
+                  status: 'True',
+                  reason: 'BillingSuspended',
+                  message: 'Project is suspended for billing reasons',
+                },
+                { type: '', status: 'True' },
+                { type: 'Incomplete' },
+              ],
+            },
+          },
+        ],
+        metadata: {},
+      }),
+      organizations: { acme: acmeOrganization() },
+      ...acmeBillingWithPayment(),
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await (
+      additionalResolvers.Query!.projects as (
+        r: null,
+        a: object,
+        c: ReturnType<typeof ctx>
+      ) => Promise<{
+        items: {
+          name: string
+          conditions: {
+            type: string
+            status: string
+            reason: string | null
+            message: string | null
+            lastTransitionTime: string | null
+            observedGeneration: number | null
+          }[]
+        }[]
+      }>
+    )(null, {}, ctx())
+    expect(result.items[0].conditions).toEqual([
+      {
+        type: 'Ready',
+        status: 'True',
+        reason: 'Ready',
+        message: null,
+        lastTransitionTime: '2026-08-20T09:00:00Z',
+        observedGeneration: 3,
+      },
+      {
+        type: 'ResourceCleanup',
+        status: 'False',
+        reason: 'CleanupComplete',
+        message: null,
+        lastTransitionTime: null,
+        observedGeneration: null,
+      },
+      {
+        type: 'Suspended',
+        status: 'True',
+        reason: 'BillingSuspended',
+        message: 'Project is suspended for billing reasons',
+        lastTransitionTime: null,
+        observedGeneration: null,
+      },
+    ])
+  })
+
   it('throws UPSTREAM_ERROR with the status when the page fetch is not ok', async () => {
     fetchSpy.mockResolvedValue(new Response('{}', { status: 500 }))
     await expect(
@@ -1949,7 +2051,9 @@ describe('Query.users', () => {
   it('throws CURSOR_EXPIRED when milo answers 410 Gone for the continue token', async () => {
     fetchSpy.mockImplementation((url: string) =>
       Promise.resolve(
-        String(url).includes('/fraudevaluations') ? jsonResponse({ items: [] }) : jsonResponse({}, 410)
+        String(url).includes('/fraudevaluations')
+          ? jsonResponse({ items: [] })
+          : jsonResponse({}, 410)
       )
     )
     await expect(call({ cursor: 'stale' })).rejects.toMatchObject({
@@ -2014,7 +2118,6 @@ describe('Query.userSummaries', () => {
     ])
   })
 })
-
 
 describe('Query.contactGroupMembershipsWithContacts', () => {
   let fetchSpy: ReturnType<typeof vi.fn>
@@ -2088,9 +2191,13 @@ describe('nested page failure inside organizations { items { projects } }', () =
     })
     vi.stubGlobal('fetch', fetchSpy)
 
-    const schema = extendSchema(buildSchema('type Query { _: String }'), parse(additionalTypeDefs), {
-      assumeValidSDL: true,
-    })
+    const schema = extendSchema(
+      buildSchema('type Query { _: String }'),
+      parse(additionalTypeDefs),
+      {
+        assumeValidSDL: true,
+      }
+    )
     const resolvers = additionalResolvers as Record<
       string,
       Record<string, GraphQLFieldResolver<unknown, unknown>>
@@ -2112,5 +2219,33 @@ describe('nested page failure inside organizations { items { projects } }', () =
 
     expect(result.data).toEqual({ organizations: { items: [{ name: 'acme', projects: null }] } })
     expect(result.errors?.[0]?.extensions).toMatchObject({ code: 'CURSOR_EXPIRED' })
+  })
+})
+
+describe('status conditions schema', () => {
+  const schema = extendSchema(buildSchema('type Query { _: String }'), parse(additionalTypeDefs), {
+    assumeValidSDL: true,
+  })
+  const field = (typeName: string, fieldName: string) =>
+    (schema.getType(typeName) as GraphQLObjectType).getFields()[fieldName]
+
+  it('exposes the shared Condition type on Project and Organization', () => {
+    expect(schema.getType('Condition')).toBeDefined()
+    expect(field('Organization', 'conditions').type.toString()).toBe('[Condition!]!')
+    expect(field('Project', 'conditions').type.toString()).toBe('[Condition!]!')
+  })
+
+  it('deprecates the derived scalars without removing them', () => {
+    const deprecated: Array<[string, string]> = [
+      ['Organization', 'state'],
+      ['Organization', 'onboardingComplete'],
+      ['Organization', 'onboardingReason'],
+      ['Organization', 'onboardingMessage'],
+      ['Project', 'state'],
+      ['Project', 'resourceCleanupMessage'],
+    ]
+    for (const [typeName, fieldName] of deprecated) {
+      expect(field(typeName, fieldName).deprecationReason).toBe('Use conditions')
+    }
   })
 })
