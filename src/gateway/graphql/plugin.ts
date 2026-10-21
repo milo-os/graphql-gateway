@@ -11,6 +11,8 @@ import {
 import { addResolversToSchema } from '@graphql-tools/schema'
 import type { Plugin } from 'graphql-yoga'
 import type { IResolvers } from '@graphql-tools/utils'
+import { Counter, register } from 'prom-client'
+import { log } from '@/shared/utils'
 import { additionalTypeDefs } from './typeDefs'
 import { additionalResolvers } from './resolvers'
 
@@ -35,11 +37,21 @@ const LOCAL_FIELDS: Readonly<Record<'query' | 'mutation', ReadonlySet<string>>> 
  * executor against the schema-with-local-extensions, so introspection
  * clients see both federated and gateway-local types.
  */
-const INTROSPECTION_FIELDS: ReadonlySet<string> = new Set([
-  '__schema',
-  '__type',
-  '__typename',
-])
+const INTROSPECTION_FIELDS: ReadonlySet<string> = new Set(['__schema', '__type', '__typename'])
+
+const MIXED_OPERATIONS_METRIC = 'graphql_gateway_mixed_operations_total'
+
+// An operation that mixes local and federated top-level fields falls back to
+// the router, which fails on the local fields. Register on prom-client's
+// default registry (the one usePrometheus serves on /metrics) so we can see
+// whether portals actually hit that wall; reuse an existing metric so a module
+// reload (tests, dev) doesn't throw on duplicate registration.
+const mixedOperations =
+  (register.getSingleMetric(MIXED_OPERATIONS_METRIC) as Counter) ??
+  new Counter({
+    name: MIXED_OPERATIONS_METRIC,
+    help: 'Operations mixing gateway-local and federated top-level fields that fall back to the router.',
+  })
 
 /**
  * Returns true when every top-level selection on the operation can be
@@ -47,7 +59,7 @@ const INTROSPECTION_FIELDS: ReadonlySet<string> = new Set([
  * schema — i.e. each top-level field is either a local resolver or an
  * introspection meta-field. Operations that mix local + federated fields
  * fall back to the router (which will fail — we don't currently support
- * mixed operations).
+ * mixed operations) and increment `graphql_gateway_mixed_operations_total`.
  */
 export const isLocallyExecutable = (doc: DocumentNode, opName?: string | null): boolean => {
   const op = doc.definitions.find(
@@ -65,9 +77,27 @@ export const isLocallyExecutable = (doc: DocumentNode, opName?: string | null): 
   )
   if (topLevelFields.length === 0) return false
 
-  return topLevelFields.every(
-    (f) => INTROSPECTION_FIELDS.has(f.name.value) || (localFields?.has(f.name.value) ?? false)
-  )
+  let hasLocalField = false
+  let hasFederatedField = false
+  for (const field of topLevelFields) {
+    const fieldName = field.name.value
+    if (INTROSPECTION_FIELDS.has(fieldName)) continue
+    if (localFields?.has(fieldName)) hasLocalField = true
+    else hasFederatedField = true
+  }
+
+  if (hasLocalField && hasFederatedField) {
+    // The operation name is client-chosen, so it is logged rather than used as
+    // a Prometheus label: one line per attempt keeps the counter cardinality
+    // bounded while still naming the operation.
+    mixedOperations.inc()
+    log.info('Mixed local and federated operation', {
+      operationName: opName ?? op.name?.value ?? 'anonymous',
+    })
+    return false
+  }
+
+  return !hasFederatedField
 }
 
 /**

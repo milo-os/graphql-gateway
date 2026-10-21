@@ -81,6 +81,11 @@ fan-out size but each call's gateway-side duration is well above what milo
 reports for it, the requests are queuing upstream (for example API Priority
 and Fairness on the apiserver), not in the gateway.
 
+An operation that mixes gateway-local and federated top-level fields is routed
+to the router and fails; `graphql_gateway_mixed_operations_total` counts those
+attempts, and each attempt logs `Mixed local and federated operation` with the
+operation name (or `anonymous`).
+
 ### 3. Check list size
 
 A large organization or project list will always take longer than a small
