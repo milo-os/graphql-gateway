@@ -76,10 +76,15 @@ error rather than an empty page. The codes a client can branch on:
 | `CURSOR_EXPIRED`   | The continue token expired from the apiserver watch cache (410)       | Restart paging from the first page |
 
 Local operations run through `graphql.execute`, which resolves sibling query
-fields (including aliases) concurrently. If in-flight peaks near the full
-fan-out size but each call's gateway-side duration is well above what milo
-reports for it, the requests are queuing upstream (for example API Priority
-and Fairness on the apiserver), not in the gateway.
+fields (including aliases) concurrently. Organization, project and billing
+lookups are deduped per request and share one concurrency budget
+(`REQUEST_LOADER_CONCURRENCY`, 8 upstream requests per operation), so aliased
+`project`/`organization` fields no longer show one fetch per alias. Because of
+that budget, `graphql_gateway_local_fetch_inflight` saturating that ceiling is
+the gateway's own limit, not upstream queuing. If in-flight stays at the ceiling
+while each call's gateway-side duration is well above what milo reports for it,
+the requests are queuing upstream (for example API Priority and Fairness on the
+apiserver), not in the gateway.
 
 ### 3. Check list size
 

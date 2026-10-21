@@ -508,7 +508,7 @@ export const organizationsResolvers = {
     organization: async (_root: unknown, args: { name: string }, context: ResolverContext) => {
       try {
         const { value, error } = await getRequestLoaders(context).organization(args.name)
-        if (error) throw error
+        if (error !== undefined) throw error
         return value
       } catch (error) {
         rethrowGraphQLError(error)
@@ -564,7 +564,7 @@ export const organizationsResolvers = {
       const loaders = getRequestLoaders(context)
       try {
         const { value: project, error } = await loaders.project(args.name)
-        if (error) throw error
+        if (error !== undefined) throw error
         if (!project) return null
         const [enriched] = await enrichProjects([project], loaders)
         return enriched

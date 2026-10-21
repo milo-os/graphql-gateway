@@ -7,7 +7,7 @@ import {
   type ResolverContext,
 } from './common'
 
-/** Upper bound on upstream calls one loader keeps in flight at a time. */
+/** Upper bound on upstream requests one GraphQL request keeps in flight. */
 export const REQUEST_LOADER_CONCURRENCY = 8
 
 export interface LoaderResult<T> {
@@ -211,7 +211,12 @@ function orgBillingAccountsURL(orgName: string) {
   )
 }
 
-/** Caps concurrent upstream calls made by one loader. */
+/**
+ * Caps concurrent upstream requests for one request's loaders. One gate is
+ * shared by the whole request, and a slot covers one upstream request rather
+ * than one loader call, so a page that aliases both projects and orgs still
+ * opens at most REQUEST_LOADER_CONCURRENCY sockets.
+ */
 class Semaphore {
   private active = 0
   private readonly waiting: Array<() => void> = []
@@ -233,18 +238,18 @@ class Semaphore {
 /**
  * Dedupes keys for the life of one request. The first load for a key starts
  * the work and every later caller awaits the same promise, so concurrent
- * aliases coalesce instead of fanning out again.
+ * aliases coalesce instead of fanning out again. Failures are cached the same
+ * way: every caller in the request sees the first outcome recorded for a key.
  */
 class RequestLoader<K extends string, T> {
   private readonly cache = new Map<K, Promise<LoaderResult<T>>>()
-  private readonly gate = new Semaphore()
 
   constructor(private readonly loadValue: (key: K) => Promise<LoaderResult<T>>) {}
 
   load(key: K): Promise<LoaderResult<T>> {
     const pending = this.cache.get(key)
     if (pending) return pending
-    const started = this.gate.run(() => this.loadValue(key))
+    const started = this.loadValue(key)
     this.cache.set(key, started)
     return started
   }
@@ -252,6 +257,11 @@ class RequestLoader<K extends string, T> {
 
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error)
+
+/** Drops an unread body so the socket returns to the keep-alive pool. */
+function discardBody(response: Response): void {
+  void response.body?.cancel().catch(() => {})
+}
 
 export interface RequestLoaders {
   organization(name: string): Promise<LoaderResult<MappedOrganization>>
@@ -267,11 +277,17 @@ export function createRequestLoaders(context: ResolverContext): RequestLoaders {
     Accept: 'application/json',
   }
 
+  // One concurrency budget for the whole request. A slot is held until the
+  // response headers arrive; reading the body happens outside the slot.
+  const gate = new Semaphore()
+  const fetchUpstream = (url: string) => gate.run(() => getOriginalFetch()(url, { headers }))
+
   const organization = new RequestLoader<string, MappedOrganization>(async (name) => {
     try {
-      const response = await getOriginalFetch()(organizationsURL({ name }), { headers })
+      const response = await fetchUpstream(organizationsURL({ name }))
       if (!response.ok) {
         log.warn('milo organization fetch failed', { organization: name, status: response.status })
+        discardBody(response)
         return { value: null, status: response.status }
       }
       return {
@@ -286,9 +302,10 @@ export function createRequestLoaders(context: ResolverContext): RequestLoaders {
 
   const project = new RequestLoader<string, MappedProject>(async (name) => {
     try {
-      const response = await getOriginalFetch()(projectURL(name), { headers })
+      const response = await fetchUpstream(projectURL(name))
       if (!response.ok) {
         log.warn('milo project fetch failed', { project: name, status: response.status })
+        discardBody(response)
         return { value: null, status: response.status }
       }
       return { value: mapProjectFull((await response.json()) as UpstreamProjectFull), status: null }
@@ -302,8 +319,8 @@ export function createRequestLoaders(context: ResolverContext): RequestLoaders {
     async (orgName) => {
       try {
         const [bindingsRes, accountsRes] = await Promise.all([
-          getOriginalFetch()(orgBillingBindingsURL(orgName), { headers }),
-          getOriginalFetch()(orgBillingAccountsURL(orgName), { headers }),
+          fetchUpstream(orgBillingBindingsURL(orgName)),
+          fetchUpstream(orgBillingAccountsURL(orgName)),
         ])
 
         if (!bindingsRes.ok) {
@@ -311,6 +328,8 @@ export function createRequestLoaders(context: ResolverContext): RequestLoaders {
             organization: orgName,
             status: bindingsRes.status,
           })
+          discardBody(bindingsRes)
+          discardBody(accountsRes)
           return { value: null, status: bindingsRes.status }
         }
         if (!accountsRes.ok) {
@@ -318,6 +337,8 @@ export function createRequestLoaders(context: ResolverContext): RequestLoaders {
             organization: orgName,
             status: accountsRes.status,
           })
+          discardBody(bindingsRes)
+          discardBody(accountsRes)
           return { value: null, status: accountsRes.status }
         }
 
