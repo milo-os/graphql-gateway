@@ -12,6 +12,7 @@ import { addResolversToSchema } from '@graphql-tools/schema'
 import type { Plugin } from 'graphql-yoga'
 import type { IResolvers } from '@graphql-tools/utils'
 import { Counter, register } from 'prom-client'
+import { log } from '@/shared/utils'
 import { additionalTypeDefs } from './typeDefs'
 import { additionalResolvers } from './resolvers'
 
@@ -36,11 +37,7 @@ const LOCAL_FIELDS: Readonly<Record<'query' | 'mutation', ReadonlySet<string>>> 
  * executor against the schema-with-local-extensions, so introspection
  * clients see both federated and gateway-local types.
  */
-const INTROSPECTION_FIELDS: ReadonlySet<string> = new Set([
-  '__schema',
-  '__type',
-  '__typename',
-])
+const INTROSPECTION_FIELDS: ReadonlySet<string> = new Set(['__schema', '__type', '__typename'])
 
 const MIXED_OPERATIONS_METRIC = 'graphql_gateway_mixed_operations_total'
 
@@ -50,11 +47,10 @@ const MIXED_OPERATIONS_METRIC = 'graphql_gateway_mixed_operations_total'
 // whether portals actually hit that wall; reuse an existing metric so a module
 // reload (tests, dev) doesn't throw on duplicate registration.
 const mixedOperations =
-  (register.getSingleMetric(MIXED_OPERATIONS_METRIC) as Counter<'operationName'>) ??
+  (register.getSingleMetric(MIXED_OPERATIONS_METRIC) as Counter) ??
   new Counter({
     name: MIXED_OPERATIONS_METRIC,
     help: 'Operations mixing gateway-local and federated top-level fields that fall back to the router.',
-    labelNames: ['operationName'],
   })
 
 /**
@@ -91,7 +87,13 @@ export const isLocallyExecutable = (doc: DocumentNode, opName?: string | null): 
   }
 
   if (hasLocalField && hasFederatedField) {
-    mixedOperations.inc({ operationName: opName ?? op.name?.value ?? 'anonymous' })
+    // The operation name is client-chosen, so it is logged rather than used as
+    // a Prometheus label: one line per attempt keeps the counter cardinality
+    // bounded while still naming the operation.
+    mixedOperations.inc()
+    log.info('Mixed local and federated operation', {
+      operationName: opName ?? op.name?.value ?? 'anonymous',
+    })
     return false
   }
 
