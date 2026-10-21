@@ -1538,6 +1538,75 @@ describe('Query.project', () => {
     )(null, { name: 'gone' }, ctx())
     expect(result).toBeNull()
   })
+
+  // FleetHealthProjectOrgs sends up to 50 aliased project() fields in one
+  // operation (#68). Each alias used to resolve its owning organization on
+  // its own, so ten aliases across three orgs cost ten org GETs.
+  it('shares one organization fetch per org across ten aliased project fields', async () => {
+    const orgNames = ['acme', 'globex', 'initech']
+    const projectNames = Array.from({ length: 10 }, (_, i) => `proj-${i + 1}`)
+    const projects = Object.fromEntries(
+      projectNames.map((name, i) => [
+        name,
+        jsonResponse({
+          metadata: { name, annotations: { 'kubernetes.io/description': `Project ${name}` } },
+          spec: { ownerRef: { name: orgNames[i % orgNames.length] } },
+        }),
+      ])
+    )
+    const organizations = Object.fromEntries(
+      orgNames.map((name) => [
+        name,
+        jsonResponse({
+          metadata: { name, annotations: { 'kubernetes.io/display-name': name.toUpperCase() } },
+          spec: { type: 'Standard' },
+        }),
+      ])
+    )
+
+    fetchSpy = projectOrgRoutedFetch({ projectByName: projects, organizations })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const schema = extendSchema(
+      buildSchema('type Query { _: String }'),
+      parse(additionalTypeDefs),
+      { assumeValidSDL: true }
+    )
+    const resolvers = additionalResolvers as Record<
+      string,
+      Record<string, GraphQLFieldResolver<unknown, unknown>>
+    >
+    const document = parse(
+      `query FleetHealthProjectOrgs { ${projectNames
+        .map((name, i) => `p${i}: project(name: "${name}") { name }`)
+        .join(' ')} }`
+    )
+
+    const result = await execute({
+      schema,
+      document,
+      contextValue: ctx(),
+      fieldResolver: (source, args, context, info) =>
+        (resolvers[info.parentType.name]?.[info.fieldName] ?? defaultFieldResolver)(
+          source,
+          args,
+          context,
+          info
+        ),
+    })
+
+    expect(result.errors).toBeUndefined()
+    expect(Object.keys(result.data ?? {})).toEqual(projectNames.map((_, i) => `p${i}`))
+
+    const callsTo = (pattern: RegExp) =>
+      fetchSpy.mock.calls
+        .map(([url]) => String(url).match(pattern)?.[1])
+        .filter((name): name is string => Boolean(name))
+    expect(callsTo(/\/projects\/([^/?]+)$/).sort()).toEqual(projectNames.sort())
+    expect(callsTo(/\/organizations\/([^/?]+)$/).sort()).toEqual([...orgNames].sort())
+    // Ten projects, three orgs, and each org's two billing lists once.
+    expect(fetchSpy).toHaveBeenCalledTimes(10 + 3 + 3 * 2)
+  })
 })
 
 describe('Query.parseUserAgent and Query.geolocateIP', () => {
