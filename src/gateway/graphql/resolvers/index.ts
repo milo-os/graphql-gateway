@@ -21,4 +21,10 @@ export const additionalResolvers = {
   Organization: {
     ...organizationsResolvers.Organization,
   },
+  Project: {
+    ...organizationsResolvers.Project,
+  },
+  ConsumerProject: {
+    ...organizationsResolvers.ConsumerProject,
+  },
 }

@@ -520,7 +520,7 @@ describe('Query.serviceConsumers', () => {
       name: 'gamma',
       displayName: 'gamma',
       organizationName: '',
-      organizationDisplayName: '',
+      organizationDisplayName: null,
     })
   })
 
@@ -552,7 +552,7 @@ describe('Query.serviceConsumers', () => {
       name: 'delta',
       displayName: 'delta',
       organizationName: '',
-      organizationDisplayName: '',
+      organizationDisplayName: null,
     })
   })
 
@@ -2451,5 +2451,129 @@ describe('status conditions schema', () => {
     for (const [typeName, fieldName] of deprecated) {
       expect(field(typeName, fieldName).deprecationReason).toBe('Use conditions')
     }
+  })
+})
+
+describe('per-item enrichment failures', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  const executeProjects = async (query: string) => {
+    const schema = extendSchema(
+      buildSchema('type Query { _: String }'),
+      parse(additionalTypeDefs),
+      {
+        assumeValidSDL: true,
+      }
+    )
+    const resolvers = additionalResolvers as Record<
+      string,
+      Record<string, GraphQLFieldResolver<unknown, unknown>>
+    >
+    return execute({
+      schema,
+      document: parse(query),
+      contextValue: ctx(),
+      fieldResolver: (source, args, context, info) =>
+        (resolvers[info.parentType.name]?.[info.fieldName] ?? defaultFieldResolver)(
+          source,
+          args,
+          context,
+          info
+        ),
+    })
+  }
+
+  const threeProjects = () =>
+    projectOrgRoutedFetch({
+      projectsList: jsonResponse({
+        items: [
+          { metadata: { name: 'proj-a', annotations: {} }, spec: { ownerRef: { name: 'acme' } } },
+          { metadata: { name: 'proj-b', annotations: {} }, spec: { ownerRef: { name: 'beta' } } },
+          { metadata: { name: 'proj-c', annotations: {} }, spec: { ownerRef: { name: 'gamma' } } },
+        ],
+        metadata: {},
+      }),
+      organizations: {
+        acme: acmeOrganization(),
+        beta: jsonResponse({
+          metadata: {
+            name: 'beta',
+            annotations: { 'kubernetes.io/display-name': 'Beta Inc' },
+          },
+        }),
+        gamma: new Response('forbidden', { status: 403 }),
+      },
+    })
+
+  it('nulls one row and reports FORBIDDEN on its field path when an org is forbidden', async () => {
+    vi.stubGlobal('fetch', threeProjects())
+
+    const result = await executeProjects(
+      '{ projects { items { name organizationDisplayName organizationBusinessName } } }'
+    )
+
+    expect(result.data).toEqual({
+      projects: {
+        items: [
+          {
+            name: 'proj-a',
+            organizationDisplayName: 'Acme Corp',
+            organizationBusinessName: 'Acme LLC',
+          },
+          { name: 'proj-b', organizationDisplayName: 'Beta Inc', organizationBusinessName: null },
+          { name: 'proj-c', organizationDisplayName: null, organizationBusinessName: null },
+        ],
+      },
+    })
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors?.[0]?.extensions).toMatchObject({ code: 'FORBIDDEN', status: 403 })
+    expect(result.errors?.[0]?.path).toEqual(['projects', 'items', 2, 'organizationDisplayName'])
+  })
+
+  it('never returns the raw org name as a display name when the org cannot be read', async () => {
+    vi.stubGlobal('fetch', threeProjects())
+
+    const result = (await (
+      additionalResolvers.Query!.projects as (
+        r: null,
+        a: object,
+        c: ReturnType<typeof ctx>
+      ) => Promise<{ items: { name: string; organizationDisplayName: string | null }[] }>
+    )(null, {}, ctx())) as { items: { name: string; organizationDisplayName: string | null }[] }
+
+    expect(result.items.map((item) => item.organizationDisplayName)).toEqual([
+      'Acme Corp',
+      'Beta Inc',
+      null,
+    ])
+  })
+
+  it('nulls billing fields and reports the failure on hasActiveBillingAccount', async () => {
+    vi.stubGlobal(
+      'fetch',
+      projectOrgRoutedFetch({
+        projectsList: jsonResponse({
+          items: [
+            { metadata: { name: 'proj-a', annotations: {} }, spec: { ownerRef: { name: 'acme' } } },
+          ],
+          metadata: {},
+        }),
+        organizations: { acme: acmeOrganization() },
+        billingBindings: { acme: new Response('forbidden', { status: 403 }) },
+      })
+    )
+
+    const result = await executeProjects(
+      '{ projects { items { name hasActiveBillingAccount billingAccountName } } }'
+    )
+
+    expect(result.data).toEqual({
+      projects: {
+        items: [{ name: 'proj-a', hasActiveBillingAccount: null, billingAccountName: null }],
+      },
+    })
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors?.[0]?.extensions).toMatchObject({ code: 'FORBIDDEN', status: 403 })
+    expect(result.errors?.[0]?.path).toEqual(['projects', 'items', 0, 'hasActiveBillingAccount'])
   })
 })

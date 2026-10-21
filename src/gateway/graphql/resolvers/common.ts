@@ -96,5 +96,84 @@ export function upstreamFailure(error: unknown, what: string): UpstreamError {
   )
 }
 
+/** Codes a portal can branch on when an enrichment field degrades to null. */
+export type EnrichmentErrorCode =
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'UPSTREAM_UNAVAILABLE'
+  | 'UPSTREAM_TIMEOUT'
+
+/**
+ * Outcome of a per-item enrichment lookup. On failure the value is null and
+ * the error carries a code and upstream path; the field resolver throws it so
+ * graphql-js reports the error on that field's path while the rest of the row
+ * still resolves.
+ */
+export type EnrichmentOutcome<T> = { value: T; error: null } | { value: null; error: GraphQLError }
+
+const enrichmentCodeForStatus = (status: number): EnrichmentErrorCode => {
+  if (status === 401 || status === 403) return 'FORBIDDEN'
+  if (status === 404) return 'NOT_FOUND'
+  return 'UPSTREAM_UNAVAILABLE'
+}
+
+/**
+ * Turns a non-OK upstream status into `{ value: null, error }` so callers do
+ * not re-implement status mapping. 401/403 become FORBIDDEN, 404 becomes
+ * NOT_FOUND, and everything else is UPSTREAM_UNAVAILABLE. The error's
+ * extensions.path is the upstream path, never the caller's query string.
+ *
+ * Loaders keep the status of a failed read (and discard the body), so this is
+ * the entry point for enrichment built on request-scoped loaders.
+ */
+export function enrichmentFailureFromStatus(
+  status: number,
+  what: string,
+  url: string
+): EnrichmentOutcome<never> {
+  const path = pathOf(url)
+  return {
+    value: null,
+    error: new GraphQLError(`${what} could not be read from ${path}`, {
+      extensions: {
+        code: enrichmentCodeForStatus(status),
+        status,
+        path,
+      },
+    }),
+  }
+}
+
+/**
+ * Turns a non-OK enrichment response into `{ value: null, error }`. The body
+ * is discarded so the socket returns to the keep-alive pool.
+ */
+export function failedEnrichment(
+  response: Response,
+  what: string,
+  url: string
+): EnrichmentOutcome<never> {
+  // An unread body keeps the socket out of the keep-alive pool until GC.
+  void response.body?.cancel().catch(() => {})
+  return enrichmentFailureFromStatus(response.status, what, url)
+}
+
+/**
+ * Turns a thrown enrichment failure into `{ value: null, error }`. A
+ * GraphQLError (including UpstreamTimeoutError) already carries the right
+ * code, so it is kept as-is; anything else becomes UPSTREAM_UNAVAILABLE with
+ * the cause hidden from the client message.
+ */
+export function enrichmentFailure(error: unknown, what: string): EnrichmentOutcome<never> {
+  if (error instanceof GraphQLError) return { value: null, error }
+  return {
+    value: null,
+    error: new GraphQLError(`${what} failed upstream`, {
+      extensions: { code: 'UPSTREAM_UNAVAILABLE' },
+      originalError: error instanceof Error ? error : undefined,
+    }),
+  }
+}
+
 export const DESCRIPTION_ANNOTATION = 'kubernetes.io/description'
 export const DISPLAY_NAME_ANNOTATION = 'kubernetes.io/display-name'

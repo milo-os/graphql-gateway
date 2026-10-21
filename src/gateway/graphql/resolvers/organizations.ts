@@ -1,14 +1,19 @@
+import type { GraphQLError } from 'graphql'
 import { getOriginalFetch, getK8sServer } from '@/gateway/auth'
 import { log } from '@/shared/utils'
 import {
+  type EnrichmentOutcome,
   type ResolverContext,
   getHeader,
   rethrowGraphQLError,
   failedPage,
+  enrichmentFailure,
+  enrichmentFailureFromStatus,
   upstreamFailure,
 } from './common'
 import {
   type BillingEnrichment,
+  type LoaderResult,
   type MappedOrganization,
   type MappedProject,
   type RequestLoaders,
@@ -17,7 +22,9 @@ import {
   getRequestLoaders,
   mapOrganization,
   mapProjectFull,
+  orgBillingBindingsURL,
   organizationsURL,
+  projectURL,
 } from './loaders'
 
 interface UpstreamOrganizationMembership {
@@ -66,6 +73,22 @@ interface UpstreamServiceConsumerList {
   items?: UpstreamServiceConsumer[]
 }
 
+/**
+ * The enrichment failures behind a project row, kept off the wire (the symbol
+ * property is non-enumerable) and thrown by the field resolvers below so each
+ * error lands on the field it degrades.
+ */
+const projectEnrichment = Symbol('projectEnrichment')
+
+type ProjectEnrichmentState = {
+  organization?: GraphQLError
+  billing?: GraphQLError
+}
+
+type EnrichedProject = MappedProject & { [projectEnrichment]?: ProjectEnrichmentState }
+
+export const consumerProjectError = Symbol('consumerProjectError')
+
 type OrgEnrichment = {
   displayName: string
   businessName: string | null
@@ -78,38 +101,46 @@ function orgEnrichmentFromMapped(org: MappedOrganization): OrgEnrichment {
   }
 }
 
-function attachOrganizationFields(
-  projects: MappedProject[],
-  orgs: Map<string, OrgEnrichment>
-): MappedProject[] {
-  return projects.map((project) => {
-    const org = orgs.get(project.organizationName)
-    return {
-      ...project,
-      organizationDisplayName: org?.displayName ?? project.organizationName,
-      organizationBusinessName: org?.businessName ?? null,
-    }
-  })
+/** Maps a loader result to the per-item outcome #82's field resolvers expect. */
+function outcomeFromLoader<T>(
+  loaded: LoaderResult<T>,
+  what: string,
+  url: string
+): EnrichmentOutcome<T> {
+  if (loaded.value !== null) return { value: loaded.value, error: null }
+  if (loaded.status !== null) return enrichmentFailureFromStatus(loaded.status, what, url)
+  return enrichmentFailure(loaded.error, what)
 }
 
 /**
  * Resolves display/company names for unique owning organizations.
  *
  * The loader dedupes org names across every alias in the request, so ten
- * projects owned by three orgs cost three GETs rather than ten. Per-org
- * failures are swallowed so one inaccessible org never fails the list.
+ * projects owned by three orgs cost three GETs rather than ten. Each org's
+ * outcome is kept separately so an inaccessible org degrades only its own
+ * project row instead of failing the list; the outcome (not a bare map entry)
+ * is what lets a field resolver report the failure on the row's path.
  */
 async function resolveOrganizationFields(
   orgNames: string[],
   loaders: RequestLoaders
-): Promise<Map<string, OrgEnrichment>> {
-  const result = new Map<string, OrgEnrichment>()
+): Promise<Map<string, EnrichmentOutcome<OrgEnrichment>>> {
+  const result = new Map<string, EnrichmentOutcome<OrgEnrichment>>()
   const unique = [...new Set(orgNames.filter(Boolean))]
 
   await Promise.all(
     unique.map(async (name) => {
-      const { value } = await loaders.organization(name)
-      if (value) result.set(name, orgEnrichmentFromMapped(value))
+      const loaded = await loaders.organization(name)
+      if (loaded.value !== null) {
+        result.set(name, { value: orgEnrichmentFromMapped(loaded.value), error: null })
+        return
+      }
+      result.set(
+        name,
+        loaded.status !== null
+          ? enrichmentFailureFromStatus(loaded.status, `organization ${name}`, organizationsURL({ name }))
+          : enrichmentFailure(loaded.error, `organization ${name}`)
+      )
     })
   )
 
@@ -122,23 +153,38 @@ async function resolveOrganizationFields(
  * method.
  *
  * The billing loader keys by project but fetches each org's binding list
- * once, so projects sharing an org share that fetch. Failures are swallowed
- * per project so a single inaccessible billing namespace never fails the
- * whole list. Only depends on each project's `organizationName`, not on org
+ * once, so projects sharing an org share that fetch. Each project keeps its
+ * own outcome so one inaccessible billing namespace degrades only that org's
+ * rows. Only depends on each project's `organizationName`, not on org
  * display/company enrichment, so it can run concurrently with
  * {@link resolveOrganizationFields}.
  */
 async function resolveBillingFields(
   projects: MappedProject[],
   loaders: RequestLoaders
-): Promise<Map<string, BillingEnrichment>> {
-  const billingByProject = new Map<string, BillingEnrichment>()
+): Promise<Map<string, EnrichmentOutcome<BillingEnrichment>>> {
+  const billingByProject = new Map<string, EnrichmentOutcome<BillingEnrichment>>()
 
   await Promise.all(
     projects.map(async (project) => {
       if (!project.organizationName) return
-      const { value } = await loaders.billing(project.name, project.organizationName)
-      if (value) billingByProject.set(project.name, value)
+      const loaded = await loaders.billing(project.name, project.organizationName)
+      // A readable org with no active binding is a successful empty read, not
+      // a failure, so it keeps a concrete false instead of a typed error.
+      const noBinding: EnrichmentOutcome<BillingEnrichment> = {
+        value: { hasActiveBillingAccount: false, billingAccountName: null },
+        error: null,
+      }
+      billingByProject.set(
+        project.name,
+        loaded.value !== null || loaded.status !== null || loaded.error !== undefined
+          ? outcomeFromLoader(
+              loaded,
+              `billing for ${project.organizationName}`,
+              orgBillingBindingsURL(project.organizationName)
+            )
+          : noBinding
+      )
     })
   )
 
@@ -150,7 +196,10 @@ async function resolveBillingFields(
  *
  * The two enrichment stages read disjoint upstream data (org display/company
  * info vs. billing bindings/accounts) and neither depends on the other's
- * result, so they run concurrently instead of one after the other.
+ * result, so they run concurrently instead of one after the other. A failed
+ * stage leaves its fields null and records the error on the row; the Project
+ * field resolvers below throw it so it lands on the field's path without
+ * blanking the row or its siblings.
  */
 async function enrichProjects(
   projects: MappedProject[],
@@ -164,13 +213,28 @@ async function enrichProjects(
     resolveBillingFields(projects, loaders),
   ])
 
-  return attachOrganizationFields(projects, orgs).map((project) => {
-    const billing = billingByProject.get(project.name)
-    return {
+  return projects.map((project) => {
+    const org = orgs.get(project.organizationName)
+    const billing = project.organizationName ? billingByProject.get(project.name) : undefined
+    const billingValue = billing?.value ?? null
+    const billingFailed = billing?.error != null
+    const enriched: EnrichedProject = {
       ...project,
-      hasActiveBillingAccount: billing?.hasActiveBillingAccount ?? false,
-      billingAccountName: billing?.billingAccountName ?? null,
+      organizationDisplayName: org?.value?.displayName ?? null,
+      organizationBusinessName: org?.value?.businessName ?? null,
+      // A read org with no active binding is false; an unread org is unknown.
+      hasActiveBillingAccount: billingFailed
+        ? null
+        : (billingValue?.hasActiveBillingAccount ?? false),
+      billingAccountName: billingFailed ? null : (billingValue?.billingAccountName ?? null),
     }
+    const enrichment: ProjectEnrichmentState = {}
+    if (org?.error) enrichment.organization = org.error
+    if (billing?.error) enrichment.billing = billing.error
+    if (enrichment.organization || enrichment.billing) {
+      Object.defineProperty(enriched, projectEnrichment, { value: enrichment })
+    }
+    return enriched
   })
 }
 
@@ -288,33 +352,44 @@ function serviceConsumersURL(producerProject: string) {
 export interface ConsumerProjectInfo {
   displayName: string
   organizationName: string
-  organizationDisplayName: string
+  organizationDisplayName: string | null
+  [consumerProjectError]?: GraphQLError
 }
 
 /**
  * Resolves the human-readable display name and owning organization for each
  * unique consumer project.
  *
- * Returns a name -> info map. Per-project failures (missing annotation, 403,
- * network) are swallowed so the project simply falls back to its raw name
- * later — a single inaccessible project never fails the whole query. The
- * project and org loaders dedupe aliases across the request, then unique
- * owning orgs are resolved via {@link resolveOrganizationFields}.
+ * Returns a name -> info map. A per-project failure (missing annotation, 403,
+ * network) still lets the project fall back to its raw name, but records the
+ * error so the field resolver can report it on that consumer's path. A failed
+ * org read leaves organizationDisplayName null and records its error the same
+ * way. The project and org loaders dedupe aliases across the request, then
+ * unique owning orgs are resolved via {@link resolveOrganizationFields}.
  */
 async function resolveConsumerProjects(
   projectNames: string[],
   loaders: RequestLoaders
 ): Promise<Map<string, ConsumerProjectInfo>> {
-  const projects = new Map<string, { displayName: string; organizationName: string }>()
+  const projects = new Map<
+    string,
+    { displayName: string; organizationName: string; error: GraphQLError | null }
+  >()
 
+  const uniqueNames = [...new Set(projectNames.filter(Boolean))]
   await Promise.all(
-    projectNames.map(async (name) => {
-      const { value: project } = await loaders.project(name)
-      if (!project) return
-      projects.set(name, {
-        displayName: project.displayName,
-        organizationName: project.organizationName,
-      })
+    uniqueNames.map(async (name) => {
+      const loaded = await loaders.project(name)
+      if (loaded.value !== null) {
+        projects.set(name, {
+          displayName: loaded.value.displayName,
+          organizationName: loaded.value.organizationName,
+          error: null,
+        })
+        return
+      }
+      const failure = outcomeFromLoader(loaded, `project ${name}`, projectURL(name))
+      projects.set(name, { displayName: name, organizationName: '', error: failure.error })
     })
   )
 
@@ -324,11 +399,14 @@ async function resolveConsumerProjects(
   const result = new Map<string, ConsumerProjectInfo>()
   for (const [name, info] of projects) {
     const org = orgEnrichment.get(info.organizationName)
-    result.set(name, {
+    const entry: ConsumerProjectInfo = {
       displayName: info.displayName,
       organizationName: info.organizationName,
-      organizationDisplayName: org?.displayName || info.organizationName,
-    })
+      organizationDisplayName: org?.value?.displayName ?? null,
+    }
+    const error = info.error ?? org?.error
+    if (error) Object.defineProperty(entry, consumerProjectError, { value: error })
+    result.set(name, entry)
   }
   return result
 }
@@ -460,6 +538,34 @@ export const organizationsResolvers = {
       args: { limit?: number; cursor?: string },
       context: ResolverContext
     ) => fetchOrgProjects(parent.name, args, context),
+  },
+
+  /**
+   * One throw per failed enrichment, carried by the field that names it:
+   * organizationDisplayName reports the org read and hasActiveBillingAccount
+   * reports the billing read. The sibling field in each pair
+   * (organizationBusinessName, billingAccountName) simply resolves to null so
+   * one upstream failure does not produce two errors for the same row.
+   */
+  Project: {
+    organizationDisplayName: (parent: MappedProject) => {
+      const error = (parent as EnrichedProject)[projectEnrichment]?.organization
+      if (error) throw error
+      return parent.organizationDisplayName
+    },
+    hasActiveBillingAccount: (parent: MappedProject) => {
+      const error = (parent as EnrichedProject)[projectEnrichment]?.billing
+      if (error) throw error
+      return parent.hasActiveBillingAccount
+    },
+  },
+
+  ConsumerProject: {
+    organizationDisplayName: (parent: { organizationDisplayName: string | null }) => {
+      const error = (parent as { [consumerProjectError]?: GraphQLError })[consumerProjectError]
+      if (error) throw error
+      return parent.organizationDisplayName
+    },
   },
 
   Query: {
@@ -624,6 +730,17 @@ export const organizationsResolvers = {
         return consumers.map((consumer) => {
           const projectName = consumer.spec?.consumerProjectRef?.name ?? ''
           const info = projectInfo.get(projectName)
+          const consumerProject = {
+            name: projectName,
+            displayName: info?.displayName || projectName,
+            organizationName: info?.organizationName ?? '',
+            organizationDisplayName: info?.organizationDisplayName ?? null,
+          }
+          if (info?.[consumerProjectError]) {
+            Object.defineProperty(consumerProject, consumerProjectError, {
+              value: info[consumerProjectError],
+            })
+          }
           return {
             name: consumer.metadata?.name ?? '',
             serviceName: consumer.spec?.serviceRef?.name ?? null,
@@ -631,13 +748,7 @@ export const organizationsResolvers = {
             approvalDecision: consumer.spec?.approval?.decision ?? null,
             approvalMessage: consumer.spec?.approval?.message ?? null,
             requestedAt: consumer.metadata?.creationTimestamp ?? null,
-            consumerProject: {
-              name: projectName,
-              displayName: info?.displayName || projectName,
-              organizationName: info?.organizationName ?? '',
-              organizationDisplayName:
-                info?.organizationDisplayName || info?.organizationName || '',
-            },
+            consumerProject,
           }
         })
       } catch (error) {
