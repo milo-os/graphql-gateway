@@ -39,6 +39,9 @@ RUN bun install --frozen-lockfile --production
 # Copy compiled gateway code (bundled by esbuild)
 COPY --from=builder /app/dist ./dist
 
+# Copy the committed supergraph snapshot served at runtime
+COPY supergraph/ ./supergraph/
+
 # Copy runtime configuration
 COPY config/ ./config/
 

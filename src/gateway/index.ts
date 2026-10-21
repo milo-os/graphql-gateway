@@ -36,7 +36,7 @@ const main = async () => {
     log.info('MAXMIND_DB_PATH not set, geolocation lookups will be unavailable')
   }
 
-  // Initialize gateway: compose supergraph eagerly + start background polling
+  // Initialize gateway: load the committed supergraph snapshot, then check for drift
   try {
     await initializeGateway()
   } catch (error) {
