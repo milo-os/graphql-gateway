@@ -185,10 +185,19 @@ interface UpstreamBillingAccountBindingList {
   items?: UpstreamBillingAccountBinding[]
 }
 
+type CompleteCondition = UpstreamCondition & { type: string; status: string }
+
+function isCompleteCondition(condition: UpstreamCondition): condition is CompleteCondition {
+  return Boolean(condition.type && condition.status)
+}
+
+// A condition without a type cannot be selected by name, and a missing status
+// is not one of Kubernetes' True/False/Unknown values. Drop both rather than
+// exposing them as empty strings behind non-null schema fields.
 function mapConditions(conditions: UpstreamCondition[] | undefined): MappedCondition[] {
-  return (conditions ?? []).map((condition) => ({
-    type: condition.type ?? '',
-    status: condition.status ?? '',
+  return (conditions ?? []).filter(isCompleteCondition).map((condition) => ({
+    type: condition.type,
+    status: condition.status,
     reason: condition.reason ?? null,
     message: condition.message ?? null,
     lastTransitionTime: condition.lastTransitionTime ?? null,
