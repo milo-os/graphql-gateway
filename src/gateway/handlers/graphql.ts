@@ -20,6 +20,18 @@ const parseScopedMatch = (match: RegExpExecArray): ScopedMatch => {
 }
 
 /**
+ * x-resource-* headers are gateway-owned: the scoped path derives them from
+ * the URL, and client-supplied values must never reach request handling.
+ */
+const RESOURCE_HEADERS = [
+  'x-resource-api-group',
+  'x-resource-version',
+  'x-resource-kind',
+  'x-resource-name',
+  'x-resource-endpoint-prefix',
+] as const
+
+/**
  * Set headers for scoped resource requests.
  * These headers are used by the upstream API to route to the correct resource.
  */
@@ -30,6 +42,11 @@ const setScopedHeaders = (req: IncomingMessage, scoped: ScopedMatch): void => {
   req.headers['x-resource-name'] = scoped.resourceName
   req.headers['x-resource-endpoint-prefix'] =
     `/apis/${scoped.apiGroup}/${scoped.version}/${scoped.kindPlural}/${scoped.resourceName}/control-plane`
+}
+
+/** Delete every gateway-owned x-resource-* header from the request. */
+export const clearResourceHeaders = (req: IncomingMessage): void => {
+  for (const header of RESOURCE_HEADERS) delete req.headers[header]
 }
 
 /** Check if the path is the root GraphQL endpoint */
@@ -72,7 +89,7 @@ export const handleGraphQL: GatewayHandler = async (req, res) => {
     setScopedHeaders(req, scoped)
   } else {
     log.info('Root GraphQL request')
-    req.headers['x-resource-endpoint-prefix'] = ''
+    clearResourceHeaders(req)
   }
 
   return gateway(req, res)
