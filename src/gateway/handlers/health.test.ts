@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const { runtime, auth, sent } = vi.hoisted(() => ({
   runtime: {
     isSupergraphReady: vi.fn(() => true),
-    hasCompositionGivenUp: vi.fn(() => false),
     gateway: vi.fn(() => Promise.resolve()),
   },
   auth: { isInitialized: vi.fn(() => true) },
@@ -32,35 +31,35 @@ describe('liveness and readiness', () => {
   beforeEach(() => {
     sent.length = 0
     runtime.isSupergraphReady.mockReturnValue(true)
-    runtime.hasCompositionGivenUp.mockReturnValue(false)
     auth.isInitialized.mockReturnValue(true)
   })
 
-  it('reports live while the composition worker can still be restarted', () => {
+  it('reports live once the process is serving requests', () => {
     handleHealthCheck(req, res)
     expect(sent).toEqual([{ status: 200, body: { status: 'ok' } }])
   })
 
-  it('fails liveness once composition has given up, so the container is restarted', () => {
-    runtime.hasCompositionGivenUp.mockReturnValue(true)
-    handleHealthCheck(req, res)
-    expect(sent[0]).toMatchObject({ status: 503, body: { status: 'unhealthy' } })
+  it('reports ready when auth and the supergraph snapshot are loaded', () => {
+    handleReadinessCheck(req, res)
+    expect(sent).toEqual([{ status: 200, body: { status: 'ready' } }])
   })
 
-  it('names the exhausted restart schedule as the readiness reason', () => {
+  it('is not ready before the committed snapshot is loaded', () => {
     runtime.isSupergraphReady.mockReturnValue(false)
-    runtime.hasCompositionGivenUp.mockReturnValue(true)
     handleReadinessCheck(req, res)
     expect(sent[0]).toMatchObject({
       status: 503,
-      body: { reason: expect.stringMatching(/gave up/i) },
+      body: { reason: 'Supergraph snapshot not loaded' },
     })
   })
 
-  it('still distinguishes a schema that has not composed yet', () => {
-    runtime.isSupergraphReady.mockReturnValue(false)
+  it('is not ready when K8s auth has not been initialised', () => {
+    auth.isInitialized.mockReturnValue(false)
     handleReadinessCheck(req, res)
-    expect(sent[0]).toMatchObject({ status: 503, body: { reason: 'Supergraph not yet composed' } })
+    expect(sent[0]).toMatchObject({
+      status: 503,
+      body: { reason: 'K8s auth not initialized' },
+    })
   })
 })
 
