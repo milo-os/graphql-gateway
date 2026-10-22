@@ -103,9 +103,11 @@ export interface MappedProject {
   name: string
   displayName: string
   organizationName: string
-  organizationDisplayName: string
+  /** Null until enrichment resolves; a failed read stays null. */
+  organizationDisplayName: string | null
   organizationBusinessName: string | null
-  hasActiveBillingAccount: boolean
+  /** Null until enrichment resolves; a failed read stays null. */
+  hasActiveBillingAccount: boolean | null
   billingAccountName: string | null
   createdAt: string | null
   state: string | null
@@ -157,10 +159,11 @@ export function mapProjectFull(raw: UpstreamProjectFull): MappedProject {
     name: raw.metadata?.name ?? '',
     displayName,
     organizationName,
-    // Defaults until attachOrganizationFields / a single-org enrichment runs.
-    organizationDisplayName: organizationName,
+    // Null until enrichment resolves; a failed enrichment stays null and
+    // reports its error on the field path instead of showing the raw name.
+    organizationDisplayName: null,
     organizationBusinessName: null,
-    hasActiveBillingAccount: false,
+    hasActiveBillingAccount: null,
     billingAccountName: null,
     createdAt: raw.metadata?.creationTimestamp ?? null,
     state: readyCondition?.status ?? null,
@@ -182,7 +185,7 @@ export function organizationsURL(params: { name?: string; limit?: number; cursor
 
 // The Project object itself is read at the core resourcemanager API (no
 // control-plane prefix) — that's where its annotations live.
-function projectURL(name: string) {
+export function projectURL(name: string) {
   const server = getK8sServer()
   return `${server}/apis/resourcemanager.miloapis.com/v1alpha1/projects/${encodeURIComponent(name)}`
 }
@@ -191,7 +194,7 @@ function orgBillingNamespace(orgName: string) {
   return `organization-${orgName}`
 }
 
-function orgBillingBindingsURL(orgName: string) {
+export function orgBillingBindingsURL(orgName: string) {
   const server = getK8sServer()
   const ns = orgBillingNamespace(orgName)
   return (
