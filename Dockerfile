@@ -17,7 +17,7 @@ COPY src/ ./src/
 RUN bun run build
 
 # --- Stage 2: Runtime ---
-FROM node:22.23.4-bookworm-slim
+FROM node:22.23.4-trixie-slim
 
 ARG VERSION=dev
 
