@@ -47,7 +47,7 @@
     "@eslint/js": "^9.39.1",
     "@opentelemetry/core": "2.8.0",
     "@types/node": "^24.10.1",
-    "esbuild": "^0.27.2",
+    "esbuild": "^0.28.0",
     "eslint": "^9.39.1",
     "prettier": "^3.7.3",
     "tsc-alias": "^1.8.16",
