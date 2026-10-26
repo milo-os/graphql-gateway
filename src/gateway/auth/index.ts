@@ -90,18 +90,6 @@ export function getMTLSFetch(): typeof fetch {
 }
 
 /**
- * Get the mTLS configuration (cert paths + server URL).
- * Used by the composition worker thread to set up its own mTLS fetch.
- * @throws Error if auth not initialized
- */
-export function getMTLSConfig(): K8sMTLSConfig {
-  if (!mtlsConfig) {
-    throw new Error('K8s auth not initialized. Call initAuth() first.')
-  }
-  return mtlsConfig
-}
-
-/**
  * Get a fetch for callers that need to reach the K8s API server WITHOUT
  * presenting the gateway's client cert. It bypasses the global mTLS
  * override and reuses a pooled set of keep-alive connections.

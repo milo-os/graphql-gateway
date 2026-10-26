@@ -8,7 +8,7 @@
     "build": "node esbuild.config.mjs",
     "start": "node dist/gateway/index.js",
     "local:setup": "bash scripts/local-test.sh",
-    "supergraph:compose": "npx mesh-compose -c src/mesh/index.ts -o src/mesh/gen/supergraph.graphql",
+    "supergraph:compose": "tsx scripts/compose-supergraph.ts",
     "docker:gateway": "docker build --no-cache -t graphql-gateway . && docker run --rm -p 4000:4000 graphql-gateway && docker rmi graphql-gateway",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

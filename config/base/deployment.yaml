@@ -80,7 +80,7 @@ spec:
               memory: 8Gi
           livenessProbe:
             failureThreshold: 3
-            initialDelaySeconds: 120
+            initialDelaySeconds: 15
             periodSeconds: 20
             timeoutSeconds: 10
             httpGet:
@@ -89,8 +89,8 @@ spec:
               scheme: HTTPS
           readinessProbe:
             failureThreshold: 3
-            initialDelaySeconds: 120
-            periodSeconds: 20
+            initialDelaySeconds: 1
+            periodSeconds: 5
             timeoutSeconds: 10
             httpGet:
               path: /readiness
