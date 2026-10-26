@@ -31,8 +31,8 @@ export const additionalTypeDefs = /* GraphQL */ `
     displayName: String!
     "The owning organization's machine name (spec.ownerRef.name)."
     organizationName: String!
-    "Owning organization's display name (kubernetes.io/display-name), falling back to organizationName."
-    organizationDisplayName: String!
+    "Owning organization's display name (kubernetes.io/display-name). Null when the organization could not be read; the failure is reported in errors[]."
+    organizationDisplayName: String
   }
 
   type ServiceConsumer {
@@ -222,7 +222,7 @@ export const additionalTypeDefs = /* GraphQL */ `
     "Contact details from spec.contactInfo."
     contactInfo: OrgContactInfo
     "True when the OnboardingComplete condition status is True."
-    onboardingComplete: Boolean! @deprecated(reason: "Use conditions")
+    onboardingComplete: Boolean @deprecated(reason: "Use conditions")
     "Reason from the OnboardingComplete condition."
     onboardingReason: String @deprecated(reason: "Use conditions")
     "Human-readable message from the OnboardingComplete condition."
@@ -252,12 +252,12 @@ export const additionalTypeDefs = /* GraphQL */ `
     displayName: String!
     "Name of the owning organization."
     organizationName: String!
-    "Owning organization's display name (kubernetes.io/display-name), falling back to organizationName."
-    organizationDisplayName: String!
+    "Owning organization's display name (kubernetes.io/display-name). Null when the organization could not be read; the failure is reported in errors[]."
+    organizationDisplayName: String
     "Owning organization's company / legal name from contactInfo.businessName."
     organizationBusinessName: String
-    "True when the project has an Active billing-account binding to an account with a default payment method."
-    hasActiveBillingAccount: Boolean!
+    "True when the project has an Active billing-account binding to an account with a default payment method. Null when billing could not be read; the failure is reported in errors[]."
+    hasActiveBillingAccount: Boolean
     "Bound billing account name when hasActiveBillingAccount is true."
     billingAccountName: String
     createdAt: String

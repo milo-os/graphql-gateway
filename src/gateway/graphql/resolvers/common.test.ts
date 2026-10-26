@@ -4,7 +4,14 @@ vi.mock('@/shared/utils', () => ({
   log: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
-import { UpstreamError, failedPage, upstreamFailure } from './common'
+import { UpstreamTimeoutError } from '@/gateway/clients/deadline'
+import {
+  UpstreamError,
+  enrichmentFailure,
+  failedEnrichment,
+  failedPage,
+  upstreamFailure,
+} from './common'
 
 const LIST = 'https://k8s.test/apis/resourcemanager.miloapis.com/v1alpha1/organizations?limit=50'
 
@@ -58,5 +65,55 @@ describe('upstreamFailure', () => {
     expect(error.message).not.toContain('10.0.0.1')
     expect(error.originalError).toBe(cause)
     expect(error.extensions).toEqual({ code: 'UPSTREAM_ERROR' })
+  })
+})
+
+describe('failedEnrichment', () => {
+  const ORG = 'https://k8s.test/apis/resourcemanager.miloapis.com/v1alpha1/organizations/acme'
+
+  it.each([
+    [403, 'FORBIDDEN'],
+    [401, 'FORBIDDEN'],
+    [404, 'NOT_FOUND'],
+    [500, 'UPSTREAM_UNAVAILABLE'],
+    [503, 'UPSTREAM_UNAVAILABLE'],
+  ])('maps %i to %s with the upstream path and no value', (status, code) => {
+    const outcome = failedEnrichment(new Response('{}', { status }), 'organization acme', ORG)
+    expect(outcome.value).toBeNull()
+    expect(outcome.error).toMatchObject({
+      extensions: {
+        code,
+        status,
+        path: '/apis/resourcemanager.miloapis.com/v1alpha1/organizations/acme',
+      },
+    })
+  })
+
+  it('cancels the unread body so the connection returns to the pool', () => {
+    const { response, wasCancelled } = responseWithCancelTracking(403)
+    failedEnrichment(response, 'organization acme', ORG)
+    expect(wasCancelled()).toBe(true)
+  })
+})
+
+describe('enrichmentFailure', () => {
+  it('keeps an upstream timeout code instead of flattening it', () => {
+    const timeout = new UpstreamTimeoutError(
+      'https://k8s.test/apis/resourcemanager.miloapis.com/v1alpha1/organizations/acme',
+      10_000
+    )
+    const outcome = enrichmentFailure(timeout, 'organization acme')
+    expect(outcome.value).toBeNull()
+    expect(outcome.error).toMatchObject({ extensions: { code: 'UPSTREAM_TIMEOUT' } })
+  })
+
+  it('maps an unexpected error to UPSTREAM_UNAVAILABLE with the cause hidden', () => {
+    const cause = new Error('connect ECONNREFUSED 10.0.0.1:443')
+    const outcome = enrichmentFailure(cause, 'billing')
+    expect(outcome.error).toMatchObject({
+      message: expect.not.stringContaining('10.0.0.1'),
+      extensions: { code: 'UPSTREAM_UNAVAILABLE' },
+      originalError: cause,
+    })
   })
 })

@@ -58,9 +58,11 @@ mTLS path used for federated subgraph calls. A call that hits it is recorded
 with `status="timeout"`. In a page-level resolver the operation then fails with
 `extensions.code = UPSTREAM_TIMEOUT` instead of returning an empty list;
 per-item enrichment (an org's display name on a project row, a contact on a
-membership row) still degrades that item to null by design. A rising timeout
-count with normal milo-side latency means a hung connection, not a slow
-apiserver:
+membership row) still degrades that item to null rather than failing the whole
+row. Org and billing enrichment also report a typed error on the enriched
+field's path, so partial data and the reason for the gap arrive together. A
+rising timeout count with normal milo-side latency means a hung connection, not
+a slow apiserver:
 
 ```promql
 sum by (resource) (rate(graphql_gateway_local_fetch_duration_seconds_count{status="timeout"}[10m]))
@@ -74,6 +76,17 @@ error rather than an empty page. The codes a client can branch on:
 | `UPSTREAM_TIMEOUT` | No response headers within the deadline                               | Retry                              |
 | `UPSTREAM_ERROR`   | Milo answered a non-OK status (`extensions.status`) or the call threw | Show the error; retry if transient |
 | `CURSOR_EXPIRED`   | The continue token expired from the apiserver watch cache (410)       | Restart paging from the first page |
+
+Per-item enrichment uses the same error channel with a narrower set of codes.
+The error lands on the `path` of the field it nulls, and the rest of the row
+still resolves:
+
+| `extensions.code`      | Meaning                                                       | Client recovery                        |
+| ---------------------- | ------------------------------------------------------------- | -------------------------------------- |
+| `FORBIDDEN`            | Milo answered 401/403 for the enriched resource               | Hide or lock the field; request access |
+| `NOT_FOUND`            | Milo answered 404, for example a deleted consumer project     | Treat the row as orphaned              |
+| `UPSTREAM_UNAVAILABLE` | Any other non-OK status, network failure, or unparseable body | Show the gap; retry if transient       |
+| `UPSTREAM_TIMEOUT`     | No response headers within the deadline                       | Retry                                  |
 
 Local operations run through `graphql.execute`, which resolves sibling query
 fields (including aliases) concurrently. Organization, project and billing
