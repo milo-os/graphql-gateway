@@ -58,6 +58,7 @@ jobs:
         uses: peter-evans/create-pull-request@v8
         with:
           branch: compose-supergraph
+          sign-commits: true
           add-paths: supergraph/
           title: 'chore(supergraph): refresh the composed SDL'
           commit-message: |
