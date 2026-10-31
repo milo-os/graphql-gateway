@@ -17,7 +17,7 @@ COPY src/ ./src/
 RUN bun run build
 
 # --- Stage 2: Runtime ---
-FROM node:26.12.1-trixie-slim
+FROM node:26.13.0-trixie-slim
 
 ARG VERSION=dev
 
