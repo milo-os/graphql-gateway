@@ -531,6 +531,24 @@ scalar query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_
 ) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 """
+DisplayName is the pricing's human-readable label (e.g. "ALB
+Requests").
+"""
+scalar query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items_displayName @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 128)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+Name is the metadata.name of the ServicePricing the discount applies
+to.
+"""
+scalar query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items_name @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+ServiceRef is the service the pricing belongs to (e.g.
+"networking.datumapis.com").
+"""
+scalar query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items_serviceRef @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
 AccountsPayableEmail receives invoices in addition to the billing
 contact. When unset, invoices go to the billing contact only.
 """
@@ -687,6 +705,29 @@ scalar query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_it
   pattern: "^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
 ) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
+scalar query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_amount @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^([1-9][0-9]*(\\.[0-9]{1,2})?|0\\.(0[1-9]|[1-9][0-9]?))$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_currency @regexp(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", pattern: "^USD$")  @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+message is a human readable message indicating details about the transition.
+This may be an empty string.
+"""
+scalar query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_message @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 32768)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_reason @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_type @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
 scalar query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_status_amountDue @regexp(
   subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
   pattern: "^-?[0-9]+(\\.[0-9]+)?$"
@@ -711,6 +752,11 @@ scalar query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_s
 scalar query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_status_conditions_items_type @regexp(
   subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
   pattern: "^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_status_creditsApplied @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[0-9]+(\\.[0-9]+)?$"
 ) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 scalar query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_status_currencyCode @regexp(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", pattern: "^[A-Z]{3}$")  @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
@@ -1041,6 +1087,18 @@ scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricing
   subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
   pattern: "^([1-9]\\d*(\\.\\d+)?|0\\.\\d*[1-9]\\d*)$"
 ) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit_amount @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^([1-9][0-9]*(\\.[0-9]{1,2})?|0\\.(0[1-9]|[1-9][0-9]?))$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit_currency @regexp(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", pattern: "^USD$")  @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+Description explains why the credit was granted, recorded on the resulting CreditGrant.
+"""
+scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit_description @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", min: 1, max: 256)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 """
 message is a human readable message indicating details about the transition.
@@ -6779,6 +6837,22 @@ scalar query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_item
 message is a human readable message indicating details about the transition.
 This may be an empty string.
 """
+scalar query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_message @length(subgraph: "APIS_NETWORKING_DATUMAPIS_COM_V1ALPHA", max: 32768)  @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+
+scalar query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_reason @regexp(
+  subgraph: "APIS_NETWORKING_DATUMAPIS_COM_V1ALPHA"
+  pattern: "^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$"
+) @typescript(subgraph: "APIS_NETWORKING_DATUMAPIS_COM_V1ALPHA", type: "string")  @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+
+scalar query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_type @regexp(
+  subgraph: "APIS_NETWORKING_DATUMAPIS_COM_V1ALPHA"
+  pattern: "^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
+) @typescript(subgraph: "APIS_NETWORKING_DATUMAPIS_COM_V1ALPHA", type: "string")  @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+
+"""
+message is a human readable message indicating details about the transition.
+This may be an empty string.
+"""
 scalar query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_status_conditions_items_message @length(subgraph: "APIS_NETWORKING_DATUMAPIS_COM_V1ALPHA", max: 32768)  @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
 
 scalar query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_status_conditions_items_reason @regexp(
@@ -7242,6 +7316,20 @@ Examples:
 - "custom-service-quota"
 """
 scalar query_listQuotaMiloapisComV1alpha1AllowanceBucketForAllNamespaces_items_items_spec_resourceType @length(subgraph: "APIS_QUOTA_MILOAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_QUOTA_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+Condition is a CEL expression that must evaluate to true for this
+request to be included in the rendered claim. Like trigger constraints,
+it is a pure CEL expression WITHOUT {{ }} delimiters and has access to
+the trigger, user, and requestInfo variables. An empty condition always
+includes the request. When no request in the template is included, no
+claim is created and the triggering resource is admitted.
+
+Example:
+
+  - "trigger.spec.ipFamily == 'IPv4' && trigger.spec.addressScope == 'Public'"
+"""
+scalar query_listQuotaMiloapisComV1alpha1ClaimCreationPolicy_items_items_spec_target_resourceClaimTemplate_spec_requests_items_condition @length(subgraph: "APIS_QUOTA_MILOAPIS_COM_V1ALPHA1", max: 1024)  @join__type(graph: APIS_QUOTA_MILOAPIS_COM_V1_ALPHA1) 
 
 """
 Expression specifies the CEL expression to evaluate against the trigger resource.
@@ -15816,6 +15904,106 @@ type Query @extraSchemaDefinitionDirective(
     queryParamArgMap: "{\"allowWatchBookmarks\":\"allowWatchBookmarks\",\"continue\":\"continue\",\"fieldSelector\":\"fieldSelector\",\"labelSelector\":\"labelSelector\",\"limit\":\"limit\",\"pretty\":\"pretty\",\"resourceVersion\":\"resourceVersion\",\"resourceVersionMatch\":\"resourceVersionMatch\",\"sendInitialEvents\":\"sendInitialEvents\",\"shardSelector\":\"shardSelector\",\"timeoutSeconds\":\"timeoutSeconds\",\"watch\":\"watch\"}"
   ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
   """
+  list objects of kind CreditGrant
+  """
+  listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces(
+    """
+    allowWatchBookmarks requests watch events with type "BOOKMARK". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored.
+    """
+    allowWatchBookmarks: Boolean
+    """
+    The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the "next key".
+    
+    This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+    """
+    continue: String
+    """
+    A selector to restrict the list of returned objects by their fields. Defaults to everything.
+    """
+    fieldSelector: String
+    """
+    A selector to restrict the list of returned objects by their labels. Defaults to everything.
+    """
+    labelSelector: String
+    """
+    limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.
+    
+    The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+    """
+    limit: Int
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersion: String
+    """
+    resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersionMatch: String
+    """
+    `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic "Bookmark" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `"k8s.io/initial-events-end": "true"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.
+    
+    When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan
+      is interpreted as "data at least as new as the provided `resourceVersion`"
+      and the bookmark event is send when the state is synced
+      to a `resourceVersion` at least as fresh as the one provided by the ListOptions.
+      If `resourceVersion` is unset, this is interpreted as "consistent read" and the
+      bookmark event is send when the state is synced at least to the moment
+      when request started being processed.
+    - `resourceVersionMatch` set to any other value or unset
+      Invalid error is returned.
+    
+    Defaults to true if `resourceVersion=""` or `resourceVersion="0"` (for backward compatibility reasons) and to false otherwise.
+    """
+    sendInitialEvents: Boolean
+    """
+    shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:
+    
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000')
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000') || shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+    
+    Field paths use CEL-style object-rooted syntax (e.g. "object.metadata.uid"), NOT the fieldSelector format ("metadata.uid"). Currently supported paths:
+      - object.metadata.uid
+      - object.metadata.namespace
+    
+    hexStart and hexEnd are single-quoted CEL string literals with a '0x' prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.
+    
+    Examples:
+      2-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x8000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+      4-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x4000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x4000000000000000', '0x8000000000000000')
+        shard 2: shardRange(object.metadata.uid, '0x8000000000000000', '0xc000000000000000')
+        shard 3: shardRange(object.metadata.uid, '0xc000000000000000', '0x10000000000000000')
+    
+    This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+    """
+    shardSelector: String
+    """
+    Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+    """
+    timeoutSeconds: Int
+    """
+    Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
+    """
+    watch: Boolean
+  ): com_miloapis_billing_v1alpha1_CreditGrantList @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/creditgrants"
+    operationSpecificHeaders: [["accept", "application/json"]]
+    httpMethod: GET
+    queryParamArgMap: "{\"allowWatchBookmarks\":\"allowWatchBookmarks\",\"continue\":\"continue\",\"fieldSelector\":\"fieldSelector\",\"labelSelector\":\"labelSelector\",\"limit\":\"limit\",\"pretty\":\"pretty\",\"resourceVersion\":\"resourceVersion\",\"resourceVersionMatch\":\"resourceVersionMatch\",\"sendInitialEvents\":\"sendInitialEvents\",\"shardSelector\":\"shardSelector\",\"timeoutSeconds\":\"timeoutSeconds\",\"watch\":\"watch\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
   list objects of kind Invoice
   """
   listBillingMiloapisComV1alpha1InvoiceForAllNamespaces(
@@ -17154,6 +17342,168 @@ type Query @extraSchemaDefinitionDirective(
   ): com_miloapis_billing_v1alpha1_BillingEntitlement @httpOperation(
     subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
     path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/billingentitlements/{args.name}/status"
+    operationSpecificHeaders: [["accept", "application/json"]]
+    httpMethod: GET
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"resourceVersion\":\"resourceVersion\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  list objects of kind CreditGrant
+  """
+  listBillingMiloapisComV1alpha1NamespacedCreditGrant(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    allowWatchBookmarks requests watch events with type "BOOKMARK". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored.
+    """
+    allowWatchBookmarks: Boolean
+    """
+    The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the "next key".
+    
+    This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+    """
+    continue: String
+    """
+    A selector to restrict the list of returned objects by their fields. Defaults to everything.
+    """
+    fieldSelector: String
+    """
+    A selector to restrict the list of returned objects by their labels. Defaults to everything.
+    """
+    labelSelector: String
+    """
+    limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.
+    
+    The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+    """
+    limit: Int
+    """
+    resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersion: String
+    """
+    resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersionMatch: String
+    """
+    `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic "Bookmark" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `"k8s.io/initial-events-end": "true"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.
+    
+    When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan
+      is interpreted as "data at least as new as the provided `resourceVersion`"
+      and the bookmark event is send when the state is synced
+      to a `resourceVersion` at least as fresh as the one provided by the ListOptions.
+      If `resourceVersion` is unset, this is interpreted as "consistent read" and the
+      bookmark event is send when the state is synced at least to the moment
+      when request started being processed.
+    - `resourceVersionMatch` set to any other value or unset
+      Invalid error is returned.
+    
+    Defaults to true if `resourceVersion=""` or `resourceVersion="0"` (for backward compatibility reasons) and to false otherwise.
+    """
+    sendInitialEvents: Boolean
+    """
+    shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:
+    
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000')
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000') || shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+    
+    Field paths use CEL-style object-rooted syntax (e.g. "object.metadata.uid"), NOT the fieldSelector format ("metadata.uid"). Currently supported paths:
+      - object.metadata.uid
+      - object.metadata.namespace
+    
+    hexStart and hexEnd are single-quoted CEL string literals with a '0x' prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.
+    
+    Examples:
+      2-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x8000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+      4-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x4000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x4000000000000000', '0x8000000000000000')
+        shard 2: shardRange(object.metadata.uid, '0x8000000000000000', '0xc000000000000000')
+        shard 3: shardRange(object.metadata.uid, '0xc000000000000000', '0x10000000000000000')
+    
+    This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+    """
+    shardSelector: String
+    """
+    Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+    """
+    timeoutSeconds: Int
+    """
+    Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
+    """
+    watch: Boolean
+  ): com_miloapis_billing_v1alpha1_CreditGrantList @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/creditgrants"
+    operationSpecificHeaders: [["accept", "application/json"]]
+    httpMethod: GET
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"allowWatchBookmarks\":\"allowWatchBookmarks\",\"continue\":\"continue\",\"fieldSelector\":\"fieldSelector\",\"labelSelector\":\"labelSelector\",\"limit\":\"limit\",\"resourceVersion\":\"resourceVersion\",\"resourceVersionMatch\":\"resourceVersionMatch\",\"sendInitialEvents\":\"sendInitialEvents\",\"shardSelector\":\"shardSelector\",\"timeoutSeconds\":\"timeoutSeconds\",\"watch\":\"watch\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  read the specified CreditGrant
+  """
+  readBillingMiloapisComV1alpha1NamespacedCreditGrant(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    name of the CreditGrant
+    """
+    name: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersion: String
+  ): com_miloapis_billing_v1alpha1_CreditGrant @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/creditgrants/{args.name}"
+    operationSpecificHeaders: [["accept", "application/json"]]
+    httpMethod: GET
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"resourceVersion\":\"resourceVersion\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  read status of the specified CreditGrant
+  """
+  readBillingMiloapisComV1alpha1NamespacedCreditGrantStatus(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    name of the CreditGrant
+    """
+    name: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersion: String
+  ): com_miloapis_billing_v1alpha1_CreditGrant @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/creditgrants/{args.name}/status"
     operationSpecificHeaders: [["accept", "application/json"]]
     httpMethod: GET
     queryParamArgMap: "{\"pretty\":\"pretty\",\"resourceVersion\":\"resourceVersion\"}"
@@ -61015,6 +61365,338 @@ type Mutation @join__type(graph: API_V1)  @join__type(graph: APIS_ACTIVITY_MILOA
   ): com_miloapis_billing_v1alpha1_BillingEntitlement @httpOperation(
     subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
     path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/billingentitlements/{args.name}/status"
+    operationSpecificHeaders: [["Content-Type", "application/json-patch+json"], ["accept", "application/json"]]
+    httpMethod: PATCH
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"fieldManager\":\"fieldManager\",\"fieldValidation\":\"fieldValidation\",\"force\":\"force\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  create a CreditGrant
+  """
+  createBillingMiloapisComV1alpha1NamespacedCreditGrant(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+    """
+    dryRun: String
+    """
+    fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+    """
+    fieldManager: String
+    """
+    fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+    """
+    fieldValidation: String
+    input: com_miloapis_billing_v1alpha1_CreditGrant_Input
+  ): com_miloapis_billing_v1alpha1_CreditGrant @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/creditgrants"
+    operationSpecificHeaders: [["Content-Type", "application/json"], ["accept", "application/json"]]
+    httpMethod: POST
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"fieldManager\":\"fieldManager\",\"fieldValidation\":\"fieldValidation\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  delete collection of CreditGrant
+  """
+  deleteBillingMiloapisComV1alpha1CollectionNamespacedCreditGrant(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    allowWatchBookmarks requests watch events with type "BOOKMARK". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored.
+    """
+    allowWatchBookmarks: Boolean
+    """
+    The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the "next key".
+    
+    This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+    """
+    continue: String
+    """
+    A selector to restrict the list of returned objects by their fields. Defaults to everything.
+    """
+    fieldSelector: String
+    """
+    A selector to restrict the list of returned objects by their labels. Defaults to everything.
+    """
+    labelSelector: String
+    """
+    limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.
+    
+    The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+    """
+    limit: Int
+    """
+    resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersion: String
+    """
+    resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersionMatch: String
+    """
+    `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic "Bookmark" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `"k8s.io/initial-events-end": "true"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.
+    
+    When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan
+      is interpreted as "data at least as new as the provided `resourceVersion`"
+      and the bookmark event is send when the state is synced
+      to a `resourceVersion` at least as fresh as the one provided by the ListOptions.
+      If `resourceVersion` is unset, this is interpreted as "consistent read" and the
+      bookmark event is send when the state is synced at least to the moment
+      when request started being processed.
+    - `resourceVersionMatch` set to any other value or unset
+      Invalid error is returned.
+    
+    Defaults to true if `resourceVersion=""` or `resourceVersion="0"` (for backward compatibility reasons) and to false otherwise.
+    """
+    sendInitialEvents: Boolean
+    """
+    shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:
+    
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000')
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000') || shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+    
+    Field paths use CEL-style object-rooted syntax (e.g. "object.metadata.uid"), NOT the fieldSelector format ("metadata.uid"). Currently supported paths:
+      - object.metadata.uid
+      - object.metadata.namespace
+    
+    hexStart and hexEnd are single-quoted CEL string literals with a '0x' prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.
+    
+    Examples:
+      2-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x8000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+      4-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x4000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x4000000000000000', '0x8000000000000000')
+        shard 2: shardRange(object.metadata.uid, '0x8000000000000000', '0xc000000000000000')
+        shard 3: shardRange(object.metadata.uid, '0xc000000000000000', '0x10000000000000000')
+    
+    This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+    """
+    shardSelector: String
+    """
+    Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+    """
+    timeoutSeconds: Int
+    """
+    Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
+    """
+    watch: Boolean
+  ): io_k8s_apimachinery_pkg_apis_meta_v1_Status @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/creditgrants"
+    operationSpecificHeaders: [["accept", "application/json"]]
+    httpMethod: DELETE
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"allowWatchBookmarks\":\"allowWatchBookmarks\",\"continue\":\"continue\",\"fieldSelector\":\"fieldSelector\",\"labelSelector\":\"labelSelector\",\"limit\":\"limit\",\"resourceVersion\":\"resourceVersion\",\"resourceVersionMatch\":\"resourceVersionMatch\",\"sendInitialEvents\":\"sendInitialEvents\",\"shardSelector\":\"shardSelector\",\"timeoutSeconds\":\"timeoutSeconds\",\"watch\":\"watch\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  replace the specified CreditGrant
+  """
+  replaceBillingMiloapisComV1alpha1NamespacedCreditGrant(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    name of the CreditGrant
+    """
+    name: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+    """
+    dryRun: String
+    """
+    fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+    """
+    fieldManager: String
+    """
+    fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+    """
+    fieldValidation: String
+    input: com_miloapis_billing_v1alpha1_CreditGrant_Input
+  ): com_miloapis_billing_v1alpha1_CreditGrant @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/creditgrants/{args.name}"
+    operationSpecificHeaders: [["Content-Type", "application/json"], ["accept", "application/json"]]
+    httpMethod: PUT
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"fieldManager\":\"fieldManager\",\"fieldValidation\":\"fieldValidation\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  delete a CreditGrant
+  """
+  deleteBillingMiloapisComV1alpha1NamespacedCreditGrant(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    name of the CreditGrant
+    """
+    name: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+    """
+    dryRun: String
+    """
+    The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.
+    """
+    gracePeriodSeconds: Int
+    """
+    if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it
+    """
+    ignoreStoreReadErrorWithClusterBreakingPotential: Boolean
+    """
+    Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the "orphan" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both.
+    """
+    orphanDependents: Boolean
+    """
+    Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground.
+    """
+    propagationPolicy: String
+    input: io_k8s_apimachinery_pkg_apis_meta_v1_DeleteOptions_Input
+  ): io_k8s_apimachinery_pkg_apis_meta_v1_Status @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/creditgrants/{args.name}"
+    operationSpecificHeaders: [["Content-Type", "application/json"], ["accept", "application/json"]]
+    httpMethod: DELETE
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"gracePeriodSeconds\":\"gracePeriodSeconds\",\"ignoreStoreReadErrorWithClusterBreakingPotential\":\"ignoreStoreReadErrorWithClusterBreakingPotential\",\"orphanDependents\":\"orphanDependents\",\"propagationPolicy\":\"propagationPolicy\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  partially update the specified CreditGrant
+  """
+  patchBillingMiloapisComV1alpha1NamespacedCreditGrant(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    name of the CreditGrant
+    """
+    name: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+    """
+    dryRun: String
+    """
+    fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint. This field is required for apply requests (application/apply-patch) but optional for non-apply patch types (JsonPatch, MergePatch, StrategicMergePatch).
+    """
+    fieldManager: String
+    """
+    fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+    """
+    fieldValidation: String
+    """
+    Force is going to "force" Apply requests. It means user will re-acquire conflicting fields owned by other people. Force flag must be unset for non-apply patch requests.
+    """
+    force: Boolean
+    input: JSON
+  ): com_miloapis_billing_v1alpha1_CreditGrant @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/creditgrants/{args.name}"
+    operationSpecificHeaders: [["Content-Type", "application/json-patch+json"], ["accept", "application/json"]]
+    httpMethod: PATCH
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"fieldManager\":\"fieldManager\",\"fieldValidation\":\"fieldValidation\",\"force\":\"force\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  replace status of the specified CreditGrant
+  """
+  replaceBillingMiloapisComV1alpha1NamespacedCreditGrantStatus(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    name of the CreditGrant
+    """
+    name: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+    """
+    dryRun: String
+    """
+    fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+    """
+    fieldManager: String
+    """
+    fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+    """
+    fieldValidation: String
+    input: com_miloapis_billing_v1alpha1_CreditGrant_Input
+  ): com_miloapis_billing_v1alpha1_CreditGrant @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/creditgrants/{args.name}/status"
+    operationSpecificHeaders: [["Content-Type", "application/json"], ["accept", "application/json"]]
+    httpMethod: PUT
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"fieldManager\":\"fieldManager\",\"fieldValidation\":\"fieldValidation\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  partially update status of the specified CreditGrant
+  """
+  patchBillingMiloapisComV1alpha1NamespacedCreditGrantStatus(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    name of the CreditGrant
+    """
+    name: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+    """
+    dryRun: String
+    """
+    fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint. This field is required for apply requests (application/apply-patch) but optional for non-apply patch types (JsonPatch, MergePatch, StrategicMergePatch).
+    """
+    fieldManager: String
+    """
+    fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+    """
+    fieldValidation: String
+    """
+    Force is going to "force" Apply requests. It means user will re-acquire conflicting fields owned by other people. Force flag must be unset for non-apply patch requests.
+    """
+    force: Boolean
+    input: JSON
+  ): com_miloapis_billing_v1alpha1_CreditGrant @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/creditgrants/{args.name}/status"
     operationSpecificHeaders: [["Content-Type", "application/json-patch+json"], ["accept", "application/json"]]
     httpMethod: PATCH
     queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"fieldManager\":\"fieldManager\",\"fieldValidation\":\"fieldValidation\",\"force\":\"force\"}"
@@ -115141,16 +115823,11 @@ type query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_it
   """
   email: NonEmptyString!
   """
-  InvoiceEmails is the list of recipients that invoices and
-  receipts are sent to. The first entry is the primary recipient;
-  subsequent entries are CC'd. When the list is empty, Email is
-  used as a single primary recipient.
-  
-  Provider support for multiple recipients varies: Stripe
-  Customer.email is single-valued, so the stripe-provider maps
-  the first entry onto it and CC's the rest via its own
-  invoice-sent webhook (when configured). Consumers should treat
-  the entire list as authoritative; the provider handles fan-out.
+  InvoiceEmails is where invoices and receipts are emailed. Only the
+  first entry receives them: Stripe emails each invoice to a single
+  address, Customer.email, and the stripe-provider sets that to the
+  first entry, or to Email when the list is empty. No provider sends
+  to later entries, so clients should keep the list to one entry.
   
   Duplicate entries are rejected. Maximum 10 entries.
   """
@@ -115255,6 +115932,14 @@ type query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_it
   account's state.
   """
   conditions: [query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_conditions_items]
+  """
+  Discounts lists the discount on each service pricing in the account's
+  Offer, copied from the Offer's published snapshot so customers can see
+  their discounts without reading the Offer. Set only while at least one
+  pricing has a discount above 0%; the others are listed at 0%. Cleared
+  when the account has no discount.
+  """
+  discounts: [query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items]
   latestInvoiceRef: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_latestInvoiceRef
   """
   LinkedProjectsCount is the number of projects currently bound to this
@@ -115292,6 +115977,34 @@ type query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_it
   reason: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_conditions_items_reason!
   status: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_conditions_items_status!
   type: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_conditions_items_type!
+}
+
+"""
+BillingAccountDiscount is one service pricing's resolved discount,
+published on the account from its Offer's snapshot. It deliberately
+doesn't name the Offer or say whether staff set the discount for the
+whole Offer or for this pricing.
+"""
+type query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  DisplayName is the pricing's human-readable label (e.g. "ALB
+  Requests").
+  """
+  displayName: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items_displayName
+  """
+  Name is the metadata.name of the ServicePricing the discount applies
+  to.
+  """
+  name: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items_name!
+  """
+  Percentage is a whole number from 0 to 100.
+  """
+  percentage: Int!
+  """
+  ServiceRef is the service the pricing belongs to (e.g.
+  "networking.datumapis.com").
+  """
+  serviceRef: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items_serviceRef
 }
 
 """
@@ -115902,6 +116615,143 @@ type query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_item
 }
 
 """
+CreditGrantList is a list of CreditGrant
+"""
+type com_miloapis_billing_v1alpha1_CreditGrantList @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+  """
+  apiVersion: String
+  """
+  List of creditgrants. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md
+  """
+  items: [com_miloapis_billing_v1alpha1_CreditGrant]!
+  """
+  Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+  """
+  kind: String
+  metadata: io_k8s_apimachinery_pkg_apis_meta_v1_ListMeta
+}
+
+"""
+CreditGrant is the Schema for the creditgrants API.
+
+A CreditGrant represents a dollar amount of credit given to a billing
+account. Usage draws down credits before anything is charged to a payment
+method. The billing provider maintains the balance in its ledger; Milo
+holds no balance on the CreditGrant resource.
+"""
+type com_miloapis_billing_v1alpha1_CreditGrant @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+  """
+  apiVersion: String
+  """
+  Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+  """
+  kind: String
+  metadata: io_k8s_apimachinery_pkg_apis_meta_v1_ObjectMeta
+  spec: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec!
+  status: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status
+}
+
+"""
+CreditGrantSpec defines the desired state of a CreditGrant.
+
+A CreditGrant is mostly immutable once created. Only voided may change,
+and only from false to true. To change a grant, void it and create a new one.
+"""
+type query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  amount: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_amount!
+  billingAccountRef: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_billingAccountRef!
+  currency: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_currency!
+  """
+  Description explains why the credit was granted. Free text, required.
+  Immutable once set.
+  """
+  description: NonEmptyString!
+  """
+  ExpiresAfter is an optional duration after the effective time when
+  the grant expires. Omitted means the grant never expires.
+  Immutable once set.
+  """
+  expiresAfter: String
+  """
+  Reason is the business reason for the grant. Immutable once set.
+  """
+  reason: String!
+  """
+  Voided marks the grant as voided. One-way: changing from false to
+  true voids what is left of the credit in the billing provider's ledger.
+  Credit already used stays used. A voided grant cannot be unvoided.
+  """
+  voided: Boolean
+}
+
+"""
+BillingAccountRef references the BillingAccount this credit grant
+belongs to. The BillingAccount must reside in the same namespace.
+Immutable once set.
+"""
+type query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_billingAccountRef @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Name is the name of the BillingAccount.
+  """
+  name: NonEmptyString!
+}
+
+"""
+CreditGrantStatus defines the observed state of a CreditGrant.
+Populated exclusively by the billing provider.
+"""
+type query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Conditions represent the latest available observations of the grant's state.
+  See CreditGrantConditionReady.
+  """
+  conditions: [query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items]
+  """
+  EffectiveAt is when the grant became active in the billing provider's ledger.
+  """
+  effectiveAt: DateTime
+  """
+  ExpiresAt is when the grant expires, computed from effectiveAt and spec.expiresAfter.
+  """
+  expiresAt: DateTime
+  """
+  ObservedGeneration is the most recent generation observed by the
+  reconciling provider controller.
+  """
+  observedGeneration: BigInt
+  phase: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_phase
+}
+
+"""
+Condition contains details for one aspect of the current state of this API Resource.
+"""
+type query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  lastTransitionTime is the last time the condition transitioned from one status to another.
+  This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+  """
+  lastTransitionTime: DateTime!
+  """
+  message is a human readable message indicating details about the transition.
+  This may be an empty string.
+  """
+  message: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_message!
+  """
+  observedGeneration represents the .metadata.generation that the condition was set based upon.
+  For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+  with respect to the current state of the instance.
+  """
+  observedGeneration: BigInt
+  reason: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_reason!
+  status: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_status!
+  type: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_type!
+}
+
+"""
 InvoiceList is a list of Invoice
 """
 type com_miloapis_billing_v1alpha1_InvoiceList @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
@@ -115992,6 +116842,7 @@ type query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_sta
   invoice's state. See InvoiceConditionReady.
   """
   conditions: [query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_status_conditions_items]
+  creditsApplied: query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_status_creditsApplied
   currencyCode: query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_status_currencyCode
   """
   DocumentUri is a provider-hosted link to the human-readable
@@ -116903,6 +117754,7 @@ type query_listBillingMiloapisComV1alpha1Offer_items_items_spec @join__type(grap
   first becomes GA. Empty while Draft.
   """
   servicePricings: [query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items]
+  signupCredit: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit
 }
 
 """
@@ -117061,6 +117913,25 @@ type query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_
   """
   description: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_unitConversion_description!
   meterUnitsPerPricingUnit: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_unitConversion_meterUnitsPerPricingUnit!
+}
+
+"""
+SignupCredit defines an optional promotional credit awarded to an
+organization's first billing account entitled to this Offer once a valid
+payment card is attached.
+"""
+type query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  amount: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit_amount!
+  currency: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit_currency
+  """
+  Description explains why the credit was granted, recorded on the resulting CreditGrant.
+  """
+  description: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit_description!
+  """
+  ExpiresAfter is an optional duration after the grant's effective time
+  when any remaining credit expires (e.g. "720h"). Omitted means the grant never expires.
+  """
+  expiresAfter: String
 }
 
 """
@@ -143004,6 +143875,10 @@ type com_miloapis_go_ipam_pkg_apis_ipam_v1alpha1_IPClaimSpec @join__type(graph: 
   """
   address: String
   """
+  AddressScope is copied from the class on create. It must agree, if set, with the class the claim resolves to. Immutable.
+  """
+  addressScope: String
+  """
   ClassName is the class of address being requested. Empty selects the default class for IPFamily, which must then be set.
   """
   className: String
@@ -143101,6 +143976,10 @@ type com_miloapis_go_ipam_pkg_apis_ipam_v1alpha1_IPClass @join__type(graph: APIS
 }
 
 type com_miloapis_go_ipam_pkg_apis_ipam_v1alpha1_IPClassSpec @join__type(graph: APIS_IPAM_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  AddressScope says whether this class hands out publicly routable or private addresses. Empty states neither. May be set once on a class that has none; immutable after that.
+  """
+  addressScope: String
   allowedPrefixLengths: com_miloapis_go_ipam_pkg_apis_ipam_v1alpha1_PrefixLengthRange
   """
   DefaultPrefixLength is the size used when a claim asks for none.
@@ -146417,6 +147296,7 @@ NetworkContextSpec defines the desired state of NetworkContext
 """
 type query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
   dns: query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_dns
+  egress: query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_egress
   """
   IP families the network carries, projected from the Network.
   
@@ -146473,6 +147353,22 @@ type query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items
   Name is the resource name in the network's namespace.
   """
   name: NonEmptyString!
+}
+
+"""
+Egress is what the network reaches outside the platform from this
+location, projected from the Network. Propagation to a cell carries spec
+and not status, so the instruction a cell acts on lives here.
+"""
+type query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_egress @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  internet: query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_egress_internet
+}
+
+"""
+Internet is the internet access this location is instructed to provide.
+"""
+type query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_egress_internet @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  mode: query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_egress_internet_mode
 }
 
 """
@@ -146678,6 +147574,7 @@ type query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_item
   """
   addresses: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_addresses_items]
   attachmentMode: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_attachmentMode
+  egress: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_egress
   """
   interfaceName is the device name the interface presents to the guest
   operating system, such as eth0 or eth1. Set it when a workload has more
@@ -146729,6 +147626,30 @@ type query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_item
   CIDR, so a class cannot be used to ask for a particular address.
   """
   class: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_addresses_items_class!
+}
+
+"""
+egress is what this interface reaches outside the platform. Only
+Inherit is accepted, which follows the network's declaration.
+
+The field is reserved so the default is settled before consumers depend
+on it: an interface written today records Inherit, so accepting Enabled
+and Disabled later changes no existing interface.
+
+Unlike the rest of this spec it is mutable. No address is allocated
+against it, and a rule pinning the only accepted value would have to be
+dropped again when per-interface control widens the enum.
+"""
+type query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_egress @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  internet: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_egress_internet
+}
+
+"""
+internet is whether this interface reaches destinations outside the
+platform.
+"""
+type query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_egress_internet @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  mode: Inherit_const
 }
 
 """
@@ -146934,6 +147855,7 @@ type query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_ite
   addresses: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_addresses_items]
   attachmentMode: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_attachmentMode
   claimRef: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_claimRef
+  egress: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_egress
   """
   externalAddresses are the addresses the interface is reachable at from
   outside the network, each mapped onto the interface address of the same
@@ -147007,6 +147929,28 @@ type query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_ite
   replacement instance binds this same interface and its addresses.
   """
   name: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_claimRef_name!
+}
+
+"""
+egress is what this interface reaches outside the platform. It comes from
+the claim, and the operator carries it without interpreting it.
+
+Only Inherit is accepted, which follows the network's declaration. An
+interface written today records Inherit, so accepting Enabled and Disabled
+later changes no existing interface.
+
+Mutable, because the claim's declaration is.
+"""
+type query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_egress @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  internet: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_egress_internet
+}
+
+"""
+internet is whether this interface reaches destinations outside the
+platform.
+"""
+type query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_egress_internet @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  mode: Inherit_const
 }
 
 """
@@ -147384,9 +148328,15 @@ type query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_
   addressRefs: [String]!
   hostname: String
   name: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_name!
-  port: Int!
+  port: Int
+  portRange: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_portRange
   protocol: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_protocol!
   tls: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_tls
+}
+
+type query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_portRange @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  end: Int!
+  start: Int!
 }
 
 type query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_tls @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
@@ -147469,6 +148419,7 @@ location, even while individual address families are unavailable.
 type query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
   addresses: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items]
   canonicalHostname: String
+  listeners: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items]
   location: String!
   requestName: String!
 }
@@ -147485,11 +148436,14 @@ type query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_
   allocation for this request/location.
   """
   conditions: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items_conditions_items]
+  coordinated: Boolean
   dnsPublished: Boolean
   family: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items_family!
   message: String
   reason: String
+  retiring: Boolean
   value: String
+  withdrawalPending: Boolean
 }
 
 """
@@ -147528,6 +148482,36 @@ type query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_
   reason: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items_conditions_items_reason!
   status: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items_conditions_items_status!
   type: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items_conditions_items_type!
+}
+
+type query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  conditions: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items]
+  name: String!
+}
+
+"""
+Condition contains details for one aspect of the current state of this API Resource.
+"""
+type query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  """
+  lastTransitionTime is the last time the condition transitioned from one status to another.
+  This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+  """
+  lastTransitionTime: DateTime!
+  """
+  message is a human readable message indicating details about the transition.
+  This may be an empty string.
+  """
+  message: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_message!
+  """
+  observedGeneration represents the .metadata.generation that the condition was set based upon.
+  For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+  with respect to the current state of the instance.
+  """
+  observedGeneration: BigInt
+  reason: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_reason!
+  status: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_status!
+  type: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_type!
 }
 
 """
@@ -147607,6 +148591,7 @@ NetworkSpec defines the desired state of a Network
 """
 type query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
   dns: query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_dns
+  egress: query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_egress
   """
   IP Families to permit on a network. Defaults to IPv6.
   
@@ -147632,6 +148617,22 @@ DNS configures private resolver access for the network.
 """
 type query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_dns @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
   mode: query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_dns_mode
+}
+
+"""
+Egress declares what instances on this network reach outside the
+platform.
+"""
+type query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_egress @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  internet: query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_egress_internet
+}
+
+"""
+Internet declares whether instances on this network reach destinations
+outside the platform.
+"""
+type query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_egress_internet @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  mode: query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_egress_internet_mode
 }
 
 """
@@ -147873,10 +148874,16 @@ type query_listNetworkingDatumapisComV1alphaNamespacedNetworkService_items_items
   port is the port number every member answers on. It is the port on the
   member itself, not one the platform publishes.
   
-  Unique within the service.
+  Intervals on the same protocol cannot overlap within the service.
   """
-  port: Int!
+  port: Int
+  portRange: query_listNetworkingDatumapisComV1alphaNamespacedNetworkService_items_items_spec_ports_items_portRange
   protocol: query_listNetworkingDatumapisComV1alphaNamespacedNetworkService_items_items_spec_ports_items_protocol
+}
+
+type query_listNetworkingDatumapisComV1alphaNamespacedNetworkService_items_items_spec_ports_items_portRange @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  end: Int!
+  start: Int!
 }
 
 """
@@ -151077,6 +152084,7 @@ Claims created by ClaimCreationPolicy include:
 ### Field Constraints and Limits
 - Maximum 10 constraints per trigger (spec.trigger.constraints)
 - Static amounts only in v1alpha1 (no expression-based quota amounts)
+- Each template request may set a boolean CEL condition; when none apply, no claim is created
 - Template metadata labels are literal strings (no expression processing)
 - Template annotation values support CEL expressions
 
@@ -151309,7 +152317,7 @@ type query_listQuotaMiloapisComV1alpha1ClaimCreationPolicy_items_items_spec_targ
 }
 
 """
-ResourceRequest defines a single resource request within a ResourceClaim.
+ResourceRequestTemplate defines a single resource request within a ResourceClaim.
 Each request specifies a resource type and the amount of quota being claimed.
 """
 type query_listQuotaMiloapisComV1alpha1ClaimCreationPolicy_items_items_spec_target_resourceClaimTemplate_spec_requests_items @join__type(graph: APIS_QUOTA_MILOAPIS_COM_V1_ALPHA1)  {
@@ -151330,6 +152338,19 @@ type query_listQuotaMiloapisComV1alpha1ClaimCreationPolicy_items_items_spec_targ
     - 1000 (claiming 1000 CPU millicores)
   """
   amount: BigInt!
+  """
+  Condition is a CEL expression that must evaluate to true for this
+  request to be included in the rendered claim. Like trigger constraints,
+  it is a pure CEL expression WITHOUT {{ }} delimiters and has access to
+  the trigger, user, and requestInfo variables. An empty condition always
+  includes the request. When no request in the template is included, no
+  claim is created and the triggering resource is admitted.
+  
+  Example:
+  
+    - "trigger.spec.ipFamily == 'IPv4' && trigger.spec.addressScope == 'Public'"
+  """
+  condition: query_listQuotaMiloapisComV1alpha1ClaimCreationPolicy_items_items_spec_target_resourceClaimTemplate_spec_requests_items_condition
   """
   ResourceType identifies the specific resource type being claimed. Must
   exactly match a ResourceRegistration.spec.resourceType that is currently
@@ -155577,6 +156598,18 @@ quota claim creation, and what metric costs are incurred per creation.
 """
 type query_listServicesMiloapisComV1alpha1ServiceConfiguration_items_items_spec_quota_metricRules_items @join__type(graph: APIS_SERVICES_MILOAPIS_COM_V1_ALPHA1)  {
   """
+  MetricCostConditions limits a metric's cost to the creations where a
+  condition holds. Each key must be a key of metricCosts; metrics without
+  an entry are charged on every creation. Each value is a pure CEL
+  expression returning a bool, written without {{ }} delimiters, with the
+  same variables as a ClaimCreationPolicy trigger constraint (for example
+  "trigger.spec.ipFamily == 'IPv4'"). Expressions are held to the same
+  rules Milo applies to trigger constraints: at most 1024 characters, and
+  none of the words system, exec, eval, import, file, network, or
+  subprocess anywhere in the text, in any case.
+  """
+  metricCostConditions: JSON
+  """
   MetricCosts maps metric names to integer amounts claimed per resource
   creation. Each key must match a spec.metrics[].name.
   """
@@ -157877,6 +158910,26 @@ enum query_listBillingMiloapisComV1alpha1BillingArrangementForAllNamespaces_item
 status of the condition, one of True, False, Unknown.
 """
 enum query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_status_conditions_items_status @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  True @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  False @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  Unknown @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+}
+
+"""
+Phase represents the current lifecycle phase of the grant.
+"""
+enum query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_phase @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  Pending @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  Active @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  Expired @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  Voided @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  Failed @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+}
+
+"""
+status of the condition, one of True, False, Unknown.
+"""
+enum query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_status @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   True @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
   False @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
   Unknown @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
@@ -161769,6 +162822,21 @@ enum query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items
 }
 
 """
+Mode is whether instances in this location reach the internet. It is the
+network's mode, or the platform default when the network has not been
+stamped with one yet, so a context always carries the mode its location
+must enforce.
+
+It carries no default of its own. A context projected before this field
+existed carries nothing, and a cell reading one must keep internet access
+rather than withdraw it.
+"""
+enum query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_egress_internet_mode @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  Enabled @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+  Disabled @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+}
+
+"""
 status of the condition, one of True, False, Unknown.
 """
 enum query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_status_conditions_items_status @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
@@ -161826,6 +162894,10 @@ asking for a policy the interface was not allocated under cannot bind it.
 enum query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_reclaimPolicy @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
   Delete @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
   Retain @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+}
+
+enum Inherit_const @typescript(subgraph: "APIS_NETWORKING_DATUMAPIS_COM_V1ALPHA", type: "\"Inherit\"")  @example(subgraph: "APIS_NETWORKING_DATUMAPIS_COM_V1ALPHA", value: "Inherit")  @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  Inherit @enum(subgraph: "APIS_NETWORKING_DATUMAPIS_COM_V1ALPHA", value: "\"Inherit\"")  @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
 }
 
 """
@@ -161996,6 +163068,15 @@ enum query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_
   Unknown @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
 }
 
+"""
+status of the condition, one of True, False, Unknown.
+"""
+enum query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_status @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  True @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+  False @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+  Unknown @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+}
+
 enum query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_ipFamilies_items @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
   IPv4 @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
   IPv6 @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
@@ -162007,6 +163088,25 @@ An empty value uses Managed when the Internal DNS feature is enabled.
 """
 enum query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_dns_mode @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
   Managed @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+  Disabled @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+}
+
+"""
+Mode is whether instances on this network reach the internet. It covers
+IPv6 and IPv4 destinations alike. Disabled limits instances to the
+network and the platform's private services; traffic through an
+interface's external address is not affected.
+
+A network created without a mode is given the platform's default when it
+is created, so every stored network records the mode it runs with.
+Changing the platform default later does not change this value.
+
+Changing the mode applies to every instance on the network, including
+instances that are already running, not only to instances attached
+afterwards.
+"""
+enum query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_egress_internet_mode @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  Enabled @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
   Disabled @join__enumValue(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
 }
 
@@ -167298,16 +168398,11 @@ input query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_i
   """
   email: NonEmptyString!
   """
-  InvoiceEmails is the list of recipients that invoices and
-  receipts are sent to. The first entry is the primary recipient;
-  subsequent entries are CC'd. When the list is empty, Email is
-  used as a single primary recipient.
-  
-  Provider support for multiple recipients varies: Stripe
-  Customer.email is single-valued, so the stripe-provider maps
-  the first entry onto it and CC's the rest via its own
-  invoice-sent webhook (when configured). Consumers should treat
-  the entire list as authoritative; the provider handles fan-out.
+  InvoiceEmails is where invoices and receipts are emailed. Only the
+  first entry receives them: Stripe emails each invoice to a single
+  address, Customer.email, and the stripe-provider sets that to the
+  first entry, or to Email when the list is empty. No provider sends
+  to later entries, so clients should keep the list to one entry.
   
   Duplicate entries are rejected. Maximum 10 entries.
   """
@@ -167412,6 +168507,14 @@ input query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_i
   account's state.
   """
   conditions: [query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_conditions_items_Input]
+  """
+  Discounts lists the discount on each service pricing in the account's
+  Offer, copied from the Offer's published snapshot so customers can see
+  their discounts without reading the Offer. Set only while at least one
+  pricing has a discount above 0%; the others are listed at 0%. Cleared
+  when the account has no discount.
+  """
+  discounts: [query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items_Input]
   latestInvoiceRef: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_latestInvoiceRef_Input
   """
   LinkedProjectsCount is the number of projects currently bound to this
@@ -167449,6 +168552,34 @@ input query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_i
   reason: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_conditions_items_reason!
   status: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_conditions_items_status!
   type: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_conditions_items_type!
+}
+
+"""
+BillingAccountDiscount is one service pricing's resolved discount,
+published on the account from its Offer's snapshot. It deliberately
+doesn't name the Offer or say whether staff set the discount for the
+whole Offer or for this pricing.
+"""
+input query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  DisplayName is the pricing's human-readable label (e.g. "ALB
+  Requests").
+  """
+  displayName: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items_displayName
+  """
+  Name is the metadata.name of the ServicePricing the discount applies
+  to.
+  """
+  name: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items_name!
+  """
+  Percentage is a whole number from 0 to 100.
+  """
+  percentage: Int!
+  """
+  ServiceRef is the service the pricing belongs to (e.g.
+  "networking.datumapis.com").
+  """
+  serviceRef: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_discounts_items_serviceRef
 }
 
 """
@@ -167983,6 +169114,124 @@ input query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_ite
 }
 
 """
+CreditGrant is the Schema for the creditgrants API.
+
+A CreditGrant represents a dollar amount of credit given to a billing
+account. Usage draws down credits before anything is charged to a payment
+method. The billing provider maintains the balance in its ledger; Milo
+holds no balance on the CreditGrant resource.
+"""
+input com_miloapis_billing_v1alpha1_CreditGrant_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+  """
+  apiVersion: String
+  """
+  Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+  """
+  kind: String
+  metadata: io_k8s_apimachinery_pkg_apis_meta_v1_ObjectMeta_Input
+  spec: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_Input!
+  status: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_Input
+}
+
+"""
+CreditGrantSpec defines the desired state of a CreditGrant.
+
+A CreditGrant is mostly immutable once created. Only voided may change,
+and only from false to true. To change a grant, void it and create a new one.
+"""
+input query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  amount: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_amount!
+  billingAccountRef: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_billingAccountRef_Input!
+  currency: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_currency!
+  """
+  Description explains why the credit was granted. Free text, required.
+  Immutable once set.
+  """
+  description: NonEmptyString!
+  """
+  ExpiresAfter is an optional duration after the effective time when
+  the grant expires. Omitted means the grant never expires.
+  Immutable once set.
+  """
+  expiresAfter: String
+  """
+  Reason is the business reason for the grant. Immutable once set.
+  """
+  reason: String!
+  """
+  Voided marks the grant as voided. One-way: changing from false to
+  true voids what is left of the credit in the billing provider's ledger.
+  Credit already used stays used. A voided grant cannot be unvoided.
+  """
+  voided: Boolean
+}
+
+"""
+BillingAccountRef references the BillingAccount this credit grant
+belongs to. The BillingAccount must reside in the same namespace.
+Immutable once set.
+"""
+input query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_spec_billingAccountRef_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Name is the name of the BillingAccount.
+  """
+  name: NonEmptyString!
+}
+
+"""
+CreditGrantStatus defines the observed state of a CreditGrant.
+Populated exclusively by the billing provider.
+"""
+input query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Conditions represent the latest available observations of the grant's state.
+  See CreditGrantConditionReady.
+  """
+  conditions: [query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_Input]
+  """
+  EffectiveAt is when the grant became active in the billing provider's ledger.
+  """
+  effectiveAt: DateTime
+  """
+  ExpiresAt is when the grant expires, computed from effectiveAt and spec.expiresAfter.
+  """
+  expiresAt: DateTime
+  """
+  ObservedGeneration is the most recent generation observed by the
+  reconciling provider controller.
+  """
+  observedGeneration: BigInt
+  phase: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_phase
+}
+
+"""
+Condition contains details for one aspect of the current state of this API Resource.
+"""
+input query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  lastTransitionTime is the last time the condition transitioned from one status to another.
+  This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+  """
+  lastTransitionTime: DateTime!
+  """
+  message is a human readable message indicating details about the transition.
+  This may be an empty string.
+  """
+  message: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_message!
+  """
+  observedGeneration represents the .metadata.generation that the condition was set based upon.
+  For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+  with respect to the current state of the instance.
+  """
+  observedGeneration: BigInt
+  reason: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_reason!
+  status: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_status!
+  type: query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_items_status_conditions_items_type!
+}
+
+"""
 Invoice is the Schema for the invoices API.
 
 Invoice is the provider-written, vendor-agnostic record of a billing
@@ -168054,6 +169303,7 @@ input query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_st
   invoice's state. See InvoiceConditionReady.
   """
   conditions: [query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_status_conditions_items_Input]
+  creditsApplied: query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_status_creditsApplied
   currencyCode: query_listBillingMiloapisComV1alpha1InvoiceForAllNamespaces_items_items_status_currencyCode
   """
   DocumentUri is a provider-hosted link to the human-readable
@@ -168539,6 +169789,7 @@ input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_Input @join__ty
   first becomes GA. Empty while Draft.
   """
   servicePricings: [query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_Input]
+  signupCredit: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit_Input
 }
 
 """
@@ -168697,6 +169948,25 @@ input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings
   """
   description: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_unitConversion_description!
   meterUnitsPerPricingUnit: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_unitConversion_meterUnitsPerPricingUnit!
+}
+
+"""
+SignupCredit defines an optional promotional credit awarded to an
+organization's first billing account entitled to this Offer once a valid
+payment card is attached.
+"""
+input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  amount: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit_amount!
+  currency: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit_currency
+  """
+  Description explains why the credit was granted, recorded on the resulting CreditGrant.
+  """
+  description: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_signupCredit_description!
+  """
+  ExpiresAfter is an optional duration after the grant's effective time
+  when any remaining credit expires (e.g. "720h"). Omitted means the grant never expires.
+  """
+  expiresAfter: String
 }
 
 """
@@ -192328,6 +193598,10 @@ input com_miloapis_go_ipam_pkg_apis_ipam_v1alpha1_IPClass_Input @join__type(grap
 }
 
 input com_miloapis_go_ipam_pkg_apis_ipam_v1alpha1_IPClassSpec_Input @join__type(graph: APIS_IPAM_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  AddressScope says whether this class hands out publicly routable or private addresses. Empty states neither. May be set once on a class that has none; immutable after that.
+  """
+  addressScope: String
   allowedPrefixLengths: com_miloapis_go_ipam_pkg_apis_ipam_v1alpha1_PrefixLengthRange_Input
   """
   DefaultPrefixLength is the size used when a claim asks for none.
@@ -192644,6 +193918,10 @@ input com_miloapis_go_ipam_pkg_apis_ipam_v1alpha1_IPClaimSpec_Input @join__type(
   Address names a specific address to bind. Omitted, the allocator chooses.
   """
   address: String
+  """
+  AddressScope is copied from the class on create. It must agree, if set, with the class the claim resolves to. Immutable.
+  """
+  addressScope: String
   """
   ClassName is the class of address being requested. Empty selects the default class for IPFamily, which must then be set.
   """
@@ -195586,6 +196864,7 @@ NetworkContextSpec defines the desired state of NetworkContext
 """
 input query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
   dns: query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_dns_Input
+  egress: query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_egress_Input
   """
   IP families the network carries, projected from the Network.
   
@@ -195642,6 +196921,22 @@ input query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_item
   Name is the resource name in the network's namespace.
   """
   name: NonEmptyString!
+}
+
+"""
+Egress is what the network reaches outside the platform from this
+location, projected from the Network. Propagation to a cell carries spec
+and not status, so the instruction a cell acts on lives here.
+"""
+input query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_egress_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  internet: query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_egress_internet_Input
+}
+
+"""
+Internet is the internet access this location is instructed to provide.
+"""
+input query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_egress_internet_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  mode: query_listNetworkingDatumapisComV1alphaNamespacedNetworkContext_items_items_spec_egress_internet_mode
 }
 
 """
@@ -195828,6 +197123,7 @@ input query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_ite
   """
   addresses: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_addresses_items_Input]
   attachmentMode: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_attachmentMode = Netns
+  egress: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_egress_Input = {internet: {mode: Inherit}}
   """
   interfaceName is the device name the interface presents to the guest
   operating system, such as eth0 or eth1. Set it when a workload has more
@@ -195879,6 +197175,30 @@ input query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_ite
   CIDR, so a class cannot be used to ask for a particular address.
   """
   class: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_addresses_items_class!
+}
+
+"""
+egress is what this interface reaches outside the platform. Only
+Inherit is accepted, which follows the network's declaration.
+
+The field is reserved so the default is settled before consumers depend
+on it: an interface written today records Inherit, so accepting Enabled
+and Disabled later changes no existing interface.
+
+Unlike the rest of this spec it is mutable. No address is allocated
+against it, and a rule pinning the only accepted value would have to be
+dropped again when per-interface control widens the enum.
+"""
+input query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_egress_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  internet: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_egress_internet_Input = {mode: Inherit}
+}
+
+"""
+internet is whether this interface reaches destinations outside the
+platform.
+"""
+input query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterfaceClaim_items_items_spec_egress_internet_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  mode: Inherit_const
 }
 
 """
@@ -196065,6 +197385,7 @@ input query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_it
   addresses: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_addresses_items_Input]
   attachmentMode: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_attachmentMode = Netns
   claimRef: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_claimRef_Input
+  egress: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_egress_Input = {internet: {mode: Inherit}}
   """
   externalAddresses are the addresses the interface is reachable at from
   outside the network, each mapped onto the interface address of the same
@@ -196138,6 +197459,28 @@ input query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_it
   replacement instance binds this same interface and its addresses.
   """
   name: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_claimRef_name!
+}
+
+"""
+egress is what this interface reaches outside the platform. It comes from
+the claim, and the operator carries it without interpreting it.
+
+Only Inherit is accepted, which follows the network's declaration. An
+interface written today records Inherit, so accepting Enabled and Disabled
+later changes no existing interface.
+
+Mutable, because the claim's declaration is.
+"""
+input query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_egress_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  internet: query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_egress_internet_Input = {mode: Inherit}
+}
+
+"""
+internet is whether this interface reaches destinations outside the
+platform.
+"""
+input query_listNetworkingDatumapisComV1alphaNamespacedNetworkInterface_items_items_spec_egress_internet_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  mode: Inherit_const
 }
 
 """
@@ -196477,9 +197820,15 @@ input query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items
   addressRefs: [String]!
   hostname: String
   name: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_name!
-  port: Int!
+  port: Int
+  portRange: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_portRange_Input
   protocol: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_protocol!
   tls: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_tls_Input
+}
+
+input query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_portRange_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  end: Int!
+  start: Int!
 }
 
 input query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_spec_listeners_items_tls_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
@@ -196562,6 +197911,7 @@ location, even while individual address families are unavailable.
 input query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
   addresses: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items_Input]
   canonicalHostname: String
+  listeners: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_Input]
   location: String!
   requestName: String!
 }
@@ -196578,11 +197928,14 @@ input query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items
   allocation for this request/location.
   """
   conditions: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items_conditions_items_Input]
+  coordinated: Boolean
   dnsPublished: Boolean
   family: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items_family!
   message: String
   reason: String
+  retiring: Boolean
   value: String
+  withdrawalPending: Boolean
 }
 
 """
@@ -196621,6 +197974,36 @@ input query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items
   reason: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items_conditions_items_reason!
   status: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items_conditions_items_status!
   type: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_addresses_items_conditions_items_type!
+}
+
+input query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  conditions: [query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_Input]
+  name: String!
+}
+
+"""
+Condition contains details for one aspect of the current state of this API Resource.
+"""
+input query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  """
+  lastTransitionTime is the last time the condition transitioned from one status to another.
+  This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+  """
+  lastTransitionTime: DateTime!
+  """
+  message is a human readable message indicating details about the transition.
+  This may be an empty string.
+  """
+  message: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_message!
+  """
+  observedGeneration represents the .metadata.generation that the condition was set based upon.
+  For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+  with respect to the current state of the instance.
+  """
+  observedGeneration: BigInt
+  reason: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_reason!
+  status: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_status!
+  type: query_listNetworkingDatumapisComV1alphaNamespacedNetworkLoadBalancer_items_items_status_endpoints_items_listeners_items_conditions_items_type!
 }
 
 """
@@ -196662,6 +198045,7 @@ NetworkSpec defines the desired state of a Network
 """
 input query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
   dns: query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_dns_Input
+  egress: query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_egress_Input
   """
   IP Families to permit on a network. Defaults to IPv6.
   
@@ -196687,6 +198071,22 @@ DNS configures private resolver access for the network.
 """
 input query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_dns_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
   mode: query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_dns_mode
+}
+
+"""
+Egress declares what instances on this network reach outside the
+platform.
+"""
+input query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_egress_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  internet: query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_egress_internet_Input
+}
+
+"""
+Internet declares whether instances on this network reach destinations
+outside the platform.
+"""
+input query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_egress_internet_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  mode: query_listNetworkingDatumapisComV1alphaNamespacedNetwork_items_items_spec_egress_internet_mode
 }
 
 """
@@ -196909,10 +198309,16 @@ input query_listNetworkingDatumapisComV1alphaNamespacedNetworkService_items_item
   port is the port number every member answers on. It is the port on the
   member itself, not one the platform publishes.
   
-  Unique within the service.
+  Intervals on the same protocol cannot overlap within the service.
   """
-  port: Int!
+  port: Int
+  portRange: query_listNetworkingDatumapisComV1alphaNamespacedNetworkService_items_items_spec_ports_items_portRange_Input
   protocol: query_listNetworkingDatumapisComV1alphaNamespacedNetworkService_items_items_spec_ports_items_protocol = TCP
+}
+
+input query_listNetworkingDatumapisComV1alphaNamespacedNetworkService_items_items_spec_ports_items_portRange_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA)  {
+  end: Int!
+  start: Int!
 }
 
 """
@@ -199403,6 +200809,7 @@ Claims created by ClaimCreationPolicy include:
 ### Field Constraints and Limits
 - Maximum 10 constraints per trigger (spec.trigger.constraints)
 - Static amounts only in v1alpha1 (no expression-based quota amounts)
+- Each template request may set a boolean CEL condition; when none apply, no claim is created
 - Template metadata labels are literal strings (no expression processing)
 - Template annotation values support CEL expressions
 
@@ -199635,7 +201042,7 @@ input query_listQuotaMiloapisComV1alpha1ClaimCreationPolicy_items_items_spec_tar
 }
 
 """
-ResourceRequest defines a single resource request within a ResourceClaim.
+ResourceRequestTemplate defines a single resource request within a ResourceClaim.
 Each request specifies a resource type and the amount of quota being claimed.
 """
 input query_listQuotaMiloapisComV1alpha1ClaimCreationPolicy_items_items_spec_target_resourceClaimTemplate_spec_requests_items_Input @join__type(graph: APIS_QUOTA_MILOAPIS_COM_V1_ALPHA1)  {
@@ -199656,6 +201063,19 @@ input query_listQuotaMiloapisComV1alpha1ClaimCreationPolicy_items_items_spec_tar
     - 1000 (claiming 1000 CPU millicores)
   """
   amount: BigInt!
+  """
+  Condition is a CEL expression that must evaluate to true for this
+  request to be included in the rendered claim. Like trigger constraints,
+  it is a pure CEL expression WITHOUT {{ }} delimiters and has access to
+  the trigger, user, and requestInfo variables. An empty condition always
+  includes the request. When no request in the template is included, no
+  claim is created and the triggering resource is admitted.
+  
+  Example:
+  
+    - "trigger.spec.ipFamily == 'IPv4' && trigger.spec.addressScope == 'Public'"
+  """
+  condition: query_listQuotaMiloapisComV1alpha1ClaimCreationPolicy_items_items_spec_target_resourceClaimTemplate_spec_requests_items_condition
   """
   ResourceType identifies the specific resource type being claimed. Must
   exactly match a ResourceRegistration.spec.resourceType that is currently
@@ -203855,6 +205275,18 @@ QuotaMetricRule declares a ClaimCreationPolicy: which resource kind triggers
 quota claim creation, and what metric costs are incurred per creation.
 """
 input query_listServicesMiloapisComV1alpha1ServiceConfiguration_items_items_spec_quota_metricRules_items_Input @join__type(graph: APIS_SERVICES_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  MetricCostConditions limits a metric's cost to the creations where a
+  condition holds. Each key must be a key of metricCosts; metrics without
+  an entry are charged on every creation. Each value is a pure CEL
+  expression returning a bool, written without {{ }} delimiters, with the
+  same variables as a ClaimCreationPolicy trigger constraint (for example
+  "trigger.spec.ipFamily == 'IPv4'"). Expressions are held to the same
+  rules Milo applies to trigger constraints: at most 1024 characters, and
+  none of the words system, exec, eval, import, file, network, or
+  subprocess anywhere in the text, in any case.
+  """
+  metricCostConditions: JSON
   """
   MetricCosts maps metric names to integer amounts claimed per resource
   creation. Each key must match a spec.metrics[].name.
