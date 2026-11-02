@@ -95,5 +95,8 @@ export const createGatewayServer = () => {
   }
 
   log.info('Starting server with HTTPS')
-  return createServer(tlsOptions, withRequestContext(dispatch))
+  const server = createServer(tlsOptions, withRequestContext(dispatch))
+  server.keepAliveTimeout = 75_000
+  server.headersTimeout = 76_000
+  return server
 }

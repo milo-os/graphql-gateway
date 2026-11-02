@@ -329,13 +329,13 @@ run_gateway() {
   
   cd "$(dirname "$0")/.."
   
-  bun install
+  npm ci
 
   NODE_EXTRA_CA_CERTS="$LOCAL_DIR/pki/trust/ca.crt" \
   KUBECONFIG="$LOCAL_DIR/config/kubeconfig" \
   OTLP_URL="${OTLP_URL:-localhost:4317}" \
   CERT_DIR="$LOCAL_DIR/pki/serving" \
-  bun run dev
+  npm run dev
 }
 
 # =============================================================================

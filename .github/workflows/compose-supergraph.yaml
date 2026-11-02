@@ -23,8 +23,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
 
       - name: Setup datumctl
         uses: datum-cloud/setup-datumctl-action@v1
@@ -34,7 +37,7 @@ jobs:
           credentials: ${{ secrets.STAGING_DATUMCTL_CREDENTIALS }}
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: npm ci
 
       - name: Compose snapshot
         env:
@@ -47,7 +50,7 @@ jobs:
           token="$(datumctl auth get-token --output=token)"
           # Keep the bearer token out of the process argument list and the log.
           echo "::add-mask::$token"
-          DATUM_TOKEN="$token" bunx tsx scripts/compose-supergraph.ts \
+          DATUM_TOKEN="$token" npx tsx scripts/compose-supergraph.ts \
             --server "$SUPERGRAPH_SERVER" \
             --endpoint "$SUPERGRAPH_ENDPOINT"
 
