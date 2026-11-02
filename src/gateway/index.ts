@@ -12,6 +12,8 @@ import { initializeGateway } from './runtime'
 import { initGeolocation } from './services/geolocation'
 import { log } from '@/shared/utils'
 
+const SHUTDOWN_DEADLINE_MS = 25_000
+
 const main = async () => {
   // Initialize K8s authentication before starting the server
   try {
@@ -61,12 +63,21 @@ const main = async () => {
   })
 
   // Graceful shutdown
+  let shuttingDown = false
   const shutdown = (signal: string) => {
+    if (shuttingDown) return
+    shuttingDown = true
     log.info(`${signal} received, shutting down gracefully...`)
     server.close(() => {
       log.info('Server closed')
       process.exit(0)
     })
+    server.closeIdleConnections()
+    setTimeout(() => {
+      log.warn('Shutdown deadline reached, closing remaining connections')
+      server.closeAllConnections()
+      process.exit(0)
+    }, SHUTDOWN_DEADLINE_MS).unref()
   }
 
   process.on('SIGTERM', () => shutdown('SIGTERM'))
