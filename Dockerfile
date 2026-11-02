@@ -1,23 +1,23 @@
 # --- Stage 1: Build ---
-FROM oven/bun:1 AS builder
+FROM node:26.12.1-alpine3.24@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS builder
 
 WORKDIR /app
 
 # Copy package files
-COPY package.json bun.lock ./
+COPY package.json package-lock.json ./
 
 # Install all dependencies (including devDependencies for build)
-RUN bun install --frozen-lockfile
+RUN npm ci
 
 # Copy source code and config
 COPY tsconfig.json esbuild.config.mjs ./
 COPY src/ ./src/
 
 # Build the application
-RUN bun run build
+RUN npm run build
 
 # --- Stage 2: Runtime ---
-FROM node:26.12.1-trixie-slim
+FROM node:26.12.1-alpine3.24@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797
 
 ARG VERSION=dev
 
@@ -28,13 +28,10 @@ ENV NODE_ENV=production
 ENV VERSION=${VERSION}
 
 # Copy package files
-COPY package.json bun.lock ./
-
-# Install bun for production dependency install
-COPY --from=oven/bun:1 /usr/local/bin/bun /usr/local/bin/bun
+COPY package.json package-lock.json ./
 
 # Install only production dependencies
-RUN bun install --frozen-lockfile --production
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy compiled gateway code (bundled by esbuild)
 COPY --from=builder /app/dist ./dist

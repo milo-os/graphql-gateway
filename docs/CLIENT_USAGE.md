@@ -61,7 +61,7 @@ export default config
 ### Development Workflow
 
 1. **Write Query**: Create a `.graphql` file (e.g., `app/resources/graphql/queries/my-query.graphql`) with your operation.
-2. **Run Codegen**: Execute `npm run codegen` (or `bun codegen`) to generate the TypeScript types.
+2. **Run Codegen**: Execute `npm run codegen` to generate the TypeScript types.
 3. **Import Types**: The generated types and document objects will now be available in `app/resources/graphql/gen/graphql.ts`.
 
 > [!IMPORTANT]
