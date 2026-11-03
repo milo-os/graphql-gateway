@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import process from 'node:process'
 import { QueryPlanner } from '@graphql-hive/router-query-planner'
 import { buildSchema, getNamedType, isLeafType, isNonNullType } from 'graphql'
 
@@ -10,15 +11,15 @@ const field = Object.values(schema.getQueryType().getFields()).find(
   (f) => !f.args.some((a) => isNonNullType(a.type))
 )
 if (!field) {
-  console.error('no Query field without required arguments to plan')
+  process.stderr.write('no Query field without required arguments to plan\n')
   process.exit(1)
 }
 
 const selection = isLeafType(getNamedType(field.type)) ? field.name : `${field.name} { __typename }`
 const plan = planner.plan(`query Smoke { ${selection} }`, 'Smoke', new Set(), 0)
 if (plan?.kind !== 'QueryPlan' || !plan.node) {
-  console.error(`empty plan for Query.${field.name}: ${JSON.stringify(plan)}`)
+  process.stderr.write(`empty plan for Query.${field.name}: ${JSON.stringify(plan)}\n`)
   process.exit(1)
 }
 
-console.log(`planned Query.${field.name}: ${plan.node.kind}`)
+process.stdout.write(`planned Query.${field.name}: ${plan.node.kind}\n`)
