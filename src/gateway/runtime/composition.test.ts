@@ -4,7 +4,8 @@ import type * as nodeFs from 'node:fs'
 const sdlPath = '/repo/supergraph/supergraph.graphql'
 const sdl = 'type Query { ok: Boolean }'
 
-const { readFileSync, log, fetchMock, auth } = vi.hoisted(() => ({
+const { readFileSync, log, fetchMock, auth, verifyQueryPlanner } = vi.hoisted(() => ({
+  verifyQueryPlanner: vi.fn(),
   readFileSync: vi.fn(),
   log: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
   fetchMock: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock('node:fs', async (importOriginal) => ({
 vi.mock('@/gateway/config', () => ({ env: { supergraphPath: sdlPath } }))
 vi.mock('@/gateway/auth', () => auth)
 vi.mock('@/shared/utils', () => ({ log }))
+vi.mock('./query-planner-check', () => ({ verifyQueryPlanner }))
 
 import { fetchOpenApiPaths, getSubgraphName, stableSpecFetch } from './compose'
 
@@ -44,6 +46,7 @@ describe('supergraph snapshot', () => {
       if (path.endsWith('paths.json')) return JSON.stringify({ paths: ['apis/a/v1', 'api/v1'] })
       throw new Error(`unexpected read ${path}`)
     })
+    verifyQueryPlanner.mockResolvedValue('ok')
     auth.getMTLSFetch.mockReturnValue(fetchMock)
     respondWith(['api/v1', 'apis/a/v1'])
     vi.resetModules()
@@ -70,6 +73,17 @@ describe('supergraph snapshot', () => {
       'Supergraph snapshot loaded',
       expect.objectContaining({ path: sdlPath, bytes: sdl.length })
     )
+  })
+
+  it('fails boot and stays not ready when the query planner cannot plan', async () => {
+    verifyQueryPlanner.mockRejectedValue(new Error('Cannot find native binding'))
+    const mod = await import('./supergraph')
+
+    await expect(mod.initializeGateway()).rejects.toThrow(
+      'Query planner cannot plan against the supergraph: Cannot find native binding'
+    )
+    expect(mod.isSupergraphReady()).toBe(false)
+    expect(mod.getSupergraph()).toBe('')
   })
 
   it('fails boot when the snapshot is empty', async () => {
