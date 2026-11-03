@@ -3,6 +3,7 @@ import { sendJson, parseUrl } from '@/gateway/utils'
 import { validParentResources, scopedEndpoints, SCOPED_RESOURCE_PATTERN } from '@/gateway/config'
 import { gateway } from '@/gateway/runtime'
 import { log } from '@/shared/utils'
+import { countGraphQLResponse } from '@/gateway/metrics/graphql-responses'
 import type { ScopedMatch, GatewayHandler } from '@/gateway/types'
 
 /**
@@ -71,6 +72,7 @@ export const isGraphQLEndpoint = (pathname: string): boolean => {
 export const handleGraphQL: GatewayHandler = async (req, res) => {
   const url = parseUrl(req.url!, req.headers.host!)
   const scopedMatch = SCOPED_RESOURCE_PATTERN?.exec(url.pathname)
+  countGraphQLResponse(res, scopedMatch ? 'scoped' : 'root')
 
   if (scopedMatch) {
     const scoped = parseScopedMatch(scopedMatch)

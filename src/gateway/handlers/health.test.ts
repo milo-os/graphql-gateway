@@ -12,6 +12,7 @@ const { runtime, auth, sent } = vi.hoisted(() => ({
 
 vi.mock('@/gateway/runtime', () => runtime)
 vi.mock('@/gateway/auth', () => auth)
+vi.mock('@/gateway/metrics/graphql-responses', () => ({ countGraphQLResponse: vi.fn() }))
 vi.mock('@/gateway/utils', () => ({
   sendJson: (_res: ServerResponse, status: number, body: unknown) => sent.push({ status, body }),
   parseUrl: (url: string, host: string) => new URL(url, `http://${host}`),

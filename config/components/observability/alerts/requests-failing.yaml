@@ -1,0 +1,30 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: graphql-gateway-requests-alerts
+spec:
+  groups:
+    - name: graphql-gateway-requests
+      rules:
+        - alert: GraphQLGatewayRequestsFailing
+          expr: |
+            sum by (namespace) (increase(graphql_gateway_http_responses_total{code=~"5.."}[30m])) >= 3
+            and
+            sum by (namespace) (increase(graphql_gateway_http_responses_total{code=~"5.."}[30m]))
+              / sum by (namespace) (increase(graphql_gateway_http_responses_total[30m])) > 0.5
+          for: 10m
+          labels:
+            severity: critical
+            service: graphql-gateway
+            team: portals
+          annotations:
+            summary: >-
+              GraphQL gateway is failing most requests
+              ({{ $value | humanizePercentage }} 5xx over 30m)
+            description: >-
+              More than half of the GraphQL requests to the gateway in
+              {{ $labels.namespace }} returned a 5xx over the last 30 minutes.
+              This counts failures from any stage, including ones the router
+              runtime raises before execution, which the subgraph and Yoga
+              metrics never see.
+            runbook_url: 'https://github.com/milo-os/graphql-gateway/blob/main/docs/runbooks/requests-failing.md'
