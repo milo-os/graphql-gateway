@@ -13,3 +13,12 @@ jobs:
     uses: datum-cloud/actions/.github/workflows/ci-basic.yaml@v1.26.0
     with:
       run: npx tsc --noEmit
+
+  image-smoke:
+    name: Plan a query in the built image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - run: scripts/image-smoke.sh
