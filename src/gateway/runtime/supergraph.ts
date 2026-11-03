@@ -17,6 +17,7 @@ import {
   readSnapshotPaths,
   type PathDiff,
 } from './supergraph-snapshot'
+import { verifyQueryPlanner } from './query-planner-check'
 
 /** Committed SDL served by the gateway. */
 let supergraphSdl = ''
@@ -83,14 +84,22 @@ export const checkSnapshotDrift = async (path = snapshotPath()): Promise<PathDif
 }
 
 /**
- * Load the snapshot and mark the gateway ready. The drift check runs in the
+ * Load the snapshot, prove the query planner can plan against it, and mark
+ * the gateway ready. A planner failure throws, so the pod never turns Ready
+ * and a rollout keeps the previous pods serving. The drift check runs in the
  * background so a slow or unreachable API server cannot delay readiness.
  */
 export const initializeGateway = async (): Promise<void> => {
   const path = snapshotPath()
-  supergraphSdl = loadSupergraphSnapshot(path)
+  const sdl = loadSupergraphSnapshot(path)
+  log.info('Supergraph snapshot loaded', { path, bytes: sdl.length })
+  const planned = await verifyQueryPlanner(sdl).catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Query planner cannot plan against the supergraph: ${message}`)
+  })
+  log.info('Query planner check passed', { field: `Query.${planned}` })
+  supergraphSdl = sdl
   isReady = true
-  log.info('Supergraph snapshot loaded', { path, bytes: supergraphSdl.length })
   void checkSnapshotDrift(path)
 }
 
