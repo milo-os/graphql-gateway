@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -22,3 +24,37 @@ jobs:
         with:
           persist-credentials: false
       - run: scripts/image-smoke.sh
+
+  # Publishing runs here rather than through workflow_run because the image and
+  # bundle tags come from the triggering event and ref. These conditions use no
+  # status function, so GitHub also requires every job in `needs` to succeed: a
+  # failed, skipped or cancelled dependency blocks the publish.
+  publish-container-image:
+    needs: [ci, image-smoke]
+    if: ${{ github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+      attestations: write
+    uses: datum-cloud/actions/.github/workflows/publish-docker.yaml@v1.26.0
+    with:
+      image-name: graphql-gateway
+      registry-organization: milo-os
+    # No secrets are passed on purpose. The build uses none, and upstream
+    # forwards SENTRY_AUTH_TOKEN as a build arg, which BuildKit records in
+    # plaintext in the image's provenance.
+
+  publish-kustomize-bundles:
+    needs: [publish-container-image]
+    if: ${{ github.event_name == 'release' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    uses: datum-cloud/actions/.github/workflows/publish-kustomize-bundle.yaml@v1.26.0
+    with:
+      bundle-name: ghcr.io/milo-os/graphql-gateway-kustomize
+      bundle-path: config
+      image-overlays: config/base
+      image-name: ghcr.io/milo-os/graphql-gateway
