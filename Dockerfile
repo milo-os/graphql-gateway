@@ -42,10 +42,12 @@ COPY supergraph/ ./supergraph/
 # Copy runtime configuration
 COPY config/ ./config/
 
-# Run as the image's unprivileged node user (uid/gid 1000). The copied files and
-# node_modules are world-readable, so the process never needs write access below
+# Run as the image's unprivileged node uid/gid (1000). Using the numeric id keeps
+# the runtime identity visible in the image config, so runAsNonRoot can be
+# verified from the image alone. The copied files and node_modules are
+# world-readable but root-owned, so the process never needs write access below
 # /app; mount a writable emptyDir at /tmp if a runtime dependency needs one.
-USER node
+USER 1000:1000
 
 EXPOSE 4000
 
