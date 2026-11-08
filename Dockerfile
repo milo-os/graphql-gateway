@@ -34,13 +34,13 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # Copy compiled gateway code (bundled by esbuild)
-COPY --chown=node:node --from=builder /app/dist ./dist
+COPY --from=builder /app/dist ./dist
 
 # Copy the committed supergraph snapshot served at runtime
-COPY --chown=node:node supergraph/ ./supergraph/
+COPY supergraph/ ./supergraph/
 
 # Copy runtime configuration
-COPY --chown=node:node config/ ./config/
+COPY config/ ./config/
 
 # Run as the image's unprivileged node user (uid/gid 1000). The copied files and
 # node_modules are world-readable, so the process never needs write access below
