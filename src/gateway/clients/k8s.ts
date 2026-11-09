@@ -209,6 +209,9 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
           }
 
           const failResponse = (error: Error) => {
+            if (init?.signal?.aborted) {
+              return
+            }
             span.setStatus({ code: SpanStatusCode.ERROR, message: error.message })
             log.error('mTLS response failed', { url, error: error.message })
             reject(error)
@@ -239,7 +242,7 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
             })
             res.on('error', failResponse)
             res.on('close', () => {
-              if (!res.complete && !res.errored && !init?.signal?.aborted) {
+              if (!res.complete && !res.errored) {
                 failResponse(new Error('mTLS response closed before it completed'))
               }
             })
