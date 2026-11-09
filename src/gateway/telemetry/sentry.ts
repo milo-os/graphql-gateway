@@ -2,12 +2,14 @@ import * as Sentry from '@sentry/node'
 import { env } from '@/gateway/config'
 import { log } from '@/shared/utils'
 
+const SCRUBBED_KEYS = ['forwarded', '-ip', 'remote-', 'via', '-user']
+
 /**
- * Initialize Sentry for error reporting and performance monitoring.
+ * Initialize Sentry for error reporting.
  *
- * Must be called after OpenTelemetry is set up (telemetry.ts) so that
- * skipOpenTelemetrySetup can hook into the already-registered providers
- * rather than creating a duplicate TracerProvider.
+ * OpenTelemetry (telemetry.ts) owns tracing and exports spans over OTLP.
+ * Sentry captures errors only and links them to the active OpenTelemetry
+ * span through openTelemetryIntegration.
  */
 export function initSentry(): void {
   if (!env.sentryDsn) {
@@ -19,10 +21,21 @@ export function initSentry(): void {
     dsn: env.sentryDsn,
     environment: env.sentryEnv,
     release: env.version,
-    tracesSampleRate: 1.0,
-    // OTEL is already configured via telemetry.ts — tell Sentry to hook into
-    // the existing providers instead of registering its own.
-    skipOpenTelemetrySetup: true,
+    integrations: [Sentry.openTelemetryIntegration()],
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: {
+        request: { deny: SCRUBBED_KEYS },
+        response: { deny: SCRUBBED_KEYS },
+      },
+      httpBodies: [],
+      urlQueryParams: { deny: SCRUBBED_KEYS },
+      genAI: { inputs: false, outputs: false },
+      databaseQueryData: false,
+      queues: false,
+      graphQL: { document: false, variables: false },
+    },
   })
 
   log.info('[sentry] Initialized', { environment: env.sentryEnv, release: env.version })
