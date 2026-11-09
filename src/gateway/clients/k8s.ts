@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs'
 import * as https from 'node:https'
 import { KubeConfig } from '@kubernetes/client-node'
-import * as Sentry from '@sentry/node'
+import { SpanKind, SpanStatusCode, trace } from '@opentelemetry/api'
 import { Agent, fetch as undiciFetch } from 'undici'
 import { log } from '@/shared/utils'
+
+const tracer = trace.getTracer('graphql-gateway')
 
 /**
  * Connection pool settings for requests that authenticate as the end user.
@@ -175,10 +177,10 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
         ? Object.fromEntries(rawHeaders.entries())
         : ((rawHeaders as Record<string, string>) ?? {})
 
-    return Sentry.startSpan(
+    return tracer.startActiveSpan(
+      `${method} ${parsedUrl.pathname}`,
       {
-        op: 'http.client',
-        name: `${method} ${parsedUrl.pathname}`,
+        kind: SpanKind.CLIENT,
         attributes: {
           'http.request.method': method,
           'url.full': url,
@@ -206,6 +208,15 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
             agent,
           }
 
+          const failResponse = (error: Error) => {
+            if (init?.signal?.aborted) {
+              return
+            }
+            span.setStatus({ code: SpanStatusCode.ERROR, message: error.message })
+            log.error('mTLS response failed', { url, error: error.message })
+            reject(error)
+          }
+
           const req = https.request(options, (res) => {
             const chunks: Buffer[] = []
 
@@ -214,7 +225,10 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
               const statusCode = res.statusCode || 200
               span.setAttribute('http.response.status_code', statusCode)
               if (statusCode >= 400) {
-                span.setStatus({ code: 2, message: res.statusMessage || 'Error' })
+                span.setStatus({
+                  code: SpanStatusCode.ERROR,
+                  message: res.statusMessage || 'Error',
+                })
               }
 
               const body = Buffer.concat(chunks).toString('utf8')
@@ -226,10 +240,16 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
 
               resolve(response)
             })
+            res.on('error', failResponse)
+            res.on('close', () => {
+              if (!res.complete && !res.errored) {
+                failResponse(new Error('mTLS response closed before it completed'))
+              }
+            })
           })
 
           req.on('error', (error) => {
-            span.setStatus({ code: 2, message: error.message })
+            span.setStatus({ code: SpanStatusCode.ERROR, message: error.message })
             log.error('mTLS request failed', { url, error: error.message })
             reject(error)
           })
@@ -249,7 +269,7 @@ export function createMTLSFetch(mtlsConfig: K8sMTLSConfig): typeof fetch {
           }
 
           req.end()
-        })
+        }).finally(() => span.end())
     )
   }
 }

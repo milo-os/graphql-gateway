@@ -1,7 +1,7 @@
 // Telemetry must be initialized before any other imports
 import './telemetry/telemetry'
 
-// Sentry must be initialized after OTEL (skipOpenTelemetrySetup hooks into it)
+// Sentry must be initialized after OTEL (openTelemetryIntegration links to it)
 import { initSentry } from './telemetry/sentry'
 initSentry()
 
