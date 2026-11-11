@@ -28,10 +28,24 @@ spec:
         app.kubernetes.io/instance: graphql-gateway
         app.kubernetes.io/name: graphql-gateway
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: graphql-gateway
           image: ghcr.io/milo-os/graphql-gateway:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
           ports:
             - containerPort: 4000
               name: https
@@ -100,6 +114,7 @@ spec:
         - name: milo-control-plane-kubeconfig
           configMap:
             name: milo-control-plane-kubeconfig
+            defaultMode: 0440
             items:
               - key: kubeconfig
                 path: kubeconfig
@@ -111,11 +126,12 @@ spec:
               csi.cert-manager.io/issuer-name: datum-control-plane
               csi.cert-manager.io/issuer-kind: ClusterIssuer
               csi.cert-manager.io/common-name: graphql-gateway
-              csi.cert-manager.io/fs-group: '65534'
+              csi.cert-manager.io/fs-group: '1000'
               csi.cert-manager.io/key-usages: client auth
         - name: trust-bundle
           configMap:
             name: datum-control-plane-trust-bundle
+            defaultMode: 0440
             items:
               - key: ca.crt
                 path: ca.crt
@@ -128,7 +144,7 @@ spec:
               csi.cert-manager.io/issuer-kind: ClusterIssuer
               csi.cert-manager.io/common-name: graphql-gateway
               csi.cert-manager.io/dns-names: graphql-gateway,graphql-gateway.graphql-gateway.svc,graphql-gateway.graphql-gateway.svc.cluster.local
-              csi.cert-manager.io/fs-group: '65532'
+              csi.cert-manager.io/fs-group: '1000'
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
