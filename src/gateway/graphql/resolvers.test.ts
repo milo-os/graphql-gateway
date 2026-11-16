@@ -1206,6 +1206,7 @@ describe('Query.organizationMembers', () => {
                 email: 'bob@example.com',
                 roles: [{ name: 'editor' }],
                 state: 'Pending',
+                expirationDate: '2024-02-08T00:00:00Z',
               },
             },
           ],
@@ -1221,6 +1222,7 @@ describe('Query.organizationMembers', () => {
       givenName: 'Ada',
       roles: ['viewer'],
       type: 'member',
+      expiresAt: null,
       userName: 'user-1',
       avatarUrl: 'https://cdn.example.com/ada.png',
     })
@@ -1230,6 +1232,7 @@ describe('Query.organizationMembers', () => {
       name: 'inv-1',
       email: 'bob@example.com',
       invitationState: 'Pending',
+      expiresAt: '2024-02-08T00:00:00Z',
       type: 'invitation',
       userName: null,
       avatarUrl: null,

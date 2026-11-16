@@ -288,6 +288,8 @@ export const additionalTypeDefs = /* GraphQL */ `
     type: String!
     "Only set for invitations: Pending, Accepted, Declined."
     invitationState: String
+    "Only set for invitations: when it stops being accepted (RFC 3339)."
+    expiresAt: String
     createdAt: String
     "The member's user resource name. Null for invitations, which have no user yet."
     userName: String
