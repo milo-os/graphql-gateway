@@ -1,10 +1,63 @@
-import type { IncomingMessage } from 'node:http'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { sendJson, parseUrl } from '@/gateway/utils'
-import { validParentResources, scopedEndpoints, SCOPED_RESOURCE_PATTERN } from '@/gateway/config'
+import {
+  env,
+  validParentResources,
+  scopedEndpoints,
+  SCOPED_RESOURCE_PATTERN,
+} from '@/gateway/config'
+import { checkCaller } from '@/gateway/auth'
+import type { CallerVerdict } from '@/gateway/auth'
 import { gateway } from '@/gateway/runtime'
 import { log } from '@/shared/utils'
 import { countGraphQLResponse } from '@/gateway/metrics/graphql-responses'
+import { countCallerCheck } from '@/gateway/metrics/caller-checks'
 import type { ScopedMatch, GatewayHandler } from '@/gateway/types'
+
+/**
+ * Refuses a request whose token Milo did not accept. The body is a GraphQL
+ * error so clients map it like any other, and says nothing about the schema.
+ * A token Milo could not check is a 503: the caller may be fine, and retrying
+ * can succeed.
+ */
+const refuseCaller = (res: ServerResponse, verdict: Exclude<CallerVerdict, 'authenticated'>) => {
+  if (verdict === 'unavailable') {
+    return sendJson(res, 503, {
+      errors: [
+        { message: 'Could not verify credentials', extensions: { code: 'UPSTREAM_UNAVAILABLE' } },
+      ],
+    })
+  }
+  return sendJson(
+    res,
+    401,
+    { errors: [{ message: 'Authentication required', extensions: { code: 'UNAUTHENTICATED' } }] },
+    { 'WWW-Authenticate': 'Bearer' }
+  )
+}
+
+/**
+ * Checks the caller's token before anything reaches Hive, so introspection,
+ * gateway-local fields and federated fields are all covered. Returns true when
+ * the request may go on. AUTH_MODE=log lets a failed check through and logs it.
+ */
+const admitCaller = async (req: IncomingMessage, res: ServerResponse): Promise<boolean> => {
+  const verdict = await checkCaller(req.headers.authorization)
+  if (verdict === 'authenticated') {
+    countCallerCheck(verdict, false)
+    return true
+  }
+  const enforced = env.authMode === 'enforce'
+  countCallerCheck(verdict, enforced)
+  if (enforced) {
+    refuseCaller(res, verdict)
+    return false
+  }
+  log.warn('Letting a GraphQL request through without an accepted token (AUTH_MODE=log)', {
+    verdict,
+  })
+  return true
+}
 
 /**
  * Parse a scoped URL match into a structured object.
@@ -73,6 +126,8 @@ export const handleGraphQL: GatewayHandler = async (req, res) => {
   const url = parseUrl(req.url!, req.headers.host!)
   const scopedMatch = SCOPED_RESOURCE_PATTERN?.exec(url.pathname)
   countGraphQLResponse(res, scopedMatch ? 'scoped' : 'root')
+
+  if (!(await admitCaller(req, res))) return
 
   if (scopedMatch) {
     const scoped = parseScopedMatch(scopedMatch)

@@ -1,7 +1,12 @@
 import type { ServerResponse } from 'node:http'
 
-export const sendJson = (res: ServerResponse, status: number, body: object): void => {
-  res.writeHead(status, { 'Content-Type': 'application/json' })
+export const sendJson = (
+  res: ServerResponse,
+  status: number,
+  body: object,
+  headers: Readonly<Record<string, string>> = {}
+): void => {
+  res.writeHead(status, { ...headers, 'Content-Type': 'application/json' })
   res.end(JSON.stringify(body))
 }
 

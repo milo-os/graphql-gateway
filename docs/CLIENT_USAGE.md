@@ -24,6 +24,8 @@ import * as dotenv from 'dotenv'
 dotenv.config()
 
 // The URL of your running GraphQL Gateway (local or remote)
+// The gateway needs a token on every request, introspection included.
+// For example: export DATUM_TOKEN="$(datumctl auth get-token --output=token)"
 const GRAPHQL_ENDPOINT = process.env.GRAPHQL_URL || 'http://localhost:4000/graphql' // or 'https://graphql.prod.env.datum.net/graphql'
 
 const config: CodegenConfig = {
@@ -31,7 +33,7 @@ const config: CodegenConfig = {
   // Point schema to the gateway to fetch the latest schema introspection
   schema: {
     [GRAPHQL_ENDPOINT]: {
-      headers: {},
+      headers: { Authorization: `Bearer ${process.env.DATUM_TOKEN}` },
     },
   },
   // Paths to your GraphQL operation files
@@ -124,7 +126,8 @@ export async function graphqlRequest<TData, TVariables>(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      // 'Authorization': `Bearer ${token}` // Add auth if needed
+      // Required: the gateway answers 401 without a token Milo accepts
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ query, variables }),
   })
@@ -277,8 +280,6 @@ When switching scopes, you typically re-create or re-configure your GraphQL clie
 function createOrgClient(orgName: string) {
   const uri = `https://graphql.prod.env.datum.net/resourcemanager.miloapis.com/v1alpha1/organizations/${orgName}/graphql`
 
-  return new GraphQLClient(uri, {
-    /* ... */
-  })
+  return new GraphQLClient(uri, {/* ... */})
 }
 ```
