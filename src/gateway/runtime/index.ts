@@ -3,7 +3,7 @@ import { useOpenTelemetry } from '@graphql-hive/plugin-opentelemetry'
 import { unifiedGraphHandler } from '@graphql-hive/router-runtime'
 import { env } from '@/gateway/config'
 import { usePrometheusMetrics } from '@/gateway/metrics/metrics'
-import { useGatewayLocalSchema } from '@/gateway/graphql'
+import { useGatewayLocalSchema, useSanitizedErrors } from '@/gateway/graphql'
 import { getSupergraph } from './supergraph'
 
 export { initializeGateway, isSupergraphReady } from './supergraph'
@@ -25,5 +25,7 @@ export const gateway = createGatewayRuntime({
     // Required because @graphql-hive/router-runtime ignores additionalTypeDefs
     // / additionalResolvers — see ./plugin.ts.
     useGatewayLocalSchema(),
+    // Drops upstream request/response details from error extensions.
+    useSanitizedErrors(),
   ],
 })

@@ -23,6 +23,8 @@ This project provides a **GraphQL gateway** that sits in front of Milo APIServer
 | Variable              | Description                                                                                  | Default                           |
 | --------------------- | -------------------------------------------------------------------------------------------- | --------------------------------- |
 | `PORT`                | Port the gateway listens on                                                                  | `4000`                            |
+| `METRICS_PORT`        | Port that serves only `/metrics`, kept off the routed port                                   | `9464`                            |
+| `AUTH_MODE`           | `enforce` refuses GraphQL requests without a token Milo accepts; `log` lets them through     | `enforce`                         |
 | `KUBECONFIG`          | Path to kubeconfig file for K8s authentication                                               | Required                          |
 | `SUPERGRAPH_PATH`     | Path to the committed supergraph SDL                                                         | `./supergraph/supergraph.graphql` |
 | `LOGGING`             | Log level (`debug`, `info`, `warn`, `error`)                                                 | `info`                            |
@@ -107,6 +109,16 @@ The gateway is deployed to Kubernetes using the manifests in `config/base/`. Key
 - **[Client Usage Guide](docs/CLIENT_USAGE.md)**:
   - Check the detailed guide on how to setup `codegen` and use the gateway from a client application, including **Parent Resources** setup.
 
-- **Health Endpoints**:
+- **Authentication**:
+  - Every GraphQL request needs `Authorization: Bearer <token>` with a token Milo accepts. That covers the root and scoped `/graphql` paths, every method, introspection and the gateway's own fields such as `geolocateIP`.
+  - The gateway checks the token with a SelfSubjectReview against Milo, without its client certificate, and reuses the answer for that token for a minute (ten seconds for a rejected token).
+  - A missing or rejected token gets HTTP 401 with a GraphQL error whose `extensions.code` is `UNAUTHENTICATED`. If Milo can't be asked, the answer is 503 with `UPSTREAM_UNAVAILABLE`.
+  - `AUTH_MODE=log` lets those requests through and logs them. `graphql_gateway_caller_checks_total` counts every check by verdict either way.
+
+- **Health Endpoints** (no token needed):
   - `/healthcheck` - Liveness probe (the HTTPS server is accepting requests)
   - `/readiness` - Readiness probe (K8s auth initialized and the committed supergraph snapshot loaded)
+
+- **Metrics**: `/metrics` is served only on `METRICS_PORT`. The Service exposes it as the `metrics` port for the ServiceMonitor, and the HTTPRoute doesn't route to it.
+
+- **Errors**: error `extensions` keep only `code`, `status`, `path` and `timeoutMs`. Upstream request and response details are dropped, and an upstream HTTP status is kept as `status`.
