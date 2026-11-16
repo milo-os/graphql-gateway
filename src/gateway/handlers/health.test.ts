@@ -30,7 +30,7 @@ vi.mock('@/shared/utils', () => ({
 }))
 
 import { env } from '@/gateway/config'
-import { handleGraphQL } from './graphql'
+import { handleGraphQL, handleInternalGraphQL } from './graphql'
 import { handleHealthCheck, handleReadinessCheck } from './health'
 import { handleMetrics } from './metrics'
 
@@ -210,5 +210,37 @@ describe('GraphQL caller check', () => {
 
     expect(runtime.gateway).toHaveBeenCalledWith(graphqlReq, res)
     expect(sent).toEqual([])
+  })
+})
+
+describe('internal GraphQL port', () => {
+  beforeEach(() => {
+    sent.length = 0
+    runtime.gateway.mockClear()
+    auth.checkCaller.mockReset()
+    env.authMode = 'enforce'
+  })
+
+  it('forwards a tokenless request without checking it', async () => {
+    const graphqlReq = graphReq('/graphql')
+
+    await handleInternalGraphQL(graphqlReq, res)
+
+    expect(auth.checkCaller).not.toHaveBeenCalled()
+    expect(runtime.gateway).toHaveBeenCalledWith(graphqlReq, res)
+    expect(sent).toEqual([])
+  })
+
+  it('still derives scoped headers and drops client-supplied ones', async () => {
+    const graphqlReq = graphReq(
+      '/resourcemanager.miloapis.com/v1alpha1/projects/proj-a/graphql',
+      CLIENT_RESOURCE_HEADERS
+    )
+
+    await handleInternalGraphQL(graphqlReq, res)
+
+    expect(auth.checkCaller).not.toHaveBeenCalled()
+    expect(graphqlReq.headers['x-resource-name']).toBe('proj-a')
+    expect(graphqlReq.headers['x-resource-api-group']).toBe('resourcemanager.miloapis.com')
   })
 })

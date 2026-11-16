@@ -48,6 +48,12 @@ export const env = {
   /** Port for the gateway (default: 4000) */
   port: Number(process.env.PORT) || 4000,
 
+  /**
+   * Port that serves GraphQL without the token check, for in-cluster callers
+   * only. No HTTPRoute may target it (default: 4001)
+   */
+  internalPort: Number(process.env.INTERNAL_PORT) || 4001,
+
   /** Port that serves only /metrics, kept off the routed port (default: 9464) */
   metricsPort: Number(process.env.METRICS_PORT) || 9464,
 

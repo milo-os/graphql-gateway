@@ -23,6 +23,7 @@ This project provides a **GraphQL gateway** that sits in front of Milo APIServer
 | Variable              | Description                                                                                  | Default                           |
 | --------------------- | -------------------------------------------------------------------------------------------- | --------------------------------- |
 | `PORT`                | Port the gateway listens on                                                                  | `4000`                            |
+| `INTERNAL_PORT`       | Port that serves GraphQL without the token check, for in-cluster callers only                | `4001`                            |
 | `METRICS_PORT`        | Port that serves only `/metrics`, kept off the routed port                                   | `9464`                            |
 | `AUTH_MODE`           | `enforce` refuses GraphQL requests without a token Milo accepts; `log` lets them through     | `enforce`                         |
 | `KUBECONFIG`          | Path to kubeconfig file for K8s authentication                                               | Required                          |
@@ -114,6 +115,7 @@ The gateway is deployed to Kubernetes using the manifests in `config/base/`. Key
   - The gateway checks the token with a SelfSubjectReview against Milo, without its client certificate, and reuses the answer for that token for a minute (ten seconds for a rejected token).
   - A missing or rejected token gets HTTP 401 with a GraphQL error whose `extensions.code` is `UNAUTHENTICATED`. If Milo can't be asked, the answer is 503 with `UPSTREAM_UNAVAILABLE`.
   - `AUTH_MODE=log` lets those requests through and logs them. `graphql_gateway_caller_checks_total` counts every check by verdict either way.
+  - `INTERNAL_PORT` (4001) serves the same GraphQL paths without the token check, for in-cluster callers that send no token. Today that is the Zitadel actions receiver, which calls `geolocateIP` and `parseUserAgent` at `https://graphql-gateway.graphql-gateway.svc.cluster.local:4001/graphql`. The Service exposes it as the `internal` port, and the HTTPRoute only routes port 4000, so it is never public. Federated fields still go to Milo with whatever token the caller sends, so a tokenless call there reaches Milo as anonymous.
 
 - **Health Endpoints** (no token needed):
   - `/healthcheck` - Liveness probe (the HTTPS server is accepting requests)

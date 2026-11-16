@@ -119,16 +119,27 @@ export const isGraphQLEndpoint = (pathname: string): boolean => {
 }
 
 /**
- * Handle GraphQL requests (both root and scoped).
- * Parses the URL, validates scoped resources, and forwards to the gateway.
+ * Builds the GraphQL handler (root and scoped paths). It parses the URL,
+ * validates scoped resources, and forwards to the gateway. With
+ * `requireToken` it first refuses callers whose token Milo does not accept.
  */
-export const handleGraphQL: GatewayHandler = async (req, res) => {
-  const url = parseUrl(req.url!, req.headers.host!)
-  const scopedMatch = SCOPED_RESOURCE_PATTERN?.exec(url.pathname)
-  countGraphQLResponse(res, scopedMatch ? 'scoped' : 'root')
+const graphQLHandler =
+  ({ requireToken }: { readonly requireToken: boolean }): GatewayHandler =>
+  async (req, res) => {
+    const url = parseUrl(req.url!, req.headers.host!)
+    const scopedMatch = SCOPED_RESOURCE_PATTERN?.exec(url.pathname)
+    countGraphQLResponse(res, scopedMatch ? 'scoped' : 'root')
 
-  if (!(await admitCaller(req, res))) return
+    if (requireToken && !(await admitCaller(req, res))) return
 
+    return forwardGraphQL(req, res, scopedMatch)
+  }
+
+const forwardGraphQL = async (
+  req: IncomingMessage,
+  res: ServerResponse,
+  scopedMatch: RegExpExecArray | null | undefined
+) => {
   if (scopedMatch) {
     const scoped = parseScopedMatch(scopedMatch)
     const lookupKey = `${scoped.apiGroup}/${scoped.version}/${scoped.kind}`
@@ -151,3 +162,13 @@ export const handleGraphQL: GatewayHandler = async (req, res) => {
 
   return gateway(req, res)
 }
+
+/** GraphQL on the routed port: every request needs a token Milo accepts. */
+export const handleGraphQL: GatewayHandler = graphQLHandler({ requireToken: true })
+
+/**
+ * GraphQL on the internal port, which no HTTPRoute targets: no token check.
+ * It serves in-cluster callers that send no token, such as the Zitadel
+ * actions receiver calling geolocateIP and parseUserAgent.
+ */
+export const handleInternalGraphQL: GatewayHandler = graphQLHandler({ requireToken: false })

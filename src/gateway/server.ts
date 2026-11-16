@@ -12,6 +12,7 @@ import {
   handleReadinessCheck,
   isGraphQLEndpoint,
   handleGraphQL,
+  handleInternalGraphQL,
   isMetrics,
   handleMetrics,
 } from './handlers'
@@ -89,6 +90,30 @@ export const createGatewayServer = () => {
   }
 
   log.info('Starting server with HTTPS')
+  const server = createServer(tlsOptions, withRequestContext(dispatch))
+  server.keepAliveTimeout = 75_000
+  server.headersTimeout = 76_000
+  return server
+}
+
+/**
+ * Serves GraphQL without the token check on the internal port, for in-cluster
+ * callers that send no token (the Zitadel actions receiver). The Service names
+ * this port separately and no HTTPRoute targets it, so it is never public.
+ * Health checks stay on the main port.
+ */
+export const createInternalGraphQLServer = () => {
+  const tlsOptions = loadTlsOptions()
+
+  const dispatch = async (req: IncomingMessage, res: ServerResponse) => {
+    const { pathname } = parseUrl(req.url!, req.headers.host!)
+    if (isGraphQLEndpoint(pathname)) {
+      log.info(`${req.method} ${pathname} (internal)`)
+      return handleInternalGraphQL(req, res)
+    }
+    sendJson(res, 404, { error: 'Not Found' })
+  }
+
   const server = createServer(tlsOptions, withRequestContext(dispatch))
   server.keepAliveTimeout = 75_000
   server.headersTimeout = 76_000

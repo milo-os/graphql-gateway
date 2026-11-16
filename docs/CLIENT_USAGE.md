@@ -151,6 +151,10 @@ export async function graphqlRequest<TData, TVariables>(
 > [!NOTE]
 > This is just a reference implementation. Since the Gateway exposes a standard GraphQL introspection endpoint, you are free to use any GraphQL client (Apollo, Urql, or custom fetch wrappers) and implement your own error handling or logic as needed.
 
+### In-cluster callers without a token
+
+A service inside the cluster that has no user token, such as the Zitadel actions receiver, calls the internal port instead: `https://graphql-gateway.graphql-gateway.svc.cluster.local:4001/graphql` (or a scoped path on the same port). It serves the same schema without the token check, and is not reachable from outside the cluster. Gateway-local fields such as `geolocateIP` and `parseUserAgent` work there without a token. Federated fields reach Milo as the anonymous user unless the caller sends a token.
+
 ## 3. Querying Resources
 
 The gateway automatically converts Kubernetes resources into GraphQL operations. The naming convention for operations typically follows:

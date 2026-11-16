@@ -14,6 +14,14 @@ spec:
       protocol: TCP
       appProtocol: https
       targetPort: https
+    # GraphQL without the token check, for in-cluster callers only (the
+    # Zitadel actions receiver). The HTTPRoute routes port 4000, so this port
+    # is never public.
+    - name: internal
+      port: 4001
+      protocol: TCP
+      appProtocol: https
+      targetPort: internal
     # Prometheus only. The HTTPRoute routes port 4000, so /metrics never
     # reaches a public listener.
     - name: metrics
