@@ -52,6 +52,7 @@ interface UpstreamUserInvitation {
     email?: string
     roles?: Array<{ name: string; namespace?: string }>
     state?: string
+    expirationDate?: string
   }
 }
 
@@ -419,6 +420,7 @@ type OrgMemberResult = {
   roles: string[]
   type: string
   invitationState: string | null
+  expiresAt: string | null
   createdAt: string | null
   userName: string | null
   avatarUrl: string | null
@@ -490,6 +492,7 @@ async function fetchOrgMembers(
           roles: (m.spec?.roles ?? []).map((r) => r.name),
           type: 'member',
           invitationState: null,
+          expiresAt: null,
           createdAt: m.metadata?.creationTimestamp ?? null,
           userName: m.spec?.userRef?.name ?? null,
           avatarUrl: m.status?.user?.avatarUrl ?? null,
@@ -510,6 +513,7 @@ async function fetchOrgMembers(
           roles: (inv.spec?.roles ?? []).map((r) => r.name),
           type: 'invitation',
           invitationState: inv.spec?.state ?? null,
+          expiresAt: inv.spec?.expirationDate ?? null,
           createdAt: inv.metadata?.creationTimestamp ?? null,
           userName: null,
           avatarUrl: null,
