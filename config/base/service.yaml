@@ -14,6 +14,13 @@ spec:
       protocol: TCP
       appProtocol: https
       targetPort: https
+    # Prometheus only. The HTTPRoute routes port 4000, so /metrics never
+    # reaches a public listener.
+    - name: metrics
+      port: 9464
+      protocol: TCP
+      appProtocol: https
+      targetPort: metrics
   selector:
     app.kubernetes.io/component: backend
     app.kubernetes.io/instance: graphql-gateway

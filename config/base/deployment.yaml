@@ -50,6 +50,9 @@ spec:
             - containerPort: 4000
               name: https
               protocol: TCP
+            - containerPort: 9464
+              name: metrics
+              protocol: TCP
           env:
             - name: LOGGING
               value: info

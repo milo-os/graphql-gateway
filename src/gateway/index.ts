@@ -5,7 +5,7 @@ import './telemetry/telemetry'
 import { initSentry } from './telemetry/sentry'
 initSentry()
 
-import { createGatewayServer } from './server'
+import { createGatewayServer, createMetricsServer } from './server'
 import { env, scopedEndpoints } from './config'
 import { initAuth, getK8sServer } from './auth'
 import { initializeGateway } from './runtime'
@@ -48,11 +48,17 @@ const main = async () => {
   }
 
   const server = createGatewayServer()
+  const metricsServer = createMetricsServer()
+
+  metricsServer.listen(env.metricsPort, () => {
+    log.info(`Metrics listening on port ${env.metricsPort} (HTTPS, /metrics only)`)
+  })
 
   server.listen(env.port, () => {
     log.info(`Gateway listening on port ${env.port} (HTTPS)`)
     log.info(`K8s API server: ${getK8sServer()}`)
-    log.info('Endpoints: /graphql, /healthcheck, /readiness, /metrics')
+    log.info(`GraphQL requests need a token Milo accepts (AUTH_MODE=${env.authMode})`)
+    log.info('Endpoints: /graphql, /healthcheck, /readiness')
 
     if (scopedEndpoints.length > 0) {
       log.info('Scoped endpoints:')
@@ -68,6 +74,9 @@ const main = async () => {
     if (shuttingDown) return
     shuttingDown = true
     log.info(`${signal} received, shutting down gracefully...`)
+    // Scrapes are short and nothing waits on them, so the metrics port just stops.
+    metricsServer.close()
+    metricsServer.closeAllConnections()
     server.close(() => {
       log.info('Server closed')
       process.exit(0)

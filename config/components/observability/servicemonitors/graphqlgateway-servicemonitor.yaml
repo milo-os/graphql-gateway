@@ -13,7 +13,7 @@ spec:
       app.kubernetes.io/name: graphql-gateway
       app.kubernetes.io/instance: graphql-gateway
   endpoints:
-    - port: https
+    - port: metrics
       path: /metrics
       interval: 30s
       scrapeTimeout: 10s
