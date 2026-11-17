@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   ci:
-    uses: datum-cloud/actions/.github/workflows/ci-basic.yaml@v1.26.0
+    uses: datum-cloud/actions/.github/workflows/ci-basic.yaml@v1.28.0
     with:
       run: npx tsc --noEmit
 
@@ -37,7 +37,7 @@ jobs:
       contents: read
       packages: write
       attestations: write
-    uses: datum-cloud/actions/.github/workflows/publish-docker.yaml@v1.26.0
+    uses: datum-cloud/actions/.github/workflows/publish-docker.yaml@v1.28.0
     with:
       image-name: graphql-gateway
       registry-organization: milo-os
@@ -52,7 +52,7 @@ jobs:
       id-token: write
       contents: read
       packages: write
-    uses: datum-cloud/actions/.github/workflows/publish-kustomize-bundle.yaml@v1.26.0
+    uses: datum-cloud/actions/.github/workflows/publish-kustomize-bundle.yaml@v1.28.0
     with:
       bundle-name: ghcr.io/milo-os/graphql-gateway-kustomize
       bundle-path: config
