@@ -2606,6 +2606,38 @@ describe('per-item enrichment failures', () => {
     expect(result.errors).toBeUndefined()
   })
 
+  it('nulls billing fields and reports UPSTREAM_UNAVAILABLE when billing fetch throws', async () => {
+    const baseFetch = projectOrgRoutedFetch({
+      projectsList: jsonResponse({
+        items: [
+          { metadata: { name: 'proj-a', annotations: {} }, spec: { ownerRef: { name: 'acme' } } },
+        ],
+        metadata: {},
+      }),
+      organizations: { acme: acmeOrganization() },
+    })
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      if (url.includes('/billingaccountbindings')) {
+        return Promise.reject(new TypeError('network error'))
+      }
+      return baseFetch(input, init)
+    })
+
+    const result = await executeProjects(
+      '{ projects { items { name hasActiveBillingAccount billingAccountName } } }'
+    )
+
+    expect(result.data).toEqual({
+      projects: {
+        items: [{ name: 'proj-a', hasActiveBillingAccount: null, billingAccountName: null }],
+      },
+    })
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors?.[0]?.extensions).toMatchObject({ code: 'UPSTREAM_UNAVAILABLE' })
+    expect(result.errors?.[0]?.path).toEqual(['projects', 'items', 0, 'hasActiveBillingAccount'])
+  })
+
   it('cancels the unread bindings body when the accounts fetch fails', async () => {
     let cancelled = false
     const bindingsBody = new ReadableStream({
