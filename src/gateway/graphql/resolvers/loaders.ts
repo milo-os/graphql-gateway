@@ -438,7 +438,9 @@ export function createRequestLoaders(context: ResolverContext): RequestLoaders {
     if (!orgName) return { value: null, status: null }
 
     const orgResult = await billingForOrg.load(orgName)
-    if (!orgResult.value) return { value: null, status: orgResult.status }
+    if (!orgResult.value) {
+      return { value: null, status: orgResult.status, error: orgResult.error }
+    }
     return { value: orgResult.value.get(projectName) ?? null, status: null }
   })
 
