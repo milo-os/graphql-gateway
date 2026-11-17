@@ -1,7 +1,14 @@
 import { GraphQLError } from 'graphql'
 import { getOriginalFetch, getK8sServer } from '@/gateway/auth'
 import { log } from '@/shared/utils'
-import { type ResolverContext, getHeader, rethrowGraphQLError, failedPage, upstreamFailure } from './common'
+import {
+  type ResolverContext,
+  discardBody,
+  getHeader,
+  rethrowGraphQLError,
+  failedPage,
+  upstreamFailure,
+} from './common'
 
 interface UpstreamUser {
   metadata?: {
@@ -59,6 +66,7 @@ async function fetchLatestFraudByUser(headers: Record<string, string>): Promise<
   try {
     const r = await getOriginalFetch()(fraudEvaluationsURL(), { headers })
     if (!r.ok) {
+      discardBody(r)
       log.warn('milo fraudEvaluations fetch failed', { status: r.status })
       return byUser
     }
@@ -157,6 +165,7 @@ export const usersResolvers = {
           headers: { ...(authorization ? { Authorization: authorization } : {}), Accept: 'application/json' },
         })
         if (!r.ok) {
+          discardBody(r)
           log.warn('milo user me fetch failed', { status: r.status })
           return null
         }
@@ -175,6 +184,7 @@ export const usersResolvers = {
           headers: { ...(authorization ? { Authorization: authorization } : {}), Accept: 'application/json' },
         })
         if (!r.ok) {
+          discardBody(r)
           log.warn('milo user fetch failed', { id: args.id, status: r.status })
           return null
         }
@@ -212,6 +222,7 @@ export const usersResolvers = {
               const url = `${server}/apis/iam.miloapis.com/v1alpha1/users/${encodeURIComponent(name)}`
               const r = await fetchFn(url, { headers })
               if (!r.ok) {
+                discardBody(r)
                 log.warn('milo user fetch failed', { name, status: r.status })
                 return null
               }
@@ -308,6 +319,7 @@ export const usersResolvers = {
           headers: { ...(authorization ? { Authorization: authorization } : {}), Accept: 'application/json' },
         })
         if (!r.ok) {
+          discardBody(r)
           log.warn('milo userIdentities fetch failed', { userID: args.userID, status: r.status })
           return []
         }
@@ -412,7 +424,11 @@ export const usersResolvers = {
           extensions: { code: 'USER_DELETE_FAILED', status: r.status },
         })
       }
-      return r.ok ? mapUser((await r.json()) as UpstreamUser) : null
+      if (!r.ok) {
+        discardBody(r)
+        return null
+      }
+      return mapUser((await r.json()) as UpstreamUser)
     },
   },
 }

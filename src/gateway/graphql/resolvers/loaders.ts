@@ -3,6 +3,7 @@ import { log } from '@/shared/utils'
 import {
   DESCRIPTION_ANNOTATION,
   DISPLAY_NAME_ANNOTATION,
+  discardBody,
   getHeader,
   type ResolverContext,
 } from './common'
@@ -302,11 +303,6 @@ class RequestLoader<K extends string, T> {
 
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error)
-
-/** Drops an unread body so the socket returns to the keep-alive pool. */
-function discardBody(response: Response): void {
-  void response.body?.cancel().catch(() => {})
-}
 
 export interface RequestLoaders {
   organization(name: string): Promise<LoaderResult<MappedOrganization>>

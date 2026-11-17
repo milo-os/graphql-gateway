@@ -3,7 +3,7 @@ import { parseUserAgent } from '@/gateway/services/user-agent'
 import { lookupIp } from '@/gateway/services/geolocation'
 import { getK8sServer, getOriginalFetch } from '@/gateway/auth'
 import { log } from '@/shared/utils'
-import { type ResolverContext, getHeader, rethrowGraphQLError } from './common'
+import { type ResolverContext, discardBody, getHeader, rethrowGraphQLError } from './common'
 
 interface UpstreamSession {
   metadata?: {
@@ -77,6 +77,7 @@ export const sessionsResolvers = {
         })
 
         if (!response.ok) {
+          discardBody(response)
           log.warn('milo sessions fetch failed', {
             status: response.status,
             url,
@@ -116,6 +117,7 @@ export const sessionsResolvers = {
       // 200/202/204 are success; 404 means the session is already gone, which
       // we treat as success so the mutation is idempotent for retries.
       if (response.ok || response.status === 404) {
+        discardBody(response)
         return true
       }
 
