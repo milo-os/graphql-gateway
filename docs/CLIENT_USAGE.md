@@ -153,7 +153,7 @@ export async function graphqlRequest<TData, TVariables>(
 
 ### In-cluster callers without a token
 
-A service inside the cluster that has no user token, such as the Zitadel actions receiver, calls the internal port instead: `https://graphql-gateway.graphql-gateway.svc.cluster.local:4001/graphql` (or a scoped path on the same port). It serves the same schema without the token check, and is not reachable from outside the cluster. Gateway-local fields such as `geolocateIP` and `parseUserAgent` work there without a token. Federated fields reach Milo as the anonymous user unless the caller sends a token.
+A service inside the cluster that has no user token and needs only `geolocateIP` or `parseUserAgent`, such as the Zitadel actions receiver, calls the internal port instead: `https://graphql-gateway.graphql-gateway.svc.cluster.local:4001/graphql`. It answers queries whose root fields are those two only, without a token, and is not reachable from outside the cluster. Every other operation there gets HTTP 403 with code `FORBIDDEN`. A service that needs anything else must call port 4000 with a token.
 
 ## 3. Querying Resources
 

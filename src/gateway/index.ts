@@ -52,7 +52,9 @@ const main = async () => {
   const metricsServer = createMetricsServer()
 
   internalServer.listen(env.internalPort, () => {
-    log.info(`Internal GraphQL listening on port ${env.internalPort} (HTTPS, no token check)`)
+    log.info(
+      `Internal GraphQL listening on port ${env.internalPort} (HTTPS, no token check, geolocateIP and parseUserAgent only)`
+    )
   })
 
   metricsServer.listen(env.metricsPort, () => {

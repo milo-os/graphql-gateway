@@ -12,6 +12,7 @@ import { gateway } from '@/gateway/runtime'
 import { log } from '@/shared/utils'
 import { countGraphQLResponse } from '@/gateway/metrics/graphql-responses'
 import { countCallerCheck } from '@/gateway/metrics/caller-checks'
+import { markInternalRequest } from '@/gateway/graphql/internal-port'
 import type { ScopedMatch, GatewayHandler } from '@/gateway/types'
 
 /**
@@ -120,17 +121,20 @@ export const isGraphQLEndpoint = (pathname: string): boolean => {
 
 /**
  * Builds the GraphQL handler (root and scoped paths). It parses the URL,
- * validates scoped resources, and forwards to the gateway. With
- * `requireToken` it first refuses callers whose token Milo does not accept.
+ * validates scoped resources, and forwards to the gateway. On the routed port
+ * it first refuses callers whose token Milo does not accept. On the internal
+ * port it marks the request instead, so useInternalPortAllowlist lets through
+ * only the gateway-local fields served there.
  */
 const graphQLHandler =
-  ({ requireToken }: { readonly requireToken: boolean }): GatewayHandler =>
+  ({ port }: { readonly port: 'routed' | 'internal' }): GatewayHandler =>
   async (req, res) => {
     const url = parseUrl(req.url!, req.headers.host!)
     const scopedMatch = SCOPED_RESOURCE_PATTERN?.exec(url.pathname)
     countGraphQLResponse(res, scopedMatch ? 'scoped' : 'root')
 
-    if (requireToken && !(await admitCaller(req, res))) return
+    if (port === 'internal') markInternalRequest(req)
+    else if (!(await admitCaller(req, res))) return
 
     return forwardGraphQL(req, res, scopedMatch)
   }
@@ -164,11 +168,11 @@ const forwardGraphQL = async (
 }
 
 /** GraphQL on the routed port: every request needs a token Milo accepts. */
-export const handleGraphQL: GatewayHandler = graphQLHandler({ requireToken: true })
+export const handleGraphQL: GatewayHandler = graphQLHandler({ port: 'routed' })
 
 /**
- * GraphQL on the internal port, which no HTTPRoute targets: no token check.
- * It serves in-cluster callers that send no token, such as the Zitadel
- * actions receiver calling geolocateIP and parseUserAgent.
+ * GraphQL on the internal port, which no HTTPRoute targets. There is no token
+ * check, and only geolocateIP and parseUserAgent are served, for in-cluster
+ * callers that send no token such as the Zitadel actions receiver.
  */
-export const handleInternalGraphQL: GatewayHandler = graphQLHandler({ requireToken: false })
+export const handleInternalGraphQL: GatewayHandler = graphQLHandler({ port: 'internal' })

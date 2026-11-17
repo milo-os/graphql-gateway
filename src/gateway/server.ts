@@ -97,10 +97,11 @@ export const createGatewayServer = () => {
 }
 
 /**
- * Serves GraphQL without the token check on the internal port, for in-cluster
- * callers that send no token (the Zitadel actions receiver). The Service names
- * this port separately and no HTTPRoute targets it, so it is never public.
- * Health checks stay on the main port.
+ * Serves geolocateIP and parseUserAgent without the token check on the internal
+ * port, for in-cluster callers that send no token (the Zitadel actions
+ * receiver). useInternalPortAllowlist refuses every other operation here. The
+ * Service names this port separately and no HTTPRoute targets it, so it is
+ * never public. Health checks stay on the main port.
  */
 export const createInternalGraphQLServer = () => {
   const tlsOptions = loadTlsOptions()

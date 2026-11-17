@@ -31,6 +31,7 @@ vi.mock('@/shared/utils', () => ({
 
 import { env } from '@/gateway/config'
 import { handleGraphQL, handleInternalGraphQL } from './graphql'
+import { receivedOnInternalPort } from '@/gateway/graphql/internal-port'
 import { handleHealthCheck, handleReadinessCheck } from './health'
 import { handleMetrics } from './metrics'
 
@@ -221,14 +222,24 @@ describe('internal GraphQL port', () => {
     env.authMode = 'enforce'
   })
 
-  it('forwards a tokenless request without checking it', async () => {
+  it('forwards a tokenless request without checking it, marked as internal', async () => {
     const graphqlReq = graphReq('/graphql')
 
     await handleInternalGraphQL(graphqlReq, res)
 
     expect(auth.checkCaller).not.toHaveBeenCalled()
     expect(runtime.gateway).toHaveBeenCalledWith(graphqlReq, res)
+    expect(receivedOnInternalPort(graphqlReq)).toBe(true)
     expect(sent).toEqual([])
+  })
+
+  it('leaves requests on the routed port unmarked', async () => {
+    auth.checkCaller.mockResolvedValue('authenticated')
+    const graphqlReq = graphReq('/graphql', { authorization: 'Bearer tok' })
+
+    await handleGraphQL(graphqlReq, res)
+
+    expect(receivedOnInternalPort(graphqlReq)).toBe(false)
   })
 
   it('still derives scoped headers and drops client-supplied ones', async () => {

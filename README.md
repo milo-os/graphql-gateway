@@ -20,17 +20,17 @@ This project provides a **GraphQL gateway** that sits in front of Milo APIServer
 
 ### Environment Variables
 
-| Variable              | Description                                                                                  | Default                           |
-| --------------------- | -------------------------------------------------------------------------------------------- | --------------------------------- |
-| `PORT`                | Port the gateway listens on                                                                  | `4000`                            |
-| `INTERNAL_PORT`       | Port that serves GraphQL without the token check, for in-cluster callers only                | `4001`                            |
-| `METRICS_PORT`        | Port that serves only `/metrics`, kept off the routed port                                   | `9464`                            |
-| `AUTH_MODE`           | `enforce` refuses GraphQL requests without a token Milo accepts; `log` lets them through     | `enforce`                         |
-| `KUBECONFIG`          | Path to kubeconfig file for K8s authentication                                               | Required                          |
-| `SUPERGRAPH_PATH`     | Path to the committed supergraph SDL                                                         | `./supergraph/supergraph.graphql` |
-| `LOGGING`             | Log level (`debug`, `info`, `warn`, `error`)                                                 | `info`                            |
-| `UPSTREAM_TIMEOUT_MS` | Deadline (ms) per Milo call: headers on the user-token path, whole response on the mTLS path | `10000` (10s)                     |
-| `NODE_EXTRA_CA_CERTS` | Path to CA certificate for trusting K8s API server                                           | Required for mTLS                 |
+| Variable              | Description                                                                                   | Default                           |
+| --------------------- | --------------------------------------------------------------------------------------------- | --------------------------------- |
+| `PORT`                | Port the gateway listens on                                                                   | `4000`                            |
+| `INTERNAL_PORT`       | Port that serves only `geolocateIP` and `parseUserAgent`, without the token check, in-cluster | `4001`                            |
+| `METRICS_PORT`        | Port that serves only `/metrics`, kept off the routed port                                    | `9464`                            |
+| `AUTH_MODE`           | `enforce` refuses GraphQL requests without a token Milo accepts; `log` lets them through      | `enforce`                         |
+| `KUBECONFIG`          | Path to kubeconfig file for K8s authentication                                                | Required                          |
+| `SUPERGRAPH_PATH`     | Path to the committed supergraph SDL                                                          | `./supergraph/supergraph.graphql` |
+| `LOGGING`             | Log level (`debug`, `info`, `warn`, `error`)                                                  | `info`                            |
+| `UPSTREAM_TIMEOUT_MS` | Deadline (ms) per Milo call: headers on the user-token path, whole response on the mTLS path  | `10000` (10s)                     |
+| `NODE_EXTRA_CA_CERTS` | Path to CA certificate for trusting K8s API server                                            | Required for mTLS                 |
 
 ### Project Scripts
 
@@ -115,7 +115,8 @@ The gateway is deployed to Kubernetes using the manifests in `config/base/`. Key
   - The gateway checks the token with a SelfSubjectReview against Milo, without its client certificate, and reuses the answer for that token for a minute (ten seconds for a rejected token).
   - A missing or rejected token gets HTTP 401 with a GraphQL error whose `extensions.code` is `UNAUTHENTICATED`. If Milo can't be asked, the answer is 503 with `UPSTREAM_UNAVAILABLE`.
   - `AUTH_MODE=log` lets those requests through and logs them. `graphql_gateway_caller_checks_total` counts every check by verdict either way.
-  - `INTERNAL_PORT` (4001) serves the same GraphQL paths without the token check, for in-cluster callers that send no token. Today that is the Zitadel actions receiver, which calls `geolocateIP` and `parseUserAgent` at `https://graphql-gateway.graphql-gateway.svc.cluster.local:4001/graphql`. The Service exposes it as the `internal` port, and the HTTPRoute only routes port 4000, so it is never public. Federated fields still go to Milo with whatever token the caller sends, so a tokenless call there reaches Milo as anonymous.
+  - `INTERNAL_PORT` (4001) answers only queries whose root fields are `geolocateIP` and `parseUserAgent`, with no token check. Both are resolved by the gateway itself without calling Milo. Any other operation there, including federated fields, other gateway-local fields, introspection and mutations, gets HTTP 403 with code `FORBIDDEN` before it runs. The port exists for the Zitadel actions receiver, which calls those two fields without a token at `https://graphql-gateway.graphql-gateway.svc.cluster.local:4001/graphql`. The Service exposes it as the `internal` port and the HTTPRoute only routes port 4000, so it is never public, but any pod in the cluster can reach it until a NetworkPolicy limits it.
+  - Federated fields are refused there because the gateway's fetch to Milo can carry its own client certificate (`initAuth` overrides the global `fetch`), and a tokenless federated call must never run as the gateway.
 
 - **Health Endpoints** (no token needed):
   - `/healthcheck` - Liveness probe (the HTTPS server is accepting requests)
