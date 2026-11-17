@@ -2616,12 +2616,12 @@ describe('per-item enrichment failures', () => {
       }),
       organizations: { acme: acmeOrganization() },
     })
-    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+    vi.stubGlobal('fetch', (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
       if (url.includes('/billingaccountbindings')) {
         return Promise.reject(new TypeError('network error'))
       }
-      return baseFetch(input, init)
+      return baseFetch(input)
     })
 
     const result = await executeProjects(
