@@ -1,6 +1,6 @@
 import { getOriginalFetch, getK8sServer } from '@/gateway/auth'
 import { log } from '@/shared/utils'
-import { type ResolverContext, getHeader, rethrowGraphQLError } from './common'
+import { type ResolverContext, discardBody, getHeader, rethrowGraphQLError } from './common'
 
 interface UpstreamAllowanceBucket {
   metadata?: { name?: string; namespace?: string }
@@ -240,8 +240,14 @@ export const quotaResolvers = {
         ])
         const buckets: UpstreamAllowanceBucketList = bucketsRes.ok ? (await bucketsRes.json()) as UpstreamAllowanceBucketList : { items: [] }
         const regsBody: UpstreamResourceRegistrationList = regsRes.ok ? (await regsRes.json()) as UpstreamResourceRegistrationList : { items: [] }
-        if (!bucketsRes.ok) log.warn('milo orgQuotaBuckets fetch failed', { orgName: args.orgName, status: bucketsRes.status })
-        if (!regsRes.ok) log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
+        if (!bucketsRes.ok) {
+          discardBody(bucketsRes)
+          log.warn('milo orgQuotaBuckets fetch failed', { orgName: args.orgName, status: bucketsRes.status })
+        }
+        if (!regsRes.ok) {
+          discardBody(regsRes)
+          log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
+        }
         return { items: mapQuotaBuckets(buckets, buildRegistrationMap(regsBody)) }
       } catch (error) {
         rethrowGraphQLError(error)
@@ -261,8 +267,14 @@ export const quotaResolvers = {
         ])
         const buckets: UpstreamAllowanceBucketList = bucketsRes.ok ? (await bucketsRes.json()) as UpstreamAllowanceBucketList : { items: [] }
         const regsBody: UpstreamResourceRegistrationList = regsRes.ok ? (await regsRes.json()) as UpstreamResourceRegistrationList : { items: [] }
-        if (!bucketsRes.ok) log.warn('milo projectQuotaBuckets fetch failed', { projectName: args.projectName, status: bucketsRes.status })
-        if (!regsRes.ok) log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
+        if (!bucketsRes.ok) {
+          discardBody(bucketsRes)
+          log.warn('milo projectQuotaBuckets fetch failed', { projectName: args.projectName, status: bucketsRes.status })
+        }
+        if (!regsRes.ok) {
+          discardBody(regsRes)
+          log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
+        }
         return { items: mapQuotaBuckets(buckets, buildRegistrationMap(regsBody)) }
       } catch (error) {
         rethrowGraphQLError(error)
@@ -282,8 +294,14 @@ export const quotaResolvers = {
         ])
         const grants: UpstreamResourceGrantList = grantsRes.ok ? (await grantsRes.json()) as UpstreamResourceGrantList : { items: [] }
         const regsBody: UpstreamResourceRegistrationList = regsRes.ok ? (await regsRes.json()) as UpstreamResourceRegistrationList : { items: [] }
-        if (!grantsRes.ok) log.warn('milo orgQuotaGrants fetch failed', { orgName: args.orgName, status: grantsRes.status })
-        if (!regsRes.ok) log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
+        if (!grantsRes.ok) {
+          discardBody(grantsRes)
+          log.warn('milo orgQuotaGrants fetch failed', { orgName: args.orgName, status: grantsRes.status })
+        }
+        if (!regsRes.ok) {
+          discardBody(regsRes)
+          log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
+        }
         return { items: mapQuotaGrants(grants, buildRegistrationMap(regsBody)) }
       } catch (error) {
         rethrowGraphQLError(error)
@@ -303,8 +321,14 @@ export const quotaResolvers = {
         ])
         const grants: UpstreamResourceGrantList = grantsRes.ok ? (await grantsRes.json()) as UpstreamResourceGrantList : { items: [] }
         const regsBody: UpstreamResourceRegistrationList = regsRes.ok ? (await regsRes.json()) as UpstreamResourceRegistrationList : { items: [] }
-        if (!grantsRes.ok) log.warn('milo projectQuotaGrants fetch failed', { projectName: args.projectName, status: grantsRes.status })
-        if (!regsRes.ok) log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
+        if (!grantsRes.ok) {
+          discardBody(grantsRes)
+          log.warn('milo projectQuotaGrants fetch failed', { projectName: args.projectName, status: grantsRes.status })
+        }
+        if (!regsRes.ok) {
+          discardBody(regsRes)
+          log.warn('milo resourceRegistrations fetch failed', { status: regsRes.status })
+        }
         return { items: mapQuotaGrants(grants, buildRegistrationMap(regsBody)) }
       } catch (error) {
         rethrowGraphQLError(error)

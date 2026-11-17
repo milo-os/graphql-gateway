@@ -56,6 +56,11 @@ export class UpstreamError extends GraphQLError {
   }
 }
 
+/** Drops an unread body so the socket returns to the keep-alive pool. */
+export function discardBody(response: Response): void {
+  void response.body?.cancel().catch(() => {})
+}
+
 /**
  * Turns a non-OK list response into a thrown error. A failed page must reach
  * the client as an error: returning an empty page with no continue token is
@@ -66,8 +71,7 @@ export class UpstreamError extends GraphQLError {
  */
 export function failedPage(response: Response, url: string): never {
   const path = pathOf(url)
-  // An unread body keeps the socket out of the keep-alive pool until GC.
-  void response.body?.cancel().catch(() => {})
+  discardBody(response)
   if (response.status === 410 && hadContinueToken(url)) {
     throw new UpstreamError(`Continue token expired for ${path}`, {
       code: 'CURSOR_EXPIRED',
@@ -153,8 +157,7 @@ export function failedEnrichment(
   what: string,
   url: string
 ): EnrichmentOutcome<never> {
-  // An unread body keeps the socket out of the keep-alive pool until GC.
-  void response.body?.cancel().catch(() => {})
+  discardBody(response)
   return enrichmentFailureFromStatus(response.status, what, url)
 }
 

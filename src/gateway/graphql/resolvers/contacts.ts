@@ -2,6 +2,7 @@ import { getOriginalFetch, getK8sServer } from '@/gateway/auth'
 import { log } from '@/shared/utils'
 import {
   type ResolverContext,
+  discardBody,
   getHeader,
   DESCRIPTION_ANNOTATION,
   rethrowGraphQLError,
@@ -142,7 +143,10 @@ export const contactsResolvers = {
             try {
               const url = `${server}/apis/notification.miloapis.com/v1alpha1/namespaces/${encodeURIComponent(namespace)}/contacts/${encodeURIComponent(name)}`
               const r = await fetchFn(url, { headers })
-              if (!r.ok) return
+              if (!r.ok) {
+                discardBody(r)
+                return
+              }
               contactMap.set(`${namespace}/${name}`, mapContact((await r.json()) as UpstreamContact))
             } catch (error) {
               log.warn('milo contact fetch threw', { name, namespace, error: error instanceof Error ? error.message : String(error) })
@@ -190,7 +194,10 @@ export const contactsResolvers = {
             try {
               const url = `${server}/apis/notification.miloapis.com/v1alpha1/namespaces/${encodeURIComponent(namespace)}/contactgroups/${encodeURIComponent(name)}`
               const r = await fetchFn(url, { headers })
-              if (!r.ok) return
+              if (!r.ok) {
+                discardBody(r)
+                return
+              }
               groupMap.set(`${namespace}/${name}`, mapContactGroup((await r.json()) as UpstreamContactGroup))
             } catch (error) {
               log.warn('milo contactgroup fetch threw', { name, namespace, error: error instanceof Error ? error.message : String(error) })

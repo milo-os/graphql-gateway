@@ -4,6 +4,7 @@ import { log } from '@/shared/utils'
 import {
   type EnrichmentOutcome,
   type ResolverContext,
+  discardBody,
   getHeader,
   rethrowGraphQLError,
   failedPage,
@@ -499,6 +500,7 @@ async function fetchOrgMembers(
         })
       }
     } else {
+      discardBody(membershipsRes)
       log.warn('milo orgMemberships fetch failed', { orgName, status: membershipsRes.status })
     }
 
@@ -520,6 +522,7 @@ async function fetchOrgMembers(
         })
       }
     } else {
+      discardBody(invitationsRes)
       log.warn('milo orgInvitations fetch failed', { orgName, status: invitationsRes.status })
     }
 
@@ -705,6 +708,7 @@ export const organizationsResolvers = {
         const url = serviceConsumersURL(args.producerProject)
         const response = await fetchFn(url, { headers })
         if (!response.ok) {
+          discardBody(response)
           log.warn('milo serviceConsumers fetch failed', {
             status: response.status,
             url,
