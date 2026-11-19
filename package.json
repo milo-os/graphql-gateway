@@ -36,7 +36,7 @@
     "@omnigraph/openapi": "^0.112.0",
     "@opentelemetry/api": "1.9.1",
     "@opentelemetry/context-async-hooks": "^2.4.0",
-    "@opentelemetry/exporter-trace-otlp-grpc": "^0.208.0",
+    "@opentelemetry/exporter-trace-otlp-grpc": "^0.221.0",
     "@sentry/node": "^11.11.0",
     "bowser": "^2.14.1",
     "prom-client": "^15.1.3",
