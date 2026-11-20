@@ -34,6 +34,7 @@
     "apis/events.k8s.io",
     "apis/events.k8s.io/v1",
     "apis/feedback.miloapis.com/v1alpha1",
+    "apis/fleet.datumapis.com/v1alpha1",
     "apis/flowcontrol.apiserver.k8s.io",
     "apis/flowcontrol.apiserver.k8s.io/v1",
     "apis/fraud.miloapis.com/v1alpha1",
