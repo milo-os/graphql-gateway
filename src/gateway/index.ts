@@ -5,7 +5,7 @@ import './telemetry/telemetry'
 import { initSentry } from './telemetry/sentry'
 initSentry()
 
-import { createGatewayServer } from './server'
+import { createGatewayServer, createInternalGraphQLServer, createMetricsServer } from './server'
 import { env, scopedEndpoints } from './config'
 import { initAuth, getK8sServer } from './auth'
 import { initializeGateway } from './runtime'
@@ -48,11 +48,24 @@ const main = async () => {
   }
 
   const server = createGatewayServer()
+  const internalServer = createInternalGraphQLServer()
+  const metricsServer = createMetricsServer()
+
+  internalServer.listen(env.internalPort, () => {
+    log.info(
+      `Internal GraphQL listening on port ${env.internalPort} (HTTPS, no token check, geolocateIP and parseUserAgent only)`
+    )
+  })
+
+  metricsServer.listen(env.metricsPort, () => {
+    log.info(`Metrics listening on port ${env.metricsPort} (HTTPS, /metrics only)`)
+  })
 
   server.listen(env.port, () => {
     log.info(`Gateway listening on port ${env.port} (HTTPS)`)
     log.info(`K8s API server: ${getK8sServer()}`)
-    log.info('Endpoints: /graphql, /healthcheck, /readiness, /metrics')
+    log.info(`GraphQL requests need a token Milo accepts (AUTH_MODE=${env.authMode})`)
+    log.info('Endpoints: /graphql, /healthcheck, /readiness')
 
     if (scopedEndpoints.length > 0) {
       log.info('Scoped endpoints:')
@@ -68,14 +81,24 @@ const main = async () => {
     if (shuttingDown) return
     shuttingDown = true
     log.info(`${signal} received, shutting down gracefully...`)
-    server.close(() => {
-      log.info('Server closed')
-      process.exit(0)
-    })
-    server.closeIdleConnections()
+    // Scrapes are short and nothing waits on them, so the metrics port just stops.
+    metricsServer.close()
+    metricsServer.closeAllConnections()
+    // Both GraphQL ports carry live requests, so exit once both have drained.
+    const graphQLServers = [server, internalServer]
+    let open = graphQLServers.length
+    for (const s of graphQLServers) {
+      s.close(() => {
+        open -= 1
+        if (open > 0) return
+        log.info('Server closed')
+        process.exit(0)
+      })
+      s.closeIdleConnections()
+    }
     setTimeout(() => {
       log.warn('Shutdown deadline reached, closing remaining connections')
-      server.closeAllConnections()
+      for (const s of graphQLServers) s.closeAllConnections()
       process.exit(0)
     }, SHUTDOWN_DEADLINE_MS).unref()
   }

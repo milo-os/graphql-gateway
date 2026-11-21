@@ -35,10 +35,5 @@ export const SCOPED_RESOURCE_PATTERN =
     : null
 
 // All available endpoints for documentation
-export const availableEndpoints = [
-  '/graphql',
-  '/healthcheck',
-  '/readiness',
-  '/metrics',
-  ...scopedEndpoints,
-]
+// /metrics is left out: it is served on the metrics port only.
+export const availableEndpoints = ['/graphql', '/healthcheck', '/readiness', ...scopedEndpoints]

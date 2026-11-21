@@ -4,7 +4,7 @@ vi.mock('@/shared/utils', () => ({
   log: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
-import { positiveMillis } from './env'
+import { authModeFrom, positiveMillis } from './env'
 
 describe('positiveMillis', () => {
   it.each([
@@ -21,5 +21,19 @@ describe('positiveMillis', () => {
 
   it('clamps values above what setTimeout can represent instead of letting them wrap to 1ms', () => {
     expect(positiveMillis('3600000000', 10_000)).toBe(2_147_483_647)
+  })
+})
+
+describe('authModeFrom', () => {
+  it.each([
+    [undefined, 'enforce'],
+    ['', 'enforce'],
+    ['enforce', 'enforce'],
+    ['log', 'log'],
+    [' LOG ', 'log'],
+    ['off', 'enforce'],
+    ['false', 'enforce'],
+  ])('%s -> %s', (raw, expected) => {
+    expect(authModeFrom(raw)).toBe(expected)
   })
 })

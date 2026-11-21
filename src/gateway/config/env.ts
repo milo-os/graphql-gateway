@@ -25,12 +25,40 @@ export const positiveMillis = (raw: string | undefined, fallback: number): numbe
 }
 
 /**
+ * `enforce` refuses GraphQL requests whose token Milo does not accept. `log`
+ * lets them through and logs them, so tokenless traffic can be measured
+ * before enforcing.
+ */
+export type AuthMode = 'enforce' | 'log'
+
+/** Parses AUTH_MODE. Anything other than `log` enforces, and a typo is logged. */
+export const authModeFrom = (raw: string | undefined): AuthMode => {
+  const value = raw?.trim().toLowerCase()
+  if (value === undefined || value === '' || value === 'enforce') return 'enforce'
+  if (value === 'log') return 'log'
+  log.warn('Ignoring invalid AUTH_MODE, enforcing tokens', { raw })
+  return 'enforce'
+}
+
+/**
  * Environment configuration for the gateway.
  * All values can be overridden via environment variables.
  */
 export const env = {
   /** Port for the gateway (default: 4000) */
   port: Number(process.env.PORT) || 4000,
+
+  /**
+   * Port that serves only geolocateIP and parseUserAgent, without the token
+   * check, for in-cluster callers. No HTTPRoute may target it (default: 4001)
+   */
+  internalPort: Number(process.env.INTERNAL_PORT) || 4001,
+
+  /** Port that serves only /metrics, kept off the routed port (default: 9464) */
+  metricsPort: Number(process.env.METRICS_PORT) || 9464,
+
+  /** Whether GraphQL requests need a token Milo accepts (default: enforce) */
+  authMode: authModeFrom(process.env.AUTH_MODE),
 
   /** Log level for the gateway */
   logLevel: sharedConfig.logLevel,

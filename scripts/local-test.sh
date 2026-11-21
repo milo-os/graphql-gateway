@@ -94,7 +94,7 @@ scrape_configs:
     tls_config:
       insecure_skip_verify: true
     static_configs:
-      - targets: ['host.docker.internal:4000']
+      - targets: ['host.docker.internal:9464']
     metrics_path: /metrics
     scrape_interval: 10s
 EOF
@@ -138,7 +138,7 @@ EOF
   log_info "  OTLP gRPC:      localhost:4317"
   log_info "  OTLP HTTP:      localhost:4318"
   log_info "  Prometheus:     http://localhost:9090"
-  log_info "  Scraping metrics from: http://localhost:4000/metrics"
+  log_info "  Scraping metrics from: https://localhost:9464/metrics"
   log_info "  Dashboards loaded from: $PROJECT_DIR/config/components/observability/dashboards/grafana/"
 }
 
