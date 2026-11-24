@@ -14,7 +14,7 @@ jobs:
   ci:
     uses: datum-cloud/actions/.github/workflows/ci-basic.yaml@v1.28.0
     with:
-      run: npx tsc --noEmit
+      run: pnpm exec tsc --noEmit
 
   image-smoke:
     name: Plan a query in the built image

@@ -33,19 +33,19 @@ This project provides a **GraphQL gateway** that sits in front of Milo APIServer
 
 Defined in `package.json`:
 
-- **`npm run build`**
+- **`pnpm build`**
   - Compiles TypeScript source code to JavaScript.
 
-- **`npm run dev`**
+- **`pnpm dev`**
   - Runs the gateway in development mode with hot reloading.
 
-- **`npm run start`**
+- **`pnpm start`**
   - Runs the compiled gateway from `dist/`.
 
-- **`npm run lint`**
+- **`pnpm lint`**
   - Runs ESLint on the codebase.
 
-- **`npm run supergraph:compose -- --server <url> --token <token>`**
+- **`pnpm supergraph:compose --server <url> --token <token>`**
   - Composes `supergraph/supergraph.graphql` and `supergraph/paths.json` from a live API server. See [Supergraph Snapshot](#supergraph-snapshot).
 
 ### Local Testing
@@ -70,7 +70,7 @@ A comprehensive local testing script is provided at `scripts/local-test.sh`. Thi
 ./scripts/local-test.sh
 ```
 
-The gateway serves the committed snapshot, so a local run does not compose. If the local cluster's APIs differ from the snapshot, re-run `npm run supergraph:compose` against the port-forward and restore the files afterwards.
+The gateway serves the committed snapshot, so a local run does not compose. If the local cluster's APIs differ from the snapshot, re-run `pnpm supergraph:compose` against the port-forward and restore the files afterwards.
 
 ### Supergraph Snapshot
 
@@ -82,7 +82,7 @@ To compose manually:
 
 ```bash
 export DATUM_TOKEN="$(datumctl auth get-token --output=token)"
-npm run supergraph:compose -- \
+pnpm supergraph:compose \
   --server https://api.staging.env.datum.net \
   --endpoint 'https://milo-apiserver.datum-system.svc.cluster.local:6443{context.headers.x-resource-endpoint-prefix}'
 ```

@@ -1,20 +1,26 @@
 # --- Stage 1: Build ---
+# Both stages use the same Debian (glibc) image. Native modules such as the
+# query planner install a binary for the build stage's C library, so the
+# runtime stage must keep the same one (datum-cloud/infra#8476).
 FROM node:26.13.0-trixie-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39 AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
-
-# Install all dependencies (including devDependencies for build)
-RUN npm ci
+# Install dependencies first so this layer stays cached until the lockfile
+# changes. Node 26 ships no corepack, so install the pnpm that package.json's
+# packageManager pins; it stays in this stage only. The split drops a
+# `+sha512.` suffix, which npm can't parse.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN npm install -g "$(node -p 'require("./package.json").packageManager.split("+")[0]')" --no-audit --no-fund && \
+    pnpm install --frozen-lockfile --prod=false --ignore-scripts
 
 # Copy source code and config
 COPY tsconfig.json esbuild.config.mjs ./
 COPY src/ ./src/
 
-# Build the application
-RUN npm run build
+# Build the application, then drop devDependencies
+RUN pnpm build && \
+    pnpm prune --prod --ignore-scripts
 
 # --- Stage 2: Runtime ---
 FROM node:26.13.0-trixie-slim@sha256:e4db4c914bf8ad241bd24804fc25d272d89bad97e68cdc8a1414862790a02c39
@@ -27,11 +33,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV VERSION=${VERSION}
 
-# Copy package files
-COPY package.json package-lock.json ./
-
-# Install only production dependencies
-RUN npm ci --omit=dev && npm cache clean --force
+# Copy package metadata and the pruned production dependencies
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy compiled gateway code (bundled by esbuild)
 COPY --from=builder /app/dist ./dist

@@ -1,0 +1,58 @@
+# pnpm settings for this repo. It is a single package, not a workspace: there
+# is no `packages:` list.
+
+# Don't install a version until it has been public for one day (in minutes).
+# pnpm defaults to this; writing it out lets the policy check see it.
+minimumReleaseAge: 1440
+
+# Our own packages are published and consumed across repos on the same day, so
+# the one-day release delay must not hold them back.
+minimumReleaseAgeExclude:
+  - '@datum-cloud/*'
+
+# Reject a version published with weaker provenance than the versions before
+# it, such as a release pushed with a stolen token for a package that normally
+# publishes from CI.
+trustPolicy: no-downgrade
+
+# Versions allowed past trustPolicy, each pinned exactly.
+trustPolicyExclude:
+  # jose published 4.15.4 with provenance and 4.15.5 to 4.15.9 without it, so
+  # the policy falls back to 4.15.4, which has CVE-2024-28176
+  # (GHSA-hhhv-q57g-882q). jwks-rsa 3 asks for ^4.15.4. 4.15.9 is what npm
+  # installed and the last 4.x release.
+  - jose@4.15.9
+
+# Dependency install scripts that may run on a local install. Anything not
+# listed is skipped. CI and the image install with --ignore-scripts. esbuild
+# checks its platform binary; the protobufjs scripts only print a version
+# notice, so they stay off.
+allowBuilds:
+  '@apollo/protobufjs': false
+  esbuild: true
+  protobufjs: false
+
+# Versions that an override and a dependency must agree on. package.json takes
+# them with `catalog:` so each is written once.
+catalog:
+  '@graphql-tools/utils': ^12.0.2
+
+overrides:
+  # One shared copy of utils 12 for the gateway and the typechecker, on the
+  # release that clears the high advisories (7516be6).
+  '@graphql-tools/utils': 'catalog:'
+  # @envelop/generic-auth 12 imports asGetArgumentValuesVariables, which only
+  # utils 13 exports, so its subtree gets 13 (fec8f93). npm's nested override
+  # covered the whole subtree; pnpm's `a>b` covers only direct dependencies, so
+  # extended-validation, which generic-auth pulls in, is listed too.
+  '@envelop/generic-auth>@graphql-tools/utils': ^13.0.0
+  '@envelop/extended-validation>@graphql-tools/utils': ^13.0.0
+  # GHSA-mrv2-3pqr-j5jr: the laboratory UI pins dompurify 3.4.16. Drop once a
+  # laboratory release pins 3.4.17 or later.
+  '@graphql-hive/laboratory>dompurify': ^3.4.17
+  # GHSA-x8rm-f576-gq67: the Mesh composition and OpenAPI packages still pin
+  # ^1.x, and the only fix is 2.0.1.
+  graphql-scalars: ^2.0.1
+  # CVE-2026-41242.
+  protobufjs: ^7.5.5
+  uuid: ^14.0.0
