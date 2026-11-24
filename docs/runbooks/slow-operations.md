@@ -7,6 +7,11 @@ p95 response time above 2s, sustained for 15 minutes. This fires per
 operation, so the alert tells you exactly which query is slow rather than
 an aggregate gateway-wide number.
 
+It needs at least 20 requests for the operation in the 10-minute window.
+Below that, a p95 is two or three requests, and one slow staff page load
+held the alert open for 15 minutes. A slow operation with less traffic
+than that still shows on the dashboard; it just does not page.
+
 ## Impact
 
 Users of the affected operation see slow page loads or spinners. Other

@@ -9,6 +9,8 @@ spec:
         - alert: GraphQLGatewaySlowOperation
           expr: |
             histogram_quantile(0.95, sum by (le, operationName) (rate(graphql_envelop_request_duration_bucket[10m]))) > 2
+            and on (operationName)
+            sum by (operationName) (increase(graphql_envelop_request_duration_count[10m])) >= 20
           for: 15m
           labels:
             severity: warning
