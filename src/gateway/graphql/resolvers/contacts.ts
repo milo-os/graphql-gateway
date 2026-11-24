@@ -11,7 +11,7 @@ import {
 } from './common'
 
 interface UpstreamContactGroupMembership {
-  metadata?: { name?: string; creationTimestamp?: string }
+  metadata?: { name?: string; namespace?: string; creationTimestamp?: string }
   spec?: {
     contactRef?: { name?: string; namespace?: string }
     contactGroupRef?: { name?: string; namespace?: string }
@@ -160,6 +160,7 @@ export const contactsResolvers = {
             const key = ref?.namespace && ref.name ? `${ref.namespace}/${ref.name}` : ''
             return {
               name: m.metadata?.name ?? '',
+              namespace: m.metadata?.namespace ?? '',
               contactRef: { name: ref?.name ?? '', namespace: ref?.namespace ?? '' },
               contact: key ? (contactMap.get(key) ?? null) : null,
             }
@@ -211,6 +212,7 @@ export const contactsResolvers = {
             const key = ref?.namespace && ref.name ? `${ref.namespace}/${ref.name}` : ''
             return {
               name: m.metadata?.name ?? '',
+              namespace: m.metadata?.namespace ?? '',
               creationTimestamp: m.metadata?.creationTimestamp ?? null,
               contactGroupRef: { name: ref?.name ?? '', namespace: ref?.namespace ?? '' },
               contactGroup: key ? (groupMap.get(key) ?? null) : null,
