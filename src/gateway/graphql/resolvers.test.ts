@@ -2357,6 +2357,31 @@ describe('Query.contactGroupMembershipsWithContacts', () => {
       extensions: { code: 'CURSOR_EXPIRED', status: 410 },
     })
   })
+
+  it("returns each membership's own namespace, not the contact's", async () => {
+    fetchSpy.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/contactgroupmemberships')) {
+        return Promise.resolve(
+          jsonResponse({
+            items: [
+              {
+                metadata: { name: 'm1', namespace: 'default' },
+                spec: {
+                  contactRef: { name: 'c1', namespace: 'organization-acme' },
+                  contactGroupRef: { name: 'g1', namespace: 'milo-system' },
+                },
+              },
+            ],
+            metadata: {},
+          })
+        )
+      }
+      return Promise.resolve(jsonResponse({ metadata: { name: 'c1', namespace: 'organization-acme' }, spec: {} }))
+    })
+    const result = (await call()) as { items: Array<{ name: string; namespace: string }> }
+    expect(result.items[0]).toMatchObject({ name: 'm1', namespace: 'default' })
+  })
 })
 
 describe('Query.contactMembershipsWithGroups', () => {
@@ -2379,6 +2404,37 @@ describe('Query.contactMembershipsWithGroups', () => {
         ) => Promise<unknown>
       )(null, { namespace: 'organization-acme' }, ctx())
     ).rejects.toMatchObject({ extensions: { code: 'UPSTREAM_ERROR', status: 500 } })
+  })
+
+  it("returns each membership's own namespace, not the group's", async () => {
+    fetchSpy.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/contactgroupmemberships')) {
+        return Promise.resolve(
+          jsonResponse({
+            items: [
+              {
+                metadata: { name: 'm1', namespace: 'organization-acme' },
+                spec: {
+                  contactRef: { name: 'c1', namespace: 'organization-acme' },
+                  contactGroupRef: { name: 'g1', namespace: 'milo-system' },
+                },
+              },
+            ],
+            metadata: {},
+          })
+        )
+      }
+      return Promise.resolve(jsonResponse({ metadata: { name: 'g1', namespace: 'milo-system' }, spec: {} }))
+    })
+    const result = (await (
+      additionalResolvers.Query!.contactMembershipsWithGroups as (
+        r: null,
+        a: { namespace?: string },
+        c: ReturnType<typeof ctx>
+      ) => Promise<unknown>
+    )(null, {}, ctx())) as { items: Array<{ name: string; namespace: string }> }
+    expect(result.items[0]).toMatchObject({ name: 'm1', namespace: 'organization-acme' })
   })
 })
 

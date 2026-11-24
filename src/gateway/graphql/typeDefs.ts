@@ -95,6 +95,8 @@ export const additionalTypeDefs = /* GraphQL */ `
   type ContactGroupMembershipEnriched {
     "metadata.name of the ContactGroupMembership resource."
     name: String!
+    "metadata.namespace of the ContactGroupMembership resource. It can differ from the contact's and the group's namespaces."
+    namespace: String!
     contactRef: ContactRef!
     "Full Contact data, null if lookup failed."
     contact: EnrichedContact
@@ -103,6 +105,8 @@ export const additionalTypeDefs = /* GraphQL */ `
   type ContactMembershipEnriched {
     "metadata.name of the ContactGroupMembership resource."
     name: String!
+    "metadata.namespace of the ContactGroupMembership resource. It can differ from the contact's and the group's namespaces."
+    namespace: String!
     "When the contact joined the group (membership metadata.creationTimestamp)."
     creationTimestamp: String
     contactGroupRef: ContactRef!
