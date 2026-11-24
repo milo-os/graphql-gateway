@@ -8,7 +8,9 @@ spec:
       rules:
         - alert: GraphQLGatewaySubgraphErrors
           expr: |
-            increase(graphql_gateway_subgraph_execute_errors[5m]) > 0
+            sum without (authenticated) (
+              increase(graphql_gateway_subgraph_execute_errors{authenticated!="false"}[5m])
+            ) > 0
           for: 5m
           labels:
             severity: warning
@@ -26,7 +28,9 @@ spec:
             runbook_url: "https://github.com/milo-os/graphql-gateway/blob/main/docs/runbooks/subgraph-errors.md"
         - alert: GraphQLGatewaySubgraphErrorsSustained
           expr: |
-            increase(graphql_gateway_subgraph_execute_errors[15m]) > 5
+            sum without (authenticated) (
+              increase(graphql_gateway_subgraph_execute_errors{authenticated!="false"}[15m])
+            ) > 5
           for: 10m
           labels:
             severity: critical

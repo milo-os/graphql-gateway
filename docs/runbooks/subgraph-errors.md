@@ -9,6 +9,13 @@ is affected (e.g., `APIS_RESOURCEMANAGER_MILOAPIS_COM_V1ALPHA1`).
 **Warning** fires after any errors sustained for 5 minutes.
 **Critical** fires after >5 errors in 15 minutes, sustained for 10 minutes.
 
+Both count only errors from callers that sent an `Authorization` header.
+A request without credentials is rejected by milo with 401/403, which
+says nothing about the gateway's health, and a scanner probing the
+public endpoint would otherwise page on it. Those errors are still
+recorded with `authenticated="false"`; a spike there is worth a look as
+a security signal, not an availability one.
+
 ## Impact
 
 Users will see errors or missing data for the affected subgraph. For
@@ -103,7 +110,10 @@ kubectl rollout restart deployment/graphql-gateway -n graphql-gateway
 ## Metric
 
 ```promql
-increase(graphql_gateway_subgraph_execute_errors[5m])
+sum without (authenticated) (
+  increase(graphql_gateway_subgraph_execute_errors{authenticated!="false"}[5m])
+)
 ```
 
-Labels: `subgraphName`, `pod`, `operationName`, `operationType`
+Labels: `subgraphName`, `pod`, `operationName`, `operationType`,
+`authenticated`
