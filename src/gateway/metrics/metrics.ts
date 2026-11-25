@@ -1,7 +1,9 @@
 import type { GatewayConfigContext } from '@graphql-hive/gateway'
 import usePrometheus from '@graphql-mesh/plugin-prometheus'
 
-export function usePrometheusMetrics(ctx: GatewayConfigContext) {
+// The explicit return type keeps declaration output from naming packages that
+// pnpm keeps out of the top-level node_modules (TS2742).
+export function usePrometheusMetrics(ctx: GatewayConfigContext): ReturnType<typeof usePrometheus> {
   return usePrometheus({
     ...ctx,
     metrics: {
