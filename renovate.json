@@ -2,5 +2,12 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "description": "Hold @graphql-hive/router-query-planner at the version @graphql-hive/router-runtime depends on. On a 0.0.x version the caret means that exact version, so a newer direct copy installs beside the runtime's own: the runtime loads the old one while the image smoke test and the types use the new one. Move the planner by hand with the router-runtime release whose dependency moves.",
+      "matchPackageNames": ["@graphql-hive/router-query-planner"],
+      "enabled": false
+    }
   ]
 }
