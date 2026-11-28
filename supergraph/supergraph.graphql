@@ -584,6 +584,16 @@ Name is the metadata.name of the fee's ServicePricing.
 """
 scalar query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_name @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
+scalar query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_servicePeriod_end @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_servicePeriod_start @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
 """
 ServiceRef is the service the fee is for. Empty for a fee that isn't
 for any one service.
@@ -819,6 +829,11 @@ scalar query_listBillingMiloapisComV1alpha1BillingArrangementForAllNamespaces_it
 """
 Name of the Offer.
 """
+scalar query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_offerAfterRef_name @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+Name of the Offer.
+"""
 scalar query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_offerRef_name @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 """
@@ -837,6 +852,56 @@ scalar query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_it
   pattern: "^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
 ) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
+scalar query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_currency @regexp(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", pattern: "^USD$")  @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+Description is what the invoice calls the charge. Defaulted from the
+pricing's displayName. It's printed on the invoice, so it never
+carries the SKU.
+"""
+scalar query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_description @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", min: 1, max: 256)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_discountPercent @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^(100(\\.0{1,2})?|[1-9]?[0-9](\\.[0-9]{1,2})?)$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+Note is for staff and finance, kept on the invoice line's metadata.
+It's never printed on the invoice or shown to the customer.
+"""
+scalar query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_note @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 500)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_quantity @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^([1-9][0-9]{0,8}(\\.[0-9]{1,2})?|0\\.(0[1-9]|[1-9][0-9]?))$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePeriod_end @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePeriod_start @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+Name of the ServicePricing.
+"""
+scalar query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePricingRef_name @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_tax_code @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_unitAmount @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,2})?$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
 scalar query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_currency @regexp(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", pattern: "^USD$")  @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 """
@@ -849,6 +914,11 @@ scalar query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_sp
 scalar query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_discountPercent @regexp(
   subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
   pattern: "^(100(\\.0{1,2})?|[1-9]?[0-9](\\.[0-9]{1,2})?)$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_invoiceGroup_name @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
 ) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 """
@@ -925,6 +995,11 @@ scalar query_listBillingMiloapisComV1alpha1CreditGrantForAllNamespaces_items_ite
   subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
   pattern: "^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
 ) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+Name of the ChargeDraft.
+"""
+scalar query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_chargeDraftRef_name @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 """
 Name of the Offer.
@@ -1228,6 +1303,14 @@ scalar query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_
 scalar query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_currency @regexp(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", pattern: "^USD$")  @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 """
+Description says what the price is for, in a sentence or two, for
+customers and staff: the portals show it with the item, and it's the
+description of the price's Product in Stripe. It isn't printed on
+invoice lines.
+"""
+scalar query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_description @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 1000)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
 DisplayName is a human-readable label for invoices and portals.
 """
 scalar query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_displayName @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 128)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
@@ -1239,6 +1322,13 @@ Required when chargeType is Usage. The meter must exist and not be
 Retired, and serviceRef must name the service that owns it.
 """
 scalar query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_metric @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+Notes are for staff and finance only: how the price was agreed, what
+it covers, who to ask. They're never shown to customers, and they
+aren't copied into an Offer's snapshot, which customers can read.
+"""
+scalar query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_notes @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 2000)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 """
 PricingUnit is a human-readable billing unit label (e.g. "vcpu",
@@ -1336,10 +1426,30 @@ milo-system when empty.
 """
 scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRefs_items_namespace @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 63)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
+scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRefs_items_servicePeriod_end @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRefs_items_servicePeriod_start @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
 """
 Name is the metadata.name of the source ServicePricing.
 """
 scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_name @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_servicePeriod_end @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_servicePeriod_start @regexp(
+  subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+) @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_amount @regexp(
   subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
@@ -1366,6 +1476,14 @@ scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricing
 scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_currency @regexp(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", pattern: "^USD$")  @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 """
+Description says what the price is for, in a sentence or two, for
+customers and staff: the portals show it with the item, and it's the
+description of the price's Product in Stripe. It isn't printed on
+invoice lines.
+"""
+scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_description @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 1000)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
 DisplayName is a human-readable label for invoices and portals.
 """
 scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_displayName @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 128)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
@@ -1377,6 +1495,13 @@ Required when chargeType is Usage. The meter must exist and not be
 Retired, and serviceRef must name the service that owns it.
 """
 scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_metric @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+Notes are for staff and finance only: how the price was agreed, what
+it covers, who to ask. They're never shown to customers, and they
+aren't copied into an Offer's snapshot, which customers can read.
+"""
+scalar query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_notes @length(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", max: 2000)  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 
 """
 PricingUnit is a human-readable billing unit label (e.g. "vcpu",
@@ -2463,7 +2588,7 @@ scalar query_listDnsNetworkingMiloapisComV1alpha1DNSRecordContributionForAllName
 """
 Integers that will have a value of 0 or more.
 """
-scalar NonNegativeInt @join__type(graph: APIS_DNS_NETWORKING_MILOAPIS_COM_V1_ALPHA1)  @join__type(graph: APIS_FRAUD_MILOAPIS_COM_V1_ALPHA1)  @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
+scalar NonNegativeInt @join__type(graph: APIS_DNS_NETWORKING_MILOAPIS_COM_V1_ALPHA1)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  @join__type(graph: APIS_FRAUD_MILOAPIS_COM_V1_ALPHA1)  @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA) 
 
 scalar query_listDnsNetworkingMiloapisComV1alpha1DNSRecordContributionForAllNamespaces_items_items_spec_recordSets_items_records_items_caa_tag @regexp(subgraph: "APIS_DNS_NETWORKING_MILOAPIS_COM_V1ALPHA1", pattern: "^[a-z0-9]+$")  @typescript(subgraph: "APIS_DNS_NETWORKING_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_DNS_NETWORKING_MILOAPIS_COM_V1_ALPHA1) 
 
@@ -2598,6 +2723,14 @@ scalar query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllN
 scalar query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_spec_destinationAddress @length(subgraph: "APIS_DNS_NETWORKING_MILOAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_DNS_NETWORKING_MILOAPIS_COM_V1_ALPHA1) 
 
 scalar query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_spec_region @length(subgraph: "APIS_DNS_NETWORKING_MILOAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_DNS_NETWORKING_MILOAPIS_COM_V1_ALPHA1) 
+
+"""
+RegionalAddress is the address the node resolver forwards this
+context's queries to in the region. It must be inside the region's
+regional resolver range and used by no other binding. Unset, the
+control plane allocates one, unless it is configured to require it.
+"""
+scalar query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_spec_regionalAddress @length(subgraph: "APIS_DNS_NETWORKING_MILOAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_DNS_NETWORKING_MILOAPIS_COM_V1_ALPHA1) 
 
 """
 message is a human readable message indicating details about the transition.
@@ -2819,6 +2952,32 @@ scalar query_listFeedbackMiloapisComV1alpha1FeedbackDigest_items_items_spec_user
 
 scalar query_listFeedbackMiloapisComV1alpha1FeedbackProfile_items_items_spec_userRef_name @length(subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1", min: 1, max: 63)  @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1) 
 
+scalar query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues_excludeLabels_items @regexp(subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1", pattern: "^[^\"]+$")  @typescript(subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues_issueTypes_items @regexp(subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1", pattern: "^[^\"]+$")  @typescript(subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues_labels_items @regexp(subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1", pattern: "^[^\"]+$")  @typescript(subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_org @regexp(
+  subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[A-Za-z0-9][A-Za-z0-9-]{0,38}$"
+) @typescript(subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_project_owner @regexp(
+  subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^[A-Za-z0-9][A-Za-z0-9-]{0,38}$"
+) @typescript(subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_repositories_exclude_items @regexp(
+  subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^([A-Za-z0-9._*?-]|\\[([A-Za-z0-9._](-[A-Za-z0-9._])?)+\\])+$"
+) @typescript(subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_repositories_include_items @regexp(
+  subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1"
+  pattern: "^([A-Za-z0-9._*?-]|\\[([A-Za-z0-9._](-[A-Za-z0-9._])?)+\\])+$"
+) @typescript(subgraph: "APIS_FEEDBACK_MILOAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1) 
+
 """
 message is a human readable message indicating details about the transition.
 This may be an empty string.
@@ -3023,8 +3182,6 @@ scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_item
 
 scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_expectedIdentity_serial @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
 
-scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_facility @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
-
 scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_facilityRef_name @regexp(
   subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1"
   pattern: "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$"
@@ -3032,20 +3189,10 @@ scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_item
 
 scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_mount @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
 
-scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_rack @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
-
 scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_rackRef_name @regexp(
   subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1"
   pattern: "^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$"
 ) @typescript(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
-
-scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_expectedPeer_device @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
-
-scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_expectedPeer_port @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
-
-scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_name @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 63)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
-
-scalar query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_type @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
 
 scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_assetTag @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
 
@@ -3090,10 +3237,6 @@ scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spe
 
 scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_name @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 63)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
 
-scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_peer_device @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
-
-scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_peer_port @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
-
 scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_internalMappings_items_from_componentID @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 63)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
 
 scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_internalMappings_items_to_componentID @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 63)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
@@ -3136,6 +3279,77 @@ scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spe
   subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1"
   pattern: "^([0-9a-f]{2}:){5}[0-9a-f]{2}$"
 ) @typescript(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_message @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 32768)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_reason @regexp(
+  subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1"
+  pattern: "^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$"
+) @typescript(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_type @regexp(
+  subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1"
+  pattern: "^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
+) @typescript(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_endpoint @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 2048)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_firmwareVersion @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_id @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_model @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items_id @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items_linkStatus @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 63)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items_macAddress @regexp(
+  subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1"
+  pattern: "^([0-9a-f]{2}:){5}[0-9a-f]{2}$"
+) @typescript(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_id @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_manufacturer @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_model @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items_id @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items_linkStatus @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 63)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items_macAddress @regexp(
+  subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1"
+  pattern: "^([0-9a-f]{2}:){5}[0-9a-f]{2}$"
+) @typescript(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_powerState @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 63)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_serialNumber @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_sku @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_uuid @regexp(
+  subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1"
+  pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+) @typescript(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_lastAttemptEndpoint @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 2048)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_endpoint @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 2048)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_product @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_redfishVersion @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 63)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_uuid @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 36)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_vendor @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_tls_endpoint @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", max: 2048)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+
+scalar query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_tls_publicKeySHA256 @regexp(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", pattern: "^[0-9a-f]{64}$")  @typescript(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", type: "string")  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
 
 scalar query_listFleetDatumapisComV1alpha1DeviceTypeForAllNamespaces_items_items_spec_componentTemplates_items_connector @length(subgraph: "APIS_FLEET_DATUMAPIS_COM_V1ALPHA1", min: 1, max: 253)  @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
 
@@ -7697,6 +7911,13 @@ scalar query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_i
 IPv4 or IPv6 address.
 """
 scalar query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_items_status_connectionDetails_publicKey_addresses_items_address @length(subgraph: "APIS_NETWORKING_DATUMAPIS_COM_V1ALPHA1", max: 39)  @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA1) 
+
+"""
+Signature is the standard base64 encoding of the ed25519 signature,
+made with the endpoint's private key, over the message
+"datum-connector-binding/v1\n<metadata.uid>\n<publicKey.id>".
+"""
+scalar query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_items_status_connectionDetails_publicKey_binding_signature @length(subgraph: "APIS_NETWORKING_DATUMAPIS_COM_V1ALPHA1", max: 128)  @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA1) 
 
 """
 Content is the text content of the note.
@@ -16772,6 +16993,106 @@ type Query @extraSchemaDefinitionDirective(
     queryParamArgMap: "{\"allowWatchBookmarks\":\"allowWatchBookmarks\",\"continue\":\"continue\",\"fieldSelector\":\"fieldSelector\",\"labelSelector\":\"labelSelector\",\"limit\":\"limit\",\"pretty\":\"pretty\",\"resourceVersion\":\"resourceVersion\",\"resourceVersionMatch\":\"resourceVersionMatch\",\"sendInitialEvents\":\"sendInitialEvents\",\"shardSelector\":\"shardSelector\",\"timeoutSeconds\":\"timeoutSeconds\",\"watch\":\"watch\"}"
   ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
   """
+  list objects of kind ChargeDraft
+  """
+  listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces(
+    """
+    allowWatchBookmarks requests watch events with type "BOOKMARK". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored.
+    """
+    allowWatchBookmarks: Boolean
+    """
+    The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the "next key".
+    
+    This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+    """
+    continue: String
+    """
+    A selector to restrict the list of returned objects by their fields. Defaults to everything.
+    """
+    fieldSelector: String
+    """
+    A selector to restrict the list of returned objects by their labels. Defaults to everything.
+    """
+    labelSelector: String
+    """
+    limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.
+    
+    The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+    """
+    limit: Int
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersion: String
+    """
+    resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersionMatch: String
+    """
+    `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic "Bookmark" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `"k8s.io/initial-events-end": "true"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.
+    
+    When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan
+      is interpreted as "data at least as new as the provided `resourceVersion`"
+      and the bookmark event is send when the state is synced
+      to a `resourceVersion` at least as fresh as the one provided by the ListOptions.
+      If `resourceVersion` is unset, this is interpreted as "consistent read" and the
+      bookmark event is send when the state is synced at least to the moment
+      when request started being processed.
+    - `resourceVersionMatch` set to any other value or unset
+      Invalid error is returned.
+    
+    Defaults to true if `resourceVersion=""` or `resourceVersion="0"` (for backward compatibility reasons) and to false otherwise.
+    """
+    sendInitialEvents: Boolean
+    """
+    shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:
+    
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000')
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000') || shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+    
+    Field paths use CEL-style object-rooted syntax (e.g. "object.metadata.uid"), NOT the fieldSelector format ("metadata.uid"). Currently supported paths:
+      - object.metadata.uid
+      - object.metadata.namespace
+    
+    hexStart and hexEnd are single-quoted CEL string literals with a '0x' prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.
+    
+    Examples:
+      2-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x8000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+      4-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x4000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x4000000000000000', '0x8000000000000000')
+        shard 2: shardRange(object.metadata.uid, '0x8000000000000000', '0xc000000000000000')
+        shard 3: shardRange(object.metadata.uid, '0xc000000000000000', '0x10000000000000000')
+    
+    This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+    """
+    shardSelector: String
+    """
+    Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+    """
+    timeoutSeconds: Int
+    """
+    Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
+    """
+    watch: Boolean
+  ): com_miloapis_billing_v1alpha1_ChargeDraftList @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/chargedrafts"
+    operationSpecificHeaders: [["accept", "application/json"]]
+    httpMethod: GET
+    queryParamArgMap: "{\"allowWatchBookmarks\":\"allowWatchBookmarks\",\"continue\":\"continue\",\"fieldSelector\":\"fieldSelector\",\"labelSelector\":\"labelSelector\",\"limit\":\"limit\",\"pretty\":\"pretty\",\"resourceVersion\":\"resourceVersion\",\"resourceVersionMatch\":\"resourceVersionMatch\",\"sendInitialEvents\":\"sendInitialEvents\",\"shardSelector\":\"shardSelector\",\"timeoutSeconds\":\"timeoutSeconds\",\"watch\":\"watch\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
   list objects of kind Charge
   """
   listBillingMiloapisComV1alpha1ChargeForAllNamespaces(
@@ -18410,6 +18731,139 @@ type Query @extraSchemaDefinitionDirective(
   ): com_miloapis_billing_v1alpha1_BillingEntitlement @httpOperation(
     subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
     path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/billingentitlements/{args.name}/status"
+    operationSpecificHeaders: [["accept", "application/json"]]
+    httpMethod: GET
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"resourceVersion\":\"resourceVersion\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  list objects of kind ChargeDraft
+  """
+  listBillingMiloapisComV1alpha1NamespacedChargeDraft(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    allowWatchBookmarks requests watch events with type "BOOKMARK". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored.
+    """
+    allowWatchBookmarks: Boolean
+    """
+    The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the "next key".
+    
+    This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+    """
+    continue: String
+    """
+    A selector to restrict the list of returned objects by their fields. Defaults to everything.
+    """
+    fieldSelector: String
+    """
+    A selector to restrict the list of returned objects by their labels. Defaults to everything.
+    """
+    labelSelector: String
+    """
+    limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.
+    
+    The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+    """
+    limit: Int
+    """
+    resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersion: String
+    """
+    resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersionMatch: String
+    """
+    `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic "Bookmark" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `"k8s.io/initial-events-end": "true"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.
+    
+    When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan
+      is interpreted as "data at least as new as the provided `resourceVersion`"
+      and the bookmark event is send when the state is synced
+      to a `resourceVersion` at least as fresh as the one provided by the ListOptions.
+      If `resourceVersion` is unset, this is interpreted as "consistent read" and the
+      bookmark event is send when the state is synced at least to the moment
+      when request started being processed.
+    - `resourceVersionMatch` set to any other value or unset
+      Invalid error is returned.
+    
+    Defaults to true if `resourceVersion=""` or `resourceVersion="0"` (for backward compatibility reasons) and to false otherwise.
+    """
+    sendInitialEvents: Boolean
+    """
+    shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:
+    
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000')
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000') || shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+    
+    Field paths use CEL-style object-rooted syntax (e.g. "object.metadata.uid"), NOT the fieldSelector format ("metadata.uid"). Currently supported paths:
+      - object.metadata.uid
+      - object.metadata.namespace
+    
+    hexStart and hexEnd are single-quoted CEL string literals with a '0x' prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.
+    
+    Examples:
+      2-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x8000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+      4-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x4000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x4000000000000000', '0x8000000000000000')
+        shard 2: shardRange(object.metadata.uid, '0x8000000000000000', '0xc000000000000000')
+        shard 3: shardRange(object.metadata.uid, '0xc000000000000000', '0x10000000000000000')
+    
+    This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+    """
+    shardSelector: String
+    """
+    Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+    """
+    timeoutSeconds: Int
+    """
+    Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
+    """
+    watch: Boolean
+  ): com_miloapis_billing_v1alpha1_ChargeDraftList @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/chargedrafts"
+    operationSpecificHeaders: [["accept", "application/json"]]
+    httpMethod: GET
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"allowWatchBookmarks\":\"allowWatchBookmarks\",\"continue\":\"continue\",\"fieldSelector\":\"fieldSelector\",\"labelSelector\":\"labelSelector\",\"limit\":\"limit\",\"resourceVersion\":\"resourceVersion\",\"resourceVersionMatch\":\"resourceVersionMatch\",\"sendInitialEvents\":\"sendInitialEvents\",\"shardSelector\":\"shardSelector\",\"timeoutSeconds\":\"timeoutSeconds\",\"watch\":\"watch\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  read the specified ChargeDraft
+  """
+  readBillingMiloapisComV1alpha1NamespacedChargeDraft(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    name of the ChargeDraft
+    """
+    name: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersion: String
+  ): com_miloapis_billing_v1alpha1_ChargeDraft @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/chargedrafts/{args.name}"
     operationSpecificHeaders: [["accept", "application/json"]]
     httpMethod: GET
     queryParamArgMap: "{\"pretty\":\"pretty\",\"resourceVersion\":\"resourceVersion\"}"
@@ -67856,6 +68310,262 @@ type Mutation @join__type(graph: API_V1)  @join__type(graph: APIS_ACTIVITY_MILOA
   ): com_miloapis_billing_v1alpha1_BillingEntitlement @httpOperation(
     subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
     path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/billingentitlements/{args.name}/status"
+    operationSpecificHeaders: [["Content-Type", "application/json-patch+json"], ["accept", "application/json"]]
+    httpMethod: PATCH
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"fieldManager\":\"fieldManager\",\"fieldValidation\":\"fieldValidation\",\"force\":\"force\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  create a ChargeDraft
+  """
+  createBillingMiloapisComV1alpha1NamespacedChargeDraft(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+    """
+    dryRun: String
+    """
+    fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+    """
+    fieldManager: String
+    """
+    fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+    """
+    fieldValidation: String
+    input: com_miloapis_billing_v1alpha1_ChargeDraft_Input
+  ): com_miloapis_billing_v1alpha1_ChargeDraft @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/chargedrafts"
+    operationSpecificHeaders: [["Content-Type", "application/json"], ["accept", "application/json"]]
+    httpMethod: POST
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"fieldManager\":\"fieldManager\",\"fieldValidation\":\"fieldValidation\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  delete collection of ChargeDraft
+  """
+  deleteBillingMiloapisComV1alpha1CollectionNamespacedChargeDraft(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    allowWatchBookmarks requests watch events with type "BOOKMARK". Servers that do not implement bookmarks may ignore this flag and bookmarks are sent at the server's discretion. Clients should not assume bookmarks are returned at any specific interval, nor may they assume the server will send any BOOKMARK event during a session. If this is not a watch, this field is ignored.
+    """
+    allowWatchBookmarks: Boolean
+    """
+    The continue option should be set when retrieving more results from the server. Since this value is server defined, clients may only use the continue value from a previous query result with identical query parameters (except for the value of continue) and the server may reject a continue value it does not recognize. If the specified continue value is no longer valid whether due to expiration (generally five to fifteen minutes) or a configuration change on the server, the server will respond with a 410 ResourceExpired error together with a continue token. If the client needs a consistent list, it must restart their list without the continue field. Otherwise, the client may send another list request with the token received with the 410 error, the server will respond with a list starting from the next key, but from the latest snapshot, which is inconsistent from the previous list results - objects that are created, modified, or deleted after the first list request will be included in the response, as long as their keys are after the "next key".
+    
+    This field is not supported when watch is true. Clients may start a watch from the last resourceVersion value returned by the server and not miss any modifications.
+    """
+    continue: String
+    """
+    A selector to restrict the list of returned objects by their fields. Defaults to everything.
+    """
+    fieldSelector: String
+    """
+    A selector to restrict the list of returned objects by their labels. Defaults to everything.
+    """
+    labelSelector: String
+    """
+    limit is a maximum number of responses to return for a list call. If more items exist, the server will set the `continue` field on the list metadata to a value that can be used with the same initial query to retrieve the next set of results. Setting a limit may return fewer than the requested amount of items (up to zero items) in the event all requested objects are filtered out and clients should only use the presence of the continue field to determine whether more results are available. Servers may choose not to support the limit argument and will return all of the available results. If limit is specified and the continue field is empty, clients may assume that no more results are available. This field is not supported if watch is true.
+    
+    The server guarantees that the objects returned when using continue will be identical to issuing a single list call without a limit - that is, no objects created, modified, or deleted after the first request is issued will be included in any subsequent continued requests. This is sometimes referred to as a consistent snapshot, and ensures that a client that is using limit to receive smaller chunks of a very large result can ensure they see all possible objects. If objects are updated during a chunked list the version of the object that was present at the time the first list result was calculated is returned.
+    """
+    limit: Int
+    """
+    resourceVersion sets a constraint on what resource versions a request may be served from. See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersion: String
+    """
+    resourceVersionMatch determines how resourceVersion is applied to list calls. It is highly recommended that resourceVersionMatch be set for list calls where resourceVersion is set See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for details.
+    
+    Defaults to unset
+    """
+    resourceVersionMatch: String
+    """
+    `sendInitialEvents=true` may be set together with `watch=true`. In that case, the watch stream will begin with synthetic events to produce the current state of objects in the collection. Once all such events have been sent, a synthetic "Bookmark" event  will be sent. The bookmark will report the ResourceVersion (RV) corresponding to the set of objects, and be marked with `"k8s.io/initial-events-end": "true"` annotation. Afterwards, the watch stream will proceed as usual, sending watch events corresponding to changes (subsequent to the RV) to objects watched.
+    
+    When `sendInitialEvents` option is set, we require `resourceVersionMatch` option to also be set. The semantic of the watch request is as following: - `resourceVersionMatch` = NotOlderThan
+      is interpreted as "data at least as new as the provided `resourceVersion`"
+      and the bookmark event is send when the state is synced
+      to a `resourceVersion` at least as fresh as the one provided by the ListOptions.
+      If `resourceVersion` is unset, this is interpreted as "consistent read" and the
+      bookmark event is send when the state is synced at least to the moment
+      when request started being processed.
+    - `resourceVersionMatch` set to any other value or unset
+      Invalid error is returned.
+    
+    Defaults to true if `resourceVersion=""` or `resourceVersion="0"` (for backward compatibility reasons) and to false otherwise.
+    """
+    sendInitialEvents: Boolean
+    """
+    shardSelector restricts the list of returned objects using a CEL-based shard selector expression. The format uses the shardRange() function combined with || (logical OR) to specify one or more hash ranges:
+    
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000')
+      shardRange(object.metadata.uid, '0x0', '0x8000000000000000') || shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+    
+    Field paths use CEL-style object-rooted syntax (e.g. "object.metadata.uid"), NOT the fieldSelector format ("metadata.uid"). Currently supported paths:
+      - object.metadata.uid
+      - object.metadata.namespace
+    
+    hexStart and hexEnd are single-quoted CEL string literals with a '0x' prefix, defining the inclusive lower and exclusive upper bounds over the 64-bit FNV-1a hash space. The full range is [0x0, 0x10000000000000000), where the exclusive upper bound equals 2^64.
+    
+    Examples:
+      2-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x8000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x8000000000000000', '0x10000000000000000')
+      4-shard split:
+        shard 0: shardRange(object.metadata.uid, '0x0000000000000000', '0x4000000000000000')
+        shard 1: shardRange(object.metadata.uid, '0x4000000000000000', '0x8000000000000000')
+        shard 2: shardRange(object.metadata.uid, '0x8000000000000000', '0xc000000000000000')
+        shard 3: shardRange(object.metadata.uid, '0xc000000000000000', '0x10000000000000000')
+    
+    This is an alpha field and requires enabling the ShardedListAndWatch feature gate.
+    """
+    shardSelector: String
+    """
+    Timeout for the list/watch call. This limits the duration of the call, regardless of any activity or inactivity.
+    """
+    timeoutSeconds: Int
+    """
+    Watch for changes to the described resources and return them as a stream of add, update, and remove notifications. Specify resourceVersion.
+    """
+    watch: Boolean
+  ): io_k8s_apimachinery_pkg_apis_meta_v1_Status @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/chargedrafts"
+    operationSpecificHeaders: [["accept", "application/json"]]
+    httpMethod: DELETE
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"allowWatchBookmarks\":\"allowWatchBookmarks\",\"continue\":\"continue\",\"fieldSelector\":\"fieldSelector\",\"labelSelector\":\"labelSelector\",\"limit\":\"limit\",\"resourceVersion\":\"resourceVersion\",\"resourceVersionMatch\":\"resourceVersionMatch\",\"sendInitialEvents\":\"sendInitialEvents\",\"shardSelector\":\"shardSelector\",\"timeoutSeconds\":\"timeoutSeconds\",\"watch\":\"watch\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  replace the specified ChargeDraft
+  """
+  replaceBillingMiloapisComV1alpha1NamespacedChargeDraft(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    name of the ChargeDraft
+    """
+    name: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+    """
+    dryRun: String
+    """
+    fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint.
+    """
+    fieldManager: String
+    """
+    fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+    """
+    fieldValidation: String
+    input: com_miloapis_billing_v1alpha1_ChargeDraft_Input
+  ): com_miloapis_billing_v1alpha1_ChargeDraft @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/chargedrafts/{args.name}"
+    operationSpecificHeaders: [["Content-Type", "application/json"], ["accept", "application/json"]]
+    httpMethod: PUT
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"fieldManager\":\"fieldManager\",\"fieldValidation\":\"fieldValidation\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  delete a ChargeDraft
+  """
+  deleteBillingMiloapisComV1alpha1NamespacedChargeDraft(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    name of the ChargeDraft
+    """
+    name: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+    """
+    dryRun: String
+    """
+    The duration in seconds before the object should be deleted. Value must be non-negative integer. The value zero indicates delete immediately. If this value is nil, the default grace period for the specified type will be used. Defaults to a per object value if not specified. zero means delete immediately.
+    """
+    gracePeriodSeconds: Int
+    """
+    if set to true, it will trigger an unsafe deletion of the resource in case the normal deletion flow fails with a corrupt object error. A resource is considered corrupt if it can not be retrieved from the underlying storage successfully because of a) its data can not be transformed e.g. decryption failure, or b) it fails to decode into an object. NOTE: unsafe deletion ignores finalizer constraints, skips precondition checks, and removes the object from the storage. WARNING: This may potentially break the cluster if the workload associated with the resource being unsafe-deleted relies on normal deletion flow. Use only if you REALLY know what you are doing. The default value is false, and the user must opt in to enable it
+    """
+    ignoreStoreReadErrorWithClusterBreakingPotential: Boolean
+    """
+    Deprecated: please use the PropagationPolicy, this field will be deprecated in 1.7. Should the dependent objects be orphaned. If true/false, the "orphan" finalizer will be added to/removed from the object's finalizers list. Either this field or PropagationPolicy may be set, but not both.
+    """
+    orphanDependents: Boolean
+    """
+    Whether and how garbage collection will be performed. Either this field or OrphanDependents may be set, but not both. The default policy is decided by the existing finalizer set in the metadata.finalizers and the resource-specific default policy. Acceptable values are: 'Orphan' - orphan the dependents; 'Background' - allow the garbage collector to delete the dependents in the background; 'Foreground' - a cascading policy that deletes all dependents in the foreground.
+    """
+    propagationPolicy: String
+    input: io_k8s_apimachinery_pkg_apis_meta_v1_DeleteOptions_Input
+  ): io_k8s_apimachinery_pkg_apis_meta_v1_Status @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/chargedrafts/{args.name}"
+    operationSpecificHeaders: [["Content-Type", "application/json"], ["accept", "application/json"]]
+    httpMethod: DELETE
+    queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"gracePeriodSeconds\":\"gracePeriodSeconds\",\"ignoreStoreReadErrorWithClusterBreakingPotential\":\"ignoreStoreReadErrorWithClusterBreakingPotential\",\"orphanDependents\":\"orphanDependents\",\"propagationPolicy\":\"propagationPolicy\"}"
+  ) @join__field(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  """
+  partially update the specified ChargeDraft
+  """
+  patchBillingMiloapisComV1alpha1NamespacedChargeDraft(
+    """
+    object name and auth scope, such as for teams and projects
+    """
+    namespace: String!
+    """
+    name of the ChargeDraft
+    """
+    name: String!
+    """
+    If 'true', then the output is pretty printed. Defaults to 'false' unless the user-agent indicates a browser or command-line HTTP tool (curl and wget).
+    """
+    pretty: String
+    """
+    When present, indicates that modifications should not be persisted. An invalid or unrecognized dryRun directive will result in an error response and no further processing of the request. Valid values are: - All: all dry run stages will be processed
+    """
+    dryRun: String
+    """
+    fieldManager is a name associated with the actor or entity that is making these changes. The value must be less than or 128 characters long, and only contain printable characters, as defined by https://golang.org/pkg/unicode/#IsPrint. This field is required for apply requests (application/apply-patch) but optional for non-apply patch types (JsonPatch, MergePatch, StrategicMergePatch).
+    """
+    fieldManager: String
+    """
+    fieldValidation instructs the server on how to handle objects in the request (POST/PUT/PATCH) containing unknown or duplicate fields. Valid values are: - Ignore: This will ignore any unknown fields that are silently dropped from the object, and will ignore all but the last duplicate field that the decoder encounters. This is the default behavior prior to v1.23. - Warn: This will send a warning via the standard warning response header for each unknown field that is dropped from the object, and for each duplicate field that is encountered. The request will still succeed if there are no other errors, and will only persist the last of any duplicate fields. This is the default in v1.23+ - Strict: This will fail the request with a BadRequest error if any unknown fields would be dropped from the object, or if any duplicate fields are present. The error returned from the server will contain all unknown and duplicate fields encountered.
+    """
+    fieldValidation: String
+    """
+    Force is going to "force" Apply requests. It means user will re-acquire conflicting fields owned by other people. Force flag must be unset for non-apply patch requests.
+    """
+    force: Boolean
+    input: JSON
+  ): com_miloapis_billing_v1alpha1_ChargeDraft @httpOperation(
+    subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1"
+    path: "/apis/billing.miloapis.com/v1alpha1/namespaces/{args.namespace}/chargedrafts/{args.name}"
     operationSpecificHeaders: [["Content-Type", "application/json-patch+json"], ["accept", "application/json"]]
     httpMethod: PATCH
     queryParamArgMap: "{\"pretty\":\"pretty\",\"dryRun\":\"dryRun\",\"fieldManager\":\"fieldManager\",\"fieldValidation\":\"fieldValidation\",\"force\":\"force\"}"
@@ -124008,21 +124718,14 @@ type io_k8s_apimachinery_pkg_apis_meta_v1_StatusCause @join__type(graph: API_V1)
 APIGroupList is a list of APIGroup, to allow clients to discover the API at /apis.
 """
 type io_k8s_apimachinery_pkg_apis_meta_v1_APIGroupList @join__type(graph: APIS)  {
-  TypeMeta: io_k8s_apimachinery_pkg_apis_meta_v1_TypeMeta!
-  """
-  groups is a list of APIGroup.
-  """
-  groups: [io_k8s_apimachinery_pkg_apis_meta_v1_APIGroup]!
-}
-
-"""
-TypeMeta describes an individual object in an API response or request with strings representing the type of the object and its API schema version. Structures that are versioned or persisted should inline TypeMeta.
-"""
-type io_k8s_apimachinery_pkg_apis_meta_v1_TypeMeta @join__type(graph: APIS)  @join__type(graph: APIS_USAGE_BILLING_MILOAPIS_COM)  @join__type(graph: APIS_USAGE_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   """
   APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
   """
   apiVersion: String
+  """
+  groups is a list of APIGroup.
+  """
+  groups: [io_k8s_apimachinery_pkg_apis_meta_v1_APIGroup]!
   """
   Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
   """
@@ -128535,6 +129238,7 @@ type query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_it
   fees are charged then, and its monthly fees bill from then.
   """
   startsAt: DateTime!
+  term: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_term
   """
   UsageBilled is true when the contract also bills usage, at the rates
   in its Offer, on top of its fees.
@@ -128557,6 +129261,10 @@ type query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_it
   Currency is the ISO 4217 currency code of amount.
   """
   currency: String!
+  """
+  Description is the pricing's description of what the fee is for.
+  """
+  description: String
   """
   DisplayName is the fee's label, as invoices show it (e.g. "Setup
   fee").
@@ -128588,6 +129296,7 @@ type query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_it
   charged is amount times quantity (e.g. 3 × "1000.00").
   """
   quantity: Int
+  servicePeriod: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_servicePeriod
   """
   ServiceRef is the service the fee is for. Empty for a fee that isn't
   for any one service.
@@ -128597,6 +129306,58 @@ type query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_it
   SKU is the fee's product code, from its pricing. Empty when it has none.
   """
   sku: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_sku
+}
+
+"""
+ServicePeriod is a OneTime fee's supply date, from the contract.
+Empty when the fee's period is the day it's charged.
+"""
+type query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_servicePeriod @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  end: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_servicePeriod_end!
+  start: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_servicePeriod_start!
+}
+
+"""
+Term is how long the contract runs, what happens when it ends, and
+where it is now. Empty for a contract without a term.
+"""
+type query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_term @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  atEnd: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_term_atEnd!
+  """
+  CurrentTermStartsAt is when the current term started: the contract's
+  start, or the start of its latest renewal. Month to month or
+  stopped, it's when the last term started.
+  """
+  currentTermStartsAt: DateTime!
+  """
+  EndsAt is when the current term ends. Month to month, it's when the
+  last term ended. Stopped, it's when the contract stopped.
+  """
+  endsAt: DateTime!
+  """
+  Months is the first term's length.
+  """
+  months: Int!
+  phase: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_term_phase!
+  """
+  RenewMonths is the length of each renewal, when atEnd is Renew.
+  """
+  renewMonths: Int
+  """
+  RenewalDueAt is when the ContractRenewalDue condition turns on for
+  the current term: ContractRenewalNotice before endsAt. Empty once the
+  contract has stopped.
+  """
+  renewalDueAt: DateTime
+  """
+  Renewals counts the renewals so far, when atEnd is Renew.
+  """
+  renewals: Int
+  """
+  StopsAt is when a contract set to stop stops: the term's end, or the
+  contract's stopsAt once it's month to month.
+  """
+  stopsAt: DateTime
 }
 
 """
@@ -128645,9 +129406,16 @@ active.
 """
 type query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_paymentArrangement @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   """
-  EndsAt is when the arrangement ends, if it has a fixed end.
+  EndsAt is when the arrangement ends, if it has a fixed end. For
+  terms that end with the contract, it's the contract's stop date once
+  the contract is set to stop, and empty while it will carry on.
   """
   endsAt: DateTime
+  """
+  EndsWithContract is true when the terms last as long as the
+  account's contract and end when it stops.
+  """
+  endsWithContract: Boolean
   invoice: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_paymentArrangement_invoice
   """
   Name is the name of the active BillingArrangement.
@@ -129121,6 +129889,14 @@ type query_listBillingMiloapisComV1alpha1BillingArrangementForAllNamespaces_item
   current time, which keeps the record for history.
   """
   endsAt: DateTime
+  """
+  EndsWithContract ties the terms to the contract on the account's
+  BillingEntitlement: they stay in effect while the contract runs, in
+  its term, renewed or month to month, and end when it stops. With
+  endsAt too, they end at whichever comes first. Only allowed when the
+  account has a contract. It can be set or cleared at any time.
+  """
+  endsWithContract: Boolean
   invoice: query_listBillingMiloapisComV1alpha1BillingArrangementForAllNamespaces_items_items_spec_invoice
   """
   Reason records why staff granted these terms (for example "Signed
@@ -129318,6 +130094,52 @@ type query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_item
   Immutable.
   """
   startsAt: DateTime!
+  term: query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term
+}
+
+"""
+Term is how long the contract runs and what happens when it ends.
+Without one, the contract runs until it's changed.
+"""
+type query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  atEnd: query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_atEnd
+  """
+  Months is the term's length. It's counted the way a fee's periods
+  are, so the term ends on a billing date: from startsAt, or, for a
+  contract billed on the invoice day, from its first billing date, so
+  the prorated first period isn't counted. It must be a whole number
+  of every recurring fee's interval in the Offer.
+  """
+  months: Int!
+  offerAfterRef: query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_offerAfterRef
+  """
+  RenewMonths is the length of each renewal, when atEnd is Renew.
+  Defaults to months. Renewals are counted from the contract's start,
+  so they end on its billing day.
+  """
+  renewMonths: Int
+  """
+  StopsAt is when a contract that's already running month to month
+  stops, at midnight UTC. Only allowed once the term has ended, and
+  then required when atEnd is Stop: a contract in its term stops at
+  the term's end. It must be a billing date on or after the contract's
+  next one, and end the period of every quarterly and annual fee billed
+  in advance.
+  """
+  stopsAt: DateTime
+}
+
+"""
+OfferAfterRef is the Offer the account moves onto when the contract
+stops. Required when atEnd is Stop, and not allowed otherwise. It
+must be a published Offer with no one-time fees. At the stop, billing
+sets offerRef to it.
+"""
+type query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_offerAfterRef @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Name of the Offer.
+  """
+  name: query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_offerAfterRef_name!
 }
 
 """
@@ -129369,6 +130191,138 @@ type query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_item
   reason: query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_status_conditions_items_reason!
   status: query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_status_conditions_items_status!
   type: query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_status_conditions_items_type!
+}
+
+"""
+ChargeDraftList is a list of ChargeDraft
+"""
+type com_miloapis_billing_v1alpha1_ChargeDraftList @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+  """
+  apiVersion: String
+  """
+  List of chargedrafts. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md
+  """
+  items: [com_miloapis_billing_v1alpha1_ChargeDraft]!
+  """
+  Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+  """
+  kind: String
+  metadata: io_k8s_apimachinery_pkg_apis_meta_v1_ListMeta
+}
+
+"""
+ChargeDraft is charges staff are preparing for a billing account, to
+check and send later: several lines, which can be changed, previewed
+with an InvoiceRequest, and sent as Charges. Only staff can read drafts,
+because of their notes.
+"""
+type com_miloapis_billing_v1alpha1_ChargeDraft @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+  """
+  apiVersion: String
+  """
+  Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+  """
+  kind: String
+  metadata: io_k8s_apimachinery_pkg_apis_meta_v1_ObjectMeta
+  spec: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec!
+}
+
+"""
+ChargeDraftSpec is charges staff are preparing for a billing account and
+haven't sent: one or more lines, and when they'll be invoiced. Unlike a
+Charge, a draft can be changed until it's sent. Sending it adds a Charge
+for each line, in one invoice group when they're invoiced now, and
+removes the draft. Nothing in a draft is billed.
+"""
+type query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  billingAccountRef: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_billingAccountRef!
+  invoice: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_invoice
+  """
+  Lines are the charges, in the order the invoice lists them.
+  """
+  lines: [query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items]!
+}
+
+"""
+BillingAccountRef names the BillingAccount, in this namespace, the
+charges are for.
+"""
+type query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_billingAccountRef @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Name is the name of the BillingAccount.
+  """
+  name: NonEmptyString!
+}
+
+"""
+ChargeDraftLine is one charge in a draft: what a Charge's spec holds for
+it, without the account or timing, which the draft gives for every line.
+Billing fills in what's left out, as it does for a Charge, when the
+draft is sent.
+"""
+type query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  currency: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_currency
+  """
+  Description is what the invoice calls the charge. Defaulted from the
+  pricing's displayName. It's printed on the invoice, so it never
+  carries the SKU.
+  """
+  description: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_description
+  discountPercent: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_discountPercent
+  """
+  Note is for staff and finance, kept on the invoice line's metadata.
+  It's never printed on the invoice or shown to the customer.
+  """
+  note: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_note
+  quantity: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_quantity!
+  servicePeriod: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePeriod
+  servicePricingRef: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePricingRef
+  tax: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_tax
+  unitAmount: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_unitAmount
+}
+
+"""
+ServicePeriod is the dates the charge is for: the invoice line's
+service period. Defaulted to the account's current billing period.
+"""
+type query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePeriod @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  end: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePeriod_end!
+  start: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePeriod_start!
+}
+
+"""
+ServicePricingRef names the catalog item: a OneTime or Recurring
+ServicePricing. Its displayName, amount and tax are the defaults for
+description, unitAmount and tax, and the invoice line counts as its
+product in reports, at whatever price. Omitted, this is a custom
+item, which uses the custom charge product.
+"""
+type query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePricingRef @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Name of the ServicePricing.
+  """
+  name: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePricingRef_name!
+  """
+  Namespace of the ServicePricing.
+  """
+  namespace: String
+}
+
+"""
+Tax is how the charge is taxed. Defaulted from the pricing's tax.
+Omitted on a custom charge, the account's default tax code applies.
+"""
+type query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_tax @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  code: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_tax_code
+  """
+  Taxable is false for a charge that's never taxed, wherever the
+  customer is. Omitted, the charge is taxable.
+  """
+  taxable: Boolean
 }
 
 """
@@ -129427,6 +130381,7 @@ type query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec
   description: query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_description
   discountPercent: query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_discountPercent
   invoice: query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_invoice
+  invoiceGroup: query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_invoiceGroup
   """
   Note is for staff and finance, kept on the invoice line's metadata.
   It's never printed on the invoice or shown to the customer.
@@ -129448,6 +130403,22 @@ type query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec
   Name is the name of the BillingAccount.
   """
   name: NonEmptyString!
+}
+
+"""
+InvoiceGroup puts this charge on one invoice with the account's other
+charges in the same group, for several lines staff send together.
+Only for a charge invoiced now. The group's charges wait until all of
+them are added, then go on one invoice of their own.
+"""
+type query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_invoiceGroup @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  name: query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_invoiceGroup_name!
+  """
+  Size is how many charges the group has. Every charge in the group
+  gives the same size, and none is invoiced until all of them are
+  added.
+  """
+  size: Int!
 }
 
 """
@@ -129761,6 +130732,7 @@ InvoiceRequestSpec defines the desired state of an InvoiceRequest.
 """
 type query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   billingAccountRef: query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_billingAccountRef!
+  chargeDraftRef: query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_chargeDraftRef
   contractDraft: query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_contractDraft
   """
   Draft, on a Preview, also leaves the invoice as a draft in the
@@ -129782,6 +130754,18 @@ type query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_it
   Name is the name of the BillingAccount.
   """
   name: NonEmptyString!
+}
+
+"""
+ChargeDraftRef, on a Preview, previews the invoice a ChargeDraft's
+lines would make, on their own, instead of what the account is billed
+for now. The draft must be for this billing account.
+"""
+type query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_chargeDraftRef @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Name of the ChargeDraft.
+  """
+  name: query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_chargeDraftRef_name!
 }
 
 """
@@ -130759,6 +131743,13 @@ type query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_sp
   chargeType: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_chargeType!
   currency: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_currency!
   """
+  Description says what the price is for, in a sentence or two, for
+  customers and staff: the portals show it with the item, and it's the
+  description of the price's Product in Stripe. It isn't printed on
+  invoice lines.
+  """
+  description: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_description
+  """
   DisplayName is a human-readable label for invoices and portals.
   """
   displayName: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_displayName
@@ -130770,6 +131761,12 @@ type query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_sp
   Retired, and serviceRef must name the service that owns it.
   """
   metric: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_metric
+  """
+  Notes are for staff and finance only: how the price was agreed, what
+  it covers, who to ask. They're never shown to customers, and they
+  aren't copied into an Offer's snapshot, which customers can read.
+  """
+  notes: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_notes
   """
   PricingUnit is a human-readable billing unit label (e.g. "vcpu",
   "gib"). Required when chargeType is Usage. Does not need to be the
@@ -131033,6 +132030,7 @@ type query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRe
   an Offer that sets it there.
   """
   quantity: Int
+  servicePeriod: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRefs_items_servicePeriod
 }
 
 """
@@ -131043,6 +132041,20 @@ type query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRe
   Percentage is a whole number from 0 to 100.
   """
   percentage: Int!
+}
+
+"""
+ServicePeriod is the supply date of a OneTime fee: the days the
+service it charges for was supplied, such as a cage's installation
+date. It's the period on the fee's invoice line, which Revenue
+Recognition spreads it over. Unset, the period is the day the fee is
+charged. It doesn't change when the fee is charged or how much. Only
+allowed on a OneTime pricing: a Recurring fee's period is the period
+it pays for, and a Usage pricing's is when it was used.
+"""
+type query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRefs_items_servicePeriod @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  end: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRefs_items_servicePeriod_end!
+  start: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRefs_items_servicePeriod_start!
 }
 
 """
@@ -131070,6 +132082,7 @@ type query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_
   existed) as 1. Unset for Usage pricings.
   """
   quantity: Int
+  servicePeriod: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_servicePeriod
   spec: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec!
 }
 
@@ -131085,7 +132098,18 @@ type query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_
 }
 
 """
-Spec is a deep copy of the source ServicePricingSpec at publish time.
+ServicePeriod is a OneTime fee's supply date, captured from the
+reference when the Offer becomes GA. Unset, the fee's period is the
+day it's charged.
+"""
+type query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_servicePeriod @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  end: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_servicePeriod_end!
+  start: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_servicePeriod_start!
+}
+
+"""
+Spec is a deep copy of the source ServicePricingSpec at publish time,
+without its notes, which are for staff only.
 """
 type query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   amount: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_amount
@@ -131108,6 +132132,13 @@ type query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_
   chargeType: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_chargeType!
   currency: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_currency!
   """
+  Description says what the price is for, in a sentence or two, for
+  customers and staff: the portals show it with the item, and it's the
+  description of the price's Product in Stripe. It isn't printed on
+  invoice lines.
+  """
+  description: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_description
+  """
   DisplayName is a human-readable label for invoices and portals.
   """
   displayName: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_displayName
@@ -131119,6 +132150,12 @@ type query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_
   Retired, and serviceRef must name the service that owns it.
   """
   metric: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_metric
+  """
+  Notes are for staff and finance only: how the price was agreed, what
+  it covers, who to ask. They're never shown to customers, and they
+  aren't copied into an Offer's snapshot, which customers can read.
+  """
+  notes: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_notes
   """
   PricingUnit is a human-readable billing unit label (e.g. "vcpu",
   "gib"). Required when chargeType is Usage. Does not need to be the
@@ -139458,6 +140495,13 @@ type query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNam
   contextRef: query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_spec_contextRef!
   destinationAddress: query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_spec_destinationAddress!
   region: query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_spec_region!
+  """
+  RegionalAddress is the address the node resolver forwards this
+  context's queries to in the region. It must be inside the region's
+  regional resolver range and used by no other binding. Unset, the
+  control plane allocates one, unless it is configured to require it.
+  """
+  regionalAddress: query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_spec_regionalAddress
 }
 
 """
@@ -139478,6 +140522,10 @@ type query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNam
 type query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_status @join__type(graph: APIS_DNS_NETWORKING_MILOAPIS_COM_V1_ALPHA1)  {
   conditions: [query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_status_conditions_items]
   observedGeneration: BigInt
+  """
+  RegionalAddress is the regional address the binding is served on.
+  """
+  regionalAddress: String
 }
 
 """
@@ -140723,7 +141771,8 @@ type com_miloapis_feedback_v1alpha1_FeedbackSourceList @join__type(graph: APIS_F
 
 """
 FeedbackSource configures what the feedback service syncs from one GitHub
-organization and how GitHub fields map onto posts. There is one per org.
+organization and how GitHub fields map onto posts. There is one per org,
+named after it: a sweep treats every post of the org as its own.
 
 FeedbackSource is a Platform resource stored in etcd.
 """
@@ -140768,10 +141817,7 @@ type query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github
   installationID: BigInt!
   issues: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues
   milestones: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_milestones
-  """
-  Org is the GitHub organization login.
-  """
-  org: String!
+  org: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_org!
   project: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_project
   repositories: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_repositories
 }
@@ -140790,9 +141836,9 @@ Issues selects which issues become posts. An issue is included when it
 matches any issue type or label, and is not excluded.
 """
 type query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1)  {
-  excludeLabels: [String]
-  issueTypes: [String]
-  labels: [String]
+  excludeLabels: [query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues_excludeLabels_items]
+  issueTypes: [query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues_issueTypes_items]
+  labels: [query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues_labels_items]
 }
 
 """
@@ -140811,10 +141857,7 @@ type query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github
   Number is the project number.
   """
   number: Int!
-  """
-  Owner is the org that owns the project.
-  """
-  owner: String!
+  owner: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_project_owner!
   """
   StatusField is the single-select field that holds item status.
   """
@@ -140830,8 +141873,8 @@ Repositories selects which public repositories are synced. Private
 repositories are always skipped.
 """
 type query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_repositories @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1)  {
-  exclude: [String]
-  include: [String]
+  exclude: [query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_repositories_exclude_items]
+  include: [query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_repositories_include_items]
 }
 
 """
@@ -142097,9 +143140,8 @@ type query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_
   cableRefs: [query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_cableRefs_items]
   displayName: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_displayName
   expectedIdentity: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_expectedIdentity!
-  lifecycle: Installation_const
+  lifecycle: Installation_const!
   placement: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement!
-  ports: [query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items]
 }
 
 type query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_cableRefs_items @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
@@ -142114,14 +143156,12 @@ type query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_
 
 type query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
   face: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_face
-  facility: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_facility
   facilityRef: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_facilityRef
   height: Int
   mount: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_mount
   position: Int
-  rack: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_rack
   rackRef: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_rackRef
-  scope: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_scope
+  scope: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_scope!
 }
 
 type query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_facilityRef @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
@@ -142130,18 +143170,6 @@ type query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_
 
 type query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_rackRef @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
   name: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_rackRef_name!
-}
-
-type query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
-  expectedPeer: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_expectedPeer
-  name: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_name!
-  speedMbps: BigInt
-  type: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_type
-}
-
-type query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_expectedPeer @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
-  device: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_expectedPeer_device!
-  port: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_expectedPeer_port!
 }
 
 """
@@ -142174,7 +143202,7 @@ type com_datumapis_fleet_v1alpha1_Device @join__type(graph: APIS_FLEET_DATUMAPIS
   kind: String
   metadata: io_k8s_apimachinery_pkg_apis_meta_v1_ObjectMeta
   spec: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec!
-  status: JSON
+  status: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status
 }
 
 type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
@@ -142230,12 +143258,6 @@ type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_
 type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
   macAddress: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_macAddress
   name: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_name!
-  peer: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_peer
-}
-
-type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_peer @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
-  device: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_peer_device!
-  port: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_peer_port!
 }
 
 type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_internalMappings_items @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
@@ -142296,6 +143318,88 @@ type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_
   id: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_serviceAssociations_items_serviceRef_id!
   system: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_serviceAssociations_items_serviceRef_system!
   type: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_serviceAssociations_items_serviceRef_type!
+}
+
+"""
+Written only by read-only BMC discovery through the status subresource. Observations are evidence; spec stays authoritative.
+"""
+type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  conditions: [query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items]
+  discovery: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery
+  observedGeneration: BigInt
+}
+
+type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  lastTransitionTime: DateTime!
+  message: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_message!
+  observedGeneration: BigInt
+  reason: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_reason!
+  status: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_status!
+  type: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_type!
+}
+
+type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  inventory: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory
+  lastAttemptAt: DateTime
+  lastAttemptEndpoint: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_lastAttemptEndpoint
+  serviceRoot: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot
+  tls: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_tls
+}
+
+type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  endpoint: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_endpoint!
+  managers: [query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items]
+  observedAt: DateTime!
+  systems: [query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items]
+}
+
+type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  firmwareVersion: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_firmwareVersion
+  id: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_id!
+  model: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_model
+  networkInterfaces: [query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items]
+}
+
+type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  id: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items_id!
+  linkStatus: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items_linkStatus
+  macAddress: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items_macAddress
+  speedMbps: NonNegativeInt
+}
+
+type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  id: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_id!
+  manufacturer: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_manufacturer
+  model: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_model
+  networkInterfaces: [query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items]
+  powerState: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_powerState
+  serialNumber: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_serialNumber
+  sku: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_sku
+  uuid: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_uuid
+}
+
+type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  id: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items_id!
+  linkStatus: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items_linkStatus
+  macAddress: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items_macAddress
+  speedMbps: NonNegativeInt
+}
+
+type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  endpoint: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_endpoint!
+  observedAt: DateTime!
+  product: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_product
+  redfishVersion: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_redfishVersion
+  uuid: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_uuid
+  vendor: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_vendor
+}
+
+type query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_tls @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  endpoint: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_tls_endpoint!
+  notAfter: DateTime
+  observedAt: DateTime!
+  publicKeySHA256: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_tls_publicKeySHA256!
+  selfSigned: Boolean
 }
 
 """
@@ -156440,6 +157544,11 @@ type query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status
   Conditions provide conditions that represent the current status of the UserInvitation.
   """
   conditions: [query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status_conditions_items]
+  """
+  InviteeEmailHash is the hex SHA-256 of the trimmed, lowercased spec.email.
+  The invited user lists their invitations by it.
+  """
+  inviteeEmailHash: String
   inviteeUser: query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status_inviteeUser
   inviterUser: query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status_inviterUser
   organization: query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status_organization
@@ -156471,8 +157580,7 @@ type query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status
 }
 
 """
-InviteeUser contains information about the invitee user in the invitation.
-This value may be nil if the invitee user has not been created yet.
+InviteeUser is no longer set and is cleared on existing invitations.
 """
 type query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status_inviteeUser @join__type(graph: APIS_IAM_MILOAPIS_COM_V1_ALPHA1)  {
   """
@@ -164447,6 +165555,7 @@ type query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_ite
   Addresses where the connector can be reached
   """
   addresses: [query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_items_status_connectionDetails_publicKey_addresses_items]!
+  binding: query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_items_status_connectionDetails_publicKey_binding
   discoveryMode: DNS_const
   """
   Home Relay server of the connector
@@ -164472,6 +165581,19 @@ type query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_ite
   Port where the connector can be reached.
   """
   port: Int!
+}
+
+"""
+Binding proves the agent publishing this Connector holds the private
+key for Id.
+"""
+type query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_items_status_connectionDetails_publicKey_binding @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA1)  {
+  """
+  Signature is the standard base64 encoding of the ed25519 signature,
+  made with the endpoint's private key, over the message
+  "datum-connector-binding/v1\n<metadata.uid>\n<publicKey.id>".
+  """
+  signature: query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_items_status_connectionDetails_publicKey_binding_signature
 }
 
 """
@@ -172194,6 +173316,13 @@ type query_listStripeBillingMiloapisComV1alpha1NamespacedStripeCustomer_items_it
   """
   conditions: [query_listStripeBillingMiloapisComV1alpha1NamespacedStripeCustomer_items_items_status_conditions_items]
   """
+  CustomerNumber is the account's customer number, the first half of
+  its invoice numbers. It's handed out just before the account's
+  first invoice is finalized, when the StripeProviderConfig has
+  spec.invoiceNumbers set.
+  """
+  customerNumber: BigInt
+  """
   ObservedGeneration is the most recent generation observed by the
   controller.
   """
@@ -172917,6 +174046,7 @@ type query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items_
   an external secret manager.
   """
   apiVersion: String
+  invoiceNumbers: query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items_spec_invoiceNumbers
   """
   PublishableKey is the Stripe publishable API key used by the portal
   to initialize Stripe.js. This value is non-sensitive and is read by
@@ -172924,6 +174054,22 @@ type query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items_
   PaymentMethodClass.
   """
   publishableKey: NonEmptyString!
+}
+
+"""
+InvoiceNumbers turns on numeric invoice numbers. When set, each
+billing account gets a customer number just before its first
+invoice is finalized, and the number becomes its Stripe customer's
+invoice_prefix, so invoices are numbered like 1042-0003. When
+unset, Stripe's random prefixes are left alone.
+"""
+type query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items_spec_invoiceNumbers @join__type(graph: APIS_STRIPE_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  FirstCustomerNumber is the first customer number handed out. Later
+  customers get the next number up. Stripe allows prefixes of up to
+  12 digits.
+  """
+  firstCustomerNumber: BigInt!
 }
 
 """
@@ -172935,6 +174081,12 @@ type query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items_
   config's state.
   """
   conditions: [query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items_status_conditions_items]
+  """
+  LastCustomerNumber is the highest customer number handed out: the
+  counter for spec.invoiceNumbers. It's written with an update, not
+  a patch, so two writers can't hand out the same number.
+  """
+  lastCustomerNumber: BigInt
   """
   ObservedGeneration is the most recent generation observed by the
   controller.
@@ -173276,6 +174428,20 @@ type query_listTelemetryMiloapisComV1alpha1ExportPolicyForAllNamespaces_items_it
 }
 
 """
+TypeMeta describes an individual object in an API response or request with strings representing the type of the object and its API schema version. Structures that are versioned or persisted should inline TypeMeta.
+"""
+type io_k8s_apimachinery_pkg_apis_meta_v1_TypeMeta @join__type(graph: APIS_USAGE_BILLING_MILOAPIS_COM)  @join__type(graph: APIS_USAGE_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+  """
+  apiVersion: String
+  """
+  Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+  """
+  kind: String
+}
+
+"""
 UsageQuery reads metered usage for billing accounts over a time range.
 
 A UsageQuery is never stored: the client creates one, and the server returns it with status filled in, the same way a TokenReview or SubjectAccessReview works.
@@ -173490,16 +174656,28 @@ type com_miloapis_go_billing_api_usage_v1alpha1_UsagePoint @join__type(graph: AP
 
 """
 UsageSpend is what usage costs.
+
+The usage is priced at the billing account's own rates: those of the pricings in its Offer, including a customer pricing that replaces a list price (spec.basedOn), never the list price it replaces. The Offer's discounts then come off, as they do on the invoice:
+
+	amount = amountBeforeDiscounts - discountAmount
 """
 type com_miloapis_go_billing_api_usage_v1alpha1_UsageSpend @join__type(graph: APIS_USAGE_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   """
-  Amount is the cost as a decimal string in Currency (for example "12.5"), before taxes, credits, discounts and minimum commitments. In a project, or with spec.projects set, it prices only that usage, as if it were the billing account's only usage.
+  Amount is what the usage costs as a decimal string in Currency (for example "12.5"), after the Offer's discounts, as the invoice charges it. It is before taxes, credits and minimum commitments. In a project, or with spec.projects set, it prices only that usage, as if it were the billing account's only usage.
   """
   amount: String!
   """
-  Currency is the ISO 4217 code of Amount, for example "USD".
+  AmountBeforeDiscounts is what the usage costs before the Offer's discounts, as a decimal string in Currency: the amount the invoice shows before its discount lines. Left empty by providers that don't report it; Amount is then all that is known.
+  """
+  amountBeforeDiscounts: String
+  """
+  Currency is the ISO 4217 code of the amounts, for example "USD".
   """
   currency: String!
+  """
+  DiscountAmount is what the Offer's discounts take off AmountBeforeDiscounts, as a decimal string in Currency: "0" when nothing is discounted. Set whenever AmountBeforeDiscounts is.
+  """
+  discountAmount: String
 }
 
 """
@@ -173956,6 +175134,25 @@ enum query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_it
   annual @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 }
 
+"""
+AtEnd is what happens when the term ends: MonthToMonth, Renew or
+Stop.
+"""
+enum query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_term_atEnd @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  MonthToMonth @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  Renew @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  Stop @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+}
+
+"""
+Phase is InTerm, MonthToMonth or Stopped.
+"""
+enum query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_term_phase @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  InTerm @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  MonthToMonth @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  Stopped @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+}
+
 enum Invoice_const @typescript(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", type: "\"Invoice\"")  @example(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", value: "Invoice")  @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   Invoice @enum(subgraph: "APIS_BILLING_MILOAPIS_COM_V1ALPHA1", value: "\"Invoice\"")  @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 }
@@ -174072,12 +175269,34 @@ enum query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_item
 }
 
 """
+AtEnd is what happens when the term ends. MonthToMonth, the default,
+carries the contract on at the same prices until someone decides
+otherwise. Renew starts another term of renewMonths. Stop stops the
+contract's charges and moves the account onto offerAfterRef.
+"""
+enum query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_atEnd @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  MonthToMonth @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  Renew @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  Stop @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+}
+
+"""
 status of the condition, one of True, False, Unknown.
 """
 enum query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_status_conditions_items_status @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   True @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
   False @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
   Unknown @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+}
+
+"""
+Invoice is when the charges will be invoiced once sent: NextInvoice,
+with the rest of the account's current billing period, or Now, together
+on an invoice of their own.
+"""
+enum query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_invoice @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  NextInvoice @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
+  Now @join__enumValue(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1) 
 }
 
 """
@@ -175622,6 +176841,12 @@ enum query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_
 enum query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_reportedPlacement_face @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
   front @join__enumValue(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
   rear @join__enumValue(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+}
+
+enum query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_status @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  True @join__enumValue(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+  False @join__enumValue(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
+  Unknown @join__enumValue(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1) 
 }
 
 enum query_listFleetDatumapisComV1alpha1DeviceTypeForAllNamespaces_items_items_spec_componentTemplates_items_face @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
@@ -184208,6 +185433,7 @@ input query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_i
   fees are charged then, and its monthly fees bill from then.
   """
   startsAt: DateTime!
+  term: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_term_Input
   """
   UsageBilled is true when the contract also bills usage, at the rates
   in its Offer, on top of its fees.
@@ -184230,6 +185456,10 @@ input query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_i
   Currency is the ISO 4217 currency code of amount.
   """
   currency: String!
+  """
+  Description is the pricing's description of what the fee is for.
+  """
+  description: String
   """
   DisplayName is the fee's label, as invoices show it (e.g. "Setup
   fee").
@@ -184261,6 +185491,7 @@ input query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_i
   charged is amount times quantity (e.g. 3 × "1000.00").
   """
   quantity: Int
+  servicePeriod: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_servicePeriod_Input
   """
   ServiceRef is the service the fee is for. Empty for a fee that isn't
   for any one service.
@@ -184270,6 +185501,58 @@ input query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_i
   SKU is the fee's product code, from its pricing. Empty when it has none.
   """
   sku: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_sku
+}
+
+"""
+ServicePeriod is a OneTime fee's supply date, from the contract.
+Empty when the fee's period is the day it's charged.
+"""
+input query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_servicePeriod_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  end: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_servicePeriod_end!
+  start: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_fees_items_servicePeriod_start!
+}
+
+"""
+Term is how long the contract runs, what happens when it ends, and
+where it is now. Empty for a contract without a term.
+"""
+input query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_term_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  atEnd: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_term_atEnd!
+  """
+  CurrentTermStartsAt is when the current term started: the contract's
+  start, or the start of its latest renewal. Month to month or
+  stopped, it's when the last term started.
+  """
+  currentTermStartsAt: DateTime!
+  """
+  EndsAt is when the current term ends. Month to month, it's when the
+  last term ended. Stopped, it's when the contract stopped.
+  """
+  endsAt: DateTime!
+  """
+  Months is the first term's length.
+  """
+  months: Int!
+  phase: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_contract_term_phase!
+  """
+  RenewMonths is the length of each renewal, when atEnd is Renew.
+  """
+  renewMonths: Int
+  """
+  RenewalDueAt is when the ContractRenewalDue condition turns on for
+  the current term: ContractRenewalNotice before endsAt. Empty once the
+  contract has stopped.
+  """
+  renewalDueAt: DateTime
+  """
+  Renewals counts the renewals so far, when atEnd is Renew.
+  """
+  renewals: Int
+  """
+  StopsAt is when a contract set to stop stops: the term's end, or the
+  contract's stopsAt once it's month to month.
+  """
+  stopsAt: DateTime
 }
 
 """
@@ -184318,9 +185601,16 @@ active.
 """
 input query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_paymentArrangement_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   """
-  EndsAt is when the arrangement ends, if it has a fixed end.
+  EndsAt is when the arrangement ends, if it has a fixed end. For
+  terms that end with the contract, it's the contract's stop date once
+  the contract is set to stop, and empty while it will carry on.
   """
   endsAt: DateTime
+  """
+  EndsWithContract is true when the terms last as long as the
+  account's contract and end when it stops.
+  """
+  endsWithContract: Boolean
   invoice: query_listBillingMiloapisComV1alpha1BillingAccountForAllNamespaces_items_items_status_paymentArrangement_invoice_Input
   """
   Name is the name of the active BillingArrangement.
@@ -184737,6 +186027,14 @@ input query_listBillingMiloapisComV1alpha1BillingArrangementForAllNamespaces_ite
   current time, which keeps the record for history.
   """
   endsAt: DateTime
+  """
+  EndsWithContract ties the terms to the contract on the account's
+  BillingEntitlement: they stay in effect while the contract runs, in
+  its term, renewed or month to month, and end when it stops. With
+  endsAt too, they end at whichever comes first. Only allowed when the
+  account has a contract. It can be set or cleared at any time.
+  """
+  endsWithContract: Boolean
   invoice: query_listBillingMiloapisComV1alpha1BillingArrangementForAllNamespaces_items_items_spec_invoice_Input
   """
   Reason records why staff granted these terms (for example "Signed
@@ -184915,6 +186213,52 @@ input query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_ite
   Immutable.
   """
   startsAt: DateTime!
+  term: query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_Input
+}
+
+"""
+Term is how long the contract runs and what happens when it ends.
+Without one, the contract runs until it's changed.
+"""
+input query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  atEnd: query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_atEnd = MonthToMonth
+  """
+  Months is the term's length. It's counted the way a fee's periods
+  are, so the term ends on a billing date: from startsAt, or, for a
+  contract billed on the invoice day, from its first billing date, so
+  the prorated first period isn't counted. It must be a whole number
+  of every recurring fee's interval in the Offer.
+  """
+  months: Int!
+  offerAfterRef: query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_offerAfterRef_Input
+  """
+  RenewMonths is the length of each renewal, when atEnd is Renew.
+  Defaults to months. Renewals are counted from the contract's start,
+  so they end on its billing day.
+  """
+  renewMonths: Int
+  """
+  StopsAt is when a contract that's already running month to month
+  stops, at midnight UTC. Only allowed once the term has ended, and
+  then required when atEnd is Stop: a contract in its term stops at
+  the term's end. It must be a billing date on or after the contract's
+  next one, and end the period of every quarterly and annual fee billed
+  in advance.
+  """
+  stopsAt: DateTime
+}
+
+"""
+OfferAfterRef is the Offer the account moves onto when the contract
+stops. Required when atEnd is Stop, and not allowed otherwise. It
+must be a published Offer with no one-time fees. At the stop, billing
+sets offerRef to it.
+"""
+input query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_offerAfterRef_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Name of the Offer.
+  """
+  name: query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_items_items_spec_contract_term_offerAfterRef_name!
 }
 
 """
@@ -184969,6 +186313,119 @@ input query_listBillingMiloapisComV1alpha1BillingEntitlementForAllNamespaces_ite
 }
 
 """
+ChargeDraft is charges staff are preparing for a billing account, to
+check and send later: several lines, which can be changed, previewed
+with an InvoiceRequest, and sent as Charges. Only staff can read drafts,
+because of their notes.
+"""
+input com_miloapis_billing_v1alpha1_ChargeDraft_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+  """
+  apiVersion: String
+  """
+  Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+  """
+  kind: String
+  metadata: io_k8s_apimachinery_pkg_apis_meta_v1_ObjectMeta_Input
+  spec: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_Input!
+}
+
+"""
+ChargeDraftSpec is charges staff are preparing for a billing account and
+haven't sent: one or more lines, and when they'll be invoiced. Unlike a
+Charge, a draft can be changed until it's sent. Sending it adds a Charge
+for each line, in one invoice group when they're invoiced now, and
+removes the draft. Nothing in a draft is billed.
+"""
+input query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  billingAccountRef: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_billingAccountRef_Input!
+  invoice: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_invoice = NextInvoice
+  """
+  Lines are the charges, in the order the invoice lists them.
+  """
+  lines: [query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_Input]!
+}
+
+"""
+BillingAccountRef names the BillingAccount, in this namespace, the
+charges are for.
+"""
+input query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_billingAccountRef_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Name is the name of the BillingAccount.
+  """
+  name: NonEmptyString!
+}
+
+"""
+ChargeDraftLine is one charge in a draft: what a Charge's spec holds for
+it, without the account or timing, which the draft gives for every line.
+Billing fills in what's left out, as it does for a Charge, when the
+draft is sent.
+"""
+input query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  currency: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_currency
+  """
+  Description is what the invoice calls the charge. Defaulted from the
+  pricing's displayName. It's printed on the invoice, so it never
+  carries the SKU.
+  """
+  description: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_description
+  discountPercent: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_discountPercent
+  """
+  Note is for staff and finance, kept on the invoice line's metadata.
+  It's never printed on the invoice or shown to the customer.
+  """
+  note: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_note
+  quantity: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_quantity!
+  servicePeriod: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePeriod_Input
+  servicePricingRef: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePricingRef_Input
+  tax: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_tax_Input
+  unitAmount: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_unitAmount
+}
+
+"""
+ServicePeriod is the dates the charge is for: the invoice line's
+service period. Defaulted to the account's current billing period.
+"""
+input query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePeriod_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  end: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePeriod_end!
+  start: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePeriod_start!
+}
+
+"""
+ServicePricingRef names the catalog item: a OneTime or Recurring
+ServicePricing. Its displayName, amount and tax are the defaults for
+description, unitAmount and tax, and the invoice line counts as its
+product in reports, at whatever price. Omitted, this is a custom
+item, which uses the custom charge product.
+"""
+input query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePricingRef_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Name of the ServicePricing.
+  """
+  name: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_servicePricingRef_name!
+  """
+  Namespace of the ServicePricing.
+  """
+  namespace: String = "milo-system"
+}
+
+"""
+Tax is how the charge is taxed. Defaulted from the pricing's tax.
+Omitted on a custom charge, the account's default tax code applies.
+"""
+input query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_tax_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  code: query_listBillingMiloapisComV1alpha1ChargeDraftForAllNamespaces_items_items_spec_lines_items_tax_code
+  """
+  Taxable is false for a charge that's never taxed, wherever the
+  customer is. Omitted, the charge is taxable.
+  """
+  taxable: Boolean
+}
+
+"""
 Charge is a one-off charge staff add to a billing account: a catalog
 item or a custom one, with a quantity, a service period, an optional
 discount and a staff note. It goes on the account's next invoice, or on
@@ -185005,6 +186462,7 @@ input query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spe
   description: query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_description
   discountPercent: query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_discountPercent
   invoice: query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_invoice = NextInvoice
+  invoiceGroup: query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_invoiceGroup_Input
   """
   Note is for staff and finance, kept on the invoice line's metadata.
   It's never printed on the invoice or shown to the customer.
@@ -185026,6 +186484,22 @@ input query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spe
   Name is the name of the BillingAccount.
   """
   name: NonEmptyString!
+}
+
+"""
+InvoiceGroup puts this charge on one invoice with the account's other
+charges in the same group, for several lines staff send together.
+Only for a charge invoiced now. The group's charges wait until all of
+them are added, then go on one invoice of their own.
+"""
+input query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_invoiceGroup_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  name: query_listBillingMiloapisComV1alpha1ChargeForAllNamespaces_items_items_spec_invoiceGroup_name!
+  """
+  Size is how many charges the group has. Every charge in the group
+  gives the same size, and none is invoiced until all of them are
+  added.
+  """
+  size: Int!
 }
 
 """
@@ -185301,6 +186775,7 @@ InvoiceRequestSpec defines the desired state of an InvoiceRequest.
 """
 input query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   billingAccountRef: query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_billingAccountRef_Input!
+  chargeDraftRef: query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_chargeDraftRef_Input
   contractDraft: query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_contractDraft_Input
   """
   Draft, on a Preview, also leaves the invoice as a draft in the
@@ -185322,6 +186797,18 @@ input query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_i
   Name is the name of the BillingAccount.
   """
   name: NonEmptyString!
+}
+
+"""
+ChargeDraftRef, on a Preview, previews the invoice a ChargeDraft's
+lines would make, on their own, instead of what the account is billed
+for now. The draft must be for this billing account.
+"""
+input query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_chargeDraftRef_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  Name of the ChargeDraft.
+  """
+  name: query_listBillingMiloapisComV1alpha1InvoiceRequestForAllNamespaces_items_items_spec_chargeDraftRef_name!
 }
 
 """
@@ -185873,6 +187360,13 @@ input query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_s
   chargeType: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_chargeType!
   currency: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_currency!
   """
+  Description says what the price is for, in a sentence or two, for
+  customers and staff: the portals show it with the item, and it's the
+  description of the price's Product in Stripe. It isn't printed on
+  invoice lines.
+  """
+  description: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_description
+  """
   DisplayName is a human-readable label for invoices and portals.
   """
   displayName: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_displayName
@@ -185884,6 +187378,12 @@ input query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_s
   Retired, and serviceRef must name the service that owns it.
   """
   metric: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_metric
+  """
+  Notes are for staff and finance only: how the price was agreed, what
+  it covers, who to ask. They're never shown to customers, and they
+  aren't copied into an Offer's snapshot, which customers can read.
+  """
+  notes: query_listBillingMiloapisComV1alpha1NamespacedServicePricing_items_items_spec_notes
   """
   PricingUnit is a human-readable billing unit label (e.g. "vcpu",
   "gib"). Required when chargeType is Usage. Does not need to be the
@@ -186128,6 +187628,7 @@ input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingR
   an Offer that sets it there.
   """
   quantity: Int
+  servicePeriod: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRefs_items_servicePeriod_Input
 }
 
 """
@@ -186138,6 +187639,20 @@ input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingR
   Percentage is a whole number from 0 to 100.
   """
   percentage: Int!
+}
+
+"""
+ServicePeriod is the supply date of a OneTime fee: the days the
+service it charges for was supplied, such as a cage's installation
+date. It's the period on the fee's invoice line, which Revenue
+Recognition spreads it over. Unset, the period is the day the fee is
+charged. It doesn't change when the fee is charged or how much. Only
+allowed on a OneTime pricing: a Recurring fee's period is the period
+it pays for, and a Usage pricing's is when it was used.
+"""
+input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRefs_items_servicePeriod_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  end: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRefs_items_servicePeriod_end!
+  start: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricingRefs_items_servicePeriod_start!
 }
 
 """
@@ -186165,6 +187680,7 @@ input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings
   existed) as 1. Unset for Usage pricings.
   """
   quantity: Int
+  servicePeriod: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_servicePeriod_Input
   spec: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_Input!
 }
 
@@ -186180,7 +187696,18 @@ input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings
 }
 
 """
-Spec is a deep copy of the source ServicePricingSpec at publish time.
+ServicePeriod is a OneTime fee's supply date, captured from the
+reference when the Offer becomes GA. Unset, the fee's period is the
+day it's charged.
+"""
+input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_servicePeriod_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  end: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_servicePeriod_end!
+  start: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_servicePeriod_start!
+}
+
+"""
+Spec is a deep copy of the source ServicePricingSpec at publish time,
+without its notes, which are for staff only.
 """
 input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_Input @join__type(graph: APIS_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   amount: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_amount
@@ -186203,6 +187730,13 @@ input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings
   chargeType: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_chargeType!
   currency: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_currency!
   """
+  Description says what the price is for, in a sentence or two, for
+  customers and staff: the portals show it with the item, and it's the
+  description of the price's Product in Stripe. It isn't printed on
+  invoice lines.
+  """
+  description: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_description
+  """
   DisplayName is a human-readable label for invoices and portals.
   """
   displayName: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_displayName
@@ -186214,6 +187748,12 @@ input query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings
   Retired, and serviceRef must name the service that owns it.
   """
   metric: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_metric
+  """
+  Notes are for staff and finance only: how the price was agreed, what
+  it covers, who to ask. They're never shown to customers, and they
+  aren't copied into an Offer's snapshot, which customers can read.
+  """
+  notes: query_listBillingMiloapisComV1alpha1Offer_items_items_spec_servicePricings_items_spec_notes
   """
   PricingUnit is a human-readable billing unit label (e.g. "vcpu",
   "gib"). Required when chargeType is Usage. Does not need to be the
@@ -193965,6 +195505,13 @@ input query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNa
   contextRef: query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_spec_contextRef_Input!
   destinationAddress: query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_spec_destinationAddress!
   region: query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_spec_region!
+  """
+  RegionalAddress is the address the node resolver forwards this
+  context's queries to in the region. It must be inside the region's
+  regional resolver range and used by no other binding. Unset, the
+  control plane allocates one, unless it is configured to require it.
+  """
+  regionalAddress: query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_spec_regionalAddress
 }
 
 """
@@ -193985,6 +195532,10 @@ input query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNa
 input query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_status_Input @join__type(graph: APIS_DNS_NETWORKING_MILOAPIS_COM_V1_ALPHA1)  {
   conditions: [query_listDnsNetworkingMiloapisComV1alpha1DNSResolverAccessBindingForAllNamespaces_items_items_status_conditions_items_Input]
   observedGeneration: BigInt
+  """
+  RegionalAddress is the regional address the binding is served on.
+  """
+  regionalAddress: String
 }
 
 """
@@ -194911,7 +196462,8 @@ input query_listFeedbackMiloapisComV1alpha1FeedbackProfile_items_items_spec_user
 
 """
 FeedbackSource configures what the feedback service syncs from one GitHub
-organization and how GitHub fields map onto posts. There is one per org.
+organization and how GitHub fields map onto posts. There is one per org,
+named after it: a sweep treats every post of the org as its own.
 
 FeedbackSource is a Platform resource stored in etcd.
 """
@@ -194956,10 +196508,7 @@ input query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_githu
   installationID: BigInt!
   issues: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues_Input
   milestones: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_milestones_Input
-  """
-  Org is the GitHub organization login.
-  """
-  org: String!
+  org: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_org!
   project: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_project_Input
   repositories: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_repositories_Input
 }
@@ -194978,9 +196527,9 @@ Issues selects which issues become posts. An issue is included when it
 matches any issue type or label, and is not excluded.
 """
 input query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues_Input @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1)  {
-  excludeLabels: [String]
-  issueTypes: [String]
-  labels: [String]
+  excludeLabels: [query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues_excludeLabels_items]
+  issueTypes: [query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues_issueTypes_items]
+  labels: [query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_issues_labels_items]
 }
 
 """
@@ -194999,10 +196548,7 @@ input query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_githu
   Number is the project number.
   """
   number: Int!
-  """
-  Owner is the org that owns the project.
-  """
-  owner: String!
+  owner: query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_project_owner!
   """
   StatusField is the single-select field that holds item status.
   """
@@ -195018,8 +196564,8 @@ Repositories selects which public repositories are synced. Private
 repositories are always skipped.
 """
 input query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_repositories_Input @join__type(graph: APIS_FEEDBACK_MILOAPIS_COM_V1_ALPHA1)  {
-  exclude: [String]
-  include: [String]
+  exclude: [query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_repositories_exclude_items]
+  include: [query_listFeedbackMiloapisComV1alpha1FeedbackSource_items_items_spec_github_repositories_include_items]
 }
 
 """
@@ -196076,9 +197622,8 @@ input query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items
   cableRefs: [query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_cableRefs_items_Input]
   displayName: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_displayName
   expectedIdentity: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_expectedIdentity_Input!
-  lifecycle: Installation_const
+  lifecycle: Installation_const!
   placement: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_Input!
-  ports: [query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_Input]
 }
 
 input query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_cableRefs_items_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
@@ -196093,14 +197638,12 @@ input query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items
 
 input query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
   face: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_face
-  facility: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_facility
   facilityRef: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_facilityRef_Input
   height: Int
   mount: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_mount
   position: Int
-  rack: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_rack
   rackRef: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_rackRef_Input
-  scope: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_scope
+  scope: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_scope!
 }
 
 input query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_facilityRef_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
@@ -196109,18 +197652,6 @@ input query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items
 
 input query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_rackRef_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
   name: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_placement_rackRef_name!
-}
-
-input query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
-  expectedPeer: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_expectedPeer_Input
-  name: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_name!
-  speedMbps: BigInt
-  type: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_type
-}
-
-input query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_expectedPeer_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
-  device: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_expectedPeer_device!
-  port: query_listFleetDatumapisComV1alpha1DeviceClaimForAllNamespaces_items_items_spec_ports_items_expectedPeer_port!
 }
 
 input com_datumapis_fleet_v1alpha1_Device_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
@@ -196134,7 +197665,7 @@ input com_datumapis_fleet_v1alpha1_Device_Input @join__type(graph: APIS_FLEET_DA
   kind: String
   metadata: io_k8s_apimachinery_pkg_apis_meta_v1_ObjectMeta_Input
   spec: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_Input!
-  status: JSON
+  status: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_Input
 }
 
 input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
@@ -196190,12 +197721,6 @@ input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec
 input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
   macAddress: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_macAddress
   name: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_name!
-  peer: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_peer_Input
-}
-
-input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_peer_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
-  device: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_peer_device!
-  port: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_interfaces_items_peer_port!
 }
 
 input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_internalMappings_items_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
@@ -196256,6 +197781,88 @@ input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec
   id: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_serviceAssociations_items_serviceRef_id!
   system: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_serviceAssociations_items_serviceRef_system!
   type: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_spec_serviceAssociations_items_serviceRef_type!
+}
+
+"""
+Written only by read-only BMC discovery through the status subresource. Observations are evidence; spec stays authoritative.
+"""
+input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  conditions: [query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_Input]
+  discovery: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_Input
+  observedGeneration: BigInt
+}
+
+input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  lastTransitionTime: DateTime!
+  message: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_message!
+  observedGeneration: BigInt
+  reason: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_reason!
+  status: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_status!
+  type: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_conditions_items_type!
+}
+
+input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  inventory: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_Input
+  lastAttemptAt: DateTime
+  lastAttemptEndpoint: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_lastAttemptEndpoint
+  serviceRoot: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_Input
+  tls: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_tls_Input
+}
+
+input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  endpoint: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_endpoint!
+  managers: [query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_Input]
+  observedAt: DateTime!
+  systems: [query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_Input]
+}
+
+input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  firmwareVersion: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_firmwareVersion
+  id: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_id!
+  model: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_model
+  networkInterfaces: [query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items_Input]
+}
+
+input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  id: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items_id!
+  linkStatus: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items_linkStatus
+  macAddress: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_managers_items_networkInterfaces_items_macAddress
+  speedMbps: NonNegativeInt
+}
+
+input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  id: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_id!
+  manufacturer: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_manufacturer
+  model: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_model
+  networkInterfaces: [query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items_Input]
+  powerState: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_powerState
+  serialNumber: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_serialNumber
+  sku: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_sku
+  uuid: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_uuid
+}
+
+input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  id: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items_id!
+  linkStatus: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items_linkStatus
+  macAddress: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_inventory_systems_items_networkInterfaces_items_macAddress
+  speedMbps: NonNegativeInt
+}
+
+input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  endpoint: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_endpoint!
+  observedAt: DateTime!
+  product: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_product
+  redfishVersion: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_redfishVersion
+  uuid: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_uuid
+  vendor: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_serviceRoot_vendor
+}
+
+input query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_tls_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
+  endpoint: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_tls_endpoint!
+  notAfter: DateTime
+  observedAt: DateTime!
+  publicKeySHA256: query_listFleetDatumapisComV1alpha1DeviceForAllNamespaces_items_items_status_discovery_tls_publicKeySHA256!
+  selfSigned: Boolean
 }
 
 input com_datumapis_fleet_v1alpha1_DeviceType_Input @join__type(graph: APIS_FLEET_DATUMAPIS_COM_V1_ALPHA1)  {
@@ -209605,6 +211212,11 @@ input query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_statu
   Conditions provide conditions that represent the current status of the UserInvitation.
   """
   conditions: [query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status_conditions_items_Input] = [{lastTransitionTime: "1970-01-01T00:00:00.000Z", message: "Waiting for control plane to reconcile", reason: "Unknown", status: Unknown, type: "Unknown"}]
+  """
+  InviteeEmailHash is the hex SHA-256 of the trimmed, lowercased spec.email.
+  The invited user lists their invitations by it.
+  """
+  inviteeEmailHash: String
   inviteeUser: query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status_inviteeUser_Input
   inviterUser: query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status_inviterUser_Input
   organization: query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status_organization_Input
@@ -209636,8 +211248,7 @@ input query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_statu
 }
 
 """
-InviteeUser contains information about the invitee user in the invitation.
-This value may be nil if the invitee user has not been created yet.
+InviteeUser is no longer set and is cleared on existing invitations.
 """
 input query_listIamMiloapisComV1alpha1NamespacedUserInvitation_items_items_status_inviteeUser_Input @join__type(graph: APIS_IAM_MILOAPIS_COM_V1_ALPHA1)  {
   """
@@ -216660,6 +218271,7 @@ input query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_it
   Addresses where the connector can be reached
   """
   addresses: [query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_items_status_connectionDetails_publicKey_addresses_items_Input]!
+  binding: query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_items_status_connectionDetails_publicKey_binding_Input
   discoveryMode: DNS_const
   """
   Home Relay server of the connector
@@ -216685,6 +218297,19 @@ input query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_it
   Port where the connector can be reached.
   """
   port: Int!
+}
+
+"""
+Binding proves the agent publishing this Connector holds the private
+key for Id.
+"""
+input query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_items_status_connectionDetails_publicKey_binding_Input @join__type(graph: APIS_NETWORKING_DATUMAPIS_COM_V1_ALPHA1)  {
+  """
+  Signature is the standard base64 encoding of the ed25519 signature,
+  made with the endpoint's private key, over the message
+  "datum-connector-binding/v1\n<metadata.uid>\n<publicKey.id>".
+  """
+  signature: query_listNetworkingDatumapisComV1alpha1ConnectorForAllNamespaces_items_items_status_connectionDetails_publicKey_binding_signature
 }
 
 """
@@ -223669,6 +225294,13 @@ input query_listStripeBillingMiloapisComV1alpha1NamespacedStripeCustomer_items_i
   """
   conditions: [query_listStripeBillingMiloapisComV1alpha1NamespacedStripeCustomer_items_items_status_conditions_items_Input]
   """
+  CustomerNumber is the account's customer number, the first half of
+  its invoice numbers. It's handed out just before the account's
+  first invoice is finalized, when the StripeProviderConfig has
+  spec.invoiceNumbers set.
+  """
+  customerNumber: BigInt
+  """
   ObservedGeneration is the most recent generation observed by the
   controller.
   """
@@ -224316,6 +225948,7 @@ input query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items
   an external secret manager.
   """
   apiVersion: String
+  invoiceNumbers: query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items_spec_invoiceNumbers_Input
   """
   PublishableKey is the Stripe publishable API key used by the portal
   to initialize Stripe.js. This value is non-sensitive and is read by
@@ -224323,6 +225956,22 @@ input query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items
   PaymentMethodClass.
   """
   publishableKey: NonEmptyString!
+}
+
+"""
+InvoiceNumbers turns on numeric invoice numbers. When set, each
+billing account gets a customer number just before its first
+invoice is finalized, and the number becomes its Stripe customer's
+invoice_prefix, so invoices are numbered like 1042-0003. When
+unset, Stripe's random prefixes are left alone.
+"""
+input query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items_spec_invoiceNumbers_Input @join__type(graph: APIS_STRIPE_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
+  """
+  FirstCustomerNumber is the first customer number handed out. Later
+  customers get the next number up. Stripe allows prefixes of up to
+  12 digits.
+  """
+  firstCustomerNumber: BigInt!
 }
 
 """
@@ -224334,6 +225983,12 @@ input query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items
   config's state.
   """
   conditions: [query_listStripeBillingMiloapisComV1alpha1StripeProviderConfig_items_items_status_conditions_items_Input]
+  """
+  LastCustomerNumber is the highest customer number handed out: the
+  counter for spec.invoiceNumbers. It's written with an update, not
+  a patch, so two writers can't hand out the same number.
+  """
+  lastCustomerNumber: BigInt
   """
   ObservedGeneration is the most recent generation observed by the
   controller.
@@ -224870,16 +226525,28 @@ input com_miloapis_go_billing_api_usage_v1alpha1_UsagePoint_Input @join__type(gr
 
 """
 UsageSpend is what usage costs.
+
+The usage is priced at the billing account's own rates: those of the pricings in its Offer, including a customer pricing that replaces a list price (spec.basedOn), never the list price it replaces. The Offer's discounts then come off, as they do on the invoice:
+
+	amount = amountBeforeDiscounts - discountAmount
 """
 input com_miloapis_go_billing_api_usage_v1alpha1_UsageSpend_Input @join__type(graph: APIS_USAGE_BILLING_MILOAPIS_COM_V1_ALPHA1)  {
   """
-  Amount is the cost as a decimal string in Currency (for example "12.5"), before taxes, credits, discounts and minimum commitments. In a project, or with spec.projects set, it prices only that usage, as if it were the billing account's only usage.
+  Amount is what the usage costs as a decimal string in Currency (for example "12.5"), after the Offer's discounts, as the invoice charges it. It is before taxes, credits and minimum commitments. In a project, or with spec.projects set, it prices only that usage, as if it were the billing account's only usage.
   """
   amount: String!
   """
-  Currency is the ISO 4217 code of Amount, for example "USD".
+  AmountBeforeDiscounts is what the usage costs before the Offer's discounts, as a decimal string in Currency: the amount the invoice shows before its discount lines. Left empty by providers that don't report it; Amount is then all that is known.
+  """
+  amountBeforeDiscounts: String
+  """
+  Currency is the ISO 4217 code of the amounts, for example "USD".
   """
   currency: String!
+  """
+  DiscountAmount is what the Offer's discounts take off AmountBeforeDiscounts, as a decimal string in Currency: "0" when nothing is discounted. Set whenever AmountBeforeDiscounts is.
+  """
+  discountAmount: String
 }
 
 """
