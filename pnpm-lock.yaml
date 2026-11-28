@@ -201,8 +201,8 @@ importers:
         specifier: ^1.5.8
         version: 1.5.15(graphql@16.15.0)(ioredis@5.11.1(supports-color@8.1.1))(supports-color@8.1.1)(ws@8.22.2)
       '@graphql-hive/router-query-planner':
-        specifier: ^0.0.49
-        version: 0.0.49
+        specifier: ^0.0.58
+        version: 0.0.58
       '@graphql-hive/router-runtime':
         specifier: ^1.3.2
         version: 1.6.16(@types/node@24.19.4)(graphql@16.15.0)(ioredis@5.11.1(supports-color@8.1.1))
@@ -896,6 +896,10 @@ packages:
 
   '@graphql-hive/router-query-planner@0.0.49':
     resolution: {integrity: sha512-Wq80cWK6HWz01H2Or+Nr/J1Tw9rJoZCFGDWBATqk93MFai8w4MBrXE7FXMvYpkUAsvBy9HQe0NqiIx8EuzSz3Q==}
+    engines: {bun: ^1, node: '>=20'}
+
+  '@graphql-hive/router-query-planner@0.0.58':
+    resolution: {integrity: sha512-QEyfjYCUZDkNB+nYvSmBet/kWkSD2RkoYykJZqz6AfgS8m3ffHSO43T3sBLuPT1WOM/aVsjHAUnk06eKikQW5A==}
     engines: {bun: ^1, node: '>=20'}
 
   '@graphql-hive/router-runtime@1.6.16':
@@ -6131,6 +6135,8 @@ snapshots:
       - zod
 
   '@graphql-hive/router-query-planner@0.0.49': {}
+
+  '@graphql-hive/router-query-planner@0.0.58': {}
 
   '@graphql-hive/router-runtime@1.6.16(@types/node@24.19.4)(graphql@16.15.0)(ioredis@5.11.1(supports-color@8.1.1))':
     dependencies:
