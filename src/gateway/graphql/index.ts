@@ -1,3 +1,5 @@
 export { additionalTypeDefs } from './typeDefs'
 export { additionalResolvers } from './resolvers'
 export { useGatewayLocalSchema } from './plugin'
+export { useSanitizedErrors } from './sanitize-errors'
+export { useInternalPortAllowlist } from './internal-port'

@@ -6,22 +6,32 @@ const { runtime, auth, sent } = vi.hoisted(() => ({
     isSupergraphReady: vi.fn(() => true),
     gateway: vi.fn(() => Promise.resolve()),
   },
-  auth: { isInitialized: vi.fn(() => true) },
-  sent: [] as { status: number; body: unknown }[],
+  auth: {
+    isInitialized: vi.fn(() => true),
+    checkCaller: vi.fn(async (): Promise<string> => 'authenticated'),
+  },
+  sent: [] as { status: number; body: unknown; headers?: Record<string, string> }[],
 }))
 
 vi.mock('@/gateway/runtime', () => runtime)
 vi.mock('@/gateway/auth', () => auth)
 vi.mock('@/gateway/metrics/graphql-responses', () => ({ countGraphQLResponse: vi.fn() }))
 vi.mock('@/gateway/utils', () => ({
-  sendJson: (_res: ServerResponse, status: number, body: unknown) => sent.push({ status, body }),
+  sendJson: (
+    _res: ServerResponse,
+    status: number,
+    body: unknown,
+    headers?: Record<string, string>
+  ) => sent.push({ status, body, ...(headers ? { headers } : {}) }),
   parseUrl: (url: string, host: string) => new URL(url, `http://${host}`),
 }))
 vi.mock('@/shared/utils', () => ({
   log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }))
 
-import { handleGraphQL } from './graphql'
+import { env } from '@/gateway/config'
+import { handleGraphQL, handleInternalGraphQL } from './graphql'
+import { receivedOnInternalPort } from '@/gateway/graphql/internal-port'
 import { handleHealthCheck, handleReadinessCheck } from './health'
 import { handleMetrics } from './metrics'
 
@@ -127,5 +137,121 @@ describe('GraphQL resource headers', () => {
 
     expect(runtime.gateway).toHaveBeenCalledWith(metricsReq, res)
     for (const header of RESOURCE_HEADERS) expect(metricsReq.headers[header]).toBeUndefined()
+  })
+})
+
+describe('GraphQL caller check', () => {
+  beforeEach(() => {
+    sent.length = 0
+    runtime.gateway.mockClear()
+    auth.checkCaller.mockReset()
+    env.authMode = 'enforce'
+  })
+
+  it('passes the Authorization header to the check and forwards an accepted caller', async () => {
+    auth.checkCaller.mockResolvedValue('authenticated')
+    const graphqlReq = graphReq('/graphql', { authorization: 'Bearer tok' })
+
+    await handleGraphQL(graphqlReq, res)
+
+    expect(auth.checkCaller).toHaveBeenCalledWith('Bearer tok')
+    expect(runtime.gateway).toHaveBeenCalledWith(graphqlReq, res)
+    expect(sent).toEqual([])
+  })
+
+  it.each(['missing', 'unauthenticated'])(
+    'refuses a %s token with 401 before anything reaches Hive',
+    async (verdict) => {
+      auth.checkCaller.mockResolvedValue(verdict)
+
+      await handleGraphQL(graphReq('/graphql'), res)
+
+      expect(runtime.gateway).not.toHaveBeenCalled()
+      expect(sent).toEqual([
+        {
+          status: 401,
+          body: {
+            errors: [
+              { message: 'Authentication required', extensions: { code: 'UNAUTHENTICATED' } },
+            ],
+          },
+          headers: { 'WWW-Authenticate': 'Bearer' },
+        },
+      ])
+    }
+  )
+
+  it('refuses scoped paths too', async () => {
+    auth.checkCaller.mockResolvedValue('missing')
+
+    await handleGraphQL(graphReq('/resourcemanager.miloapis.com/v1alpha1/projects/p/graphql'), res)
+
+    expect(runtime.gateway).not.toHaveBeenCalled()
+    expect(sent[0]).toMatchObject({ status: 401 })
+  })
+
+  it('answers 503 when Milo cannot check the token', async () => {
+    auth.checkCaller.mockResolvedValue('unavailable')
+
+    await handleGraphQL(graphReq('/graphql', { authorization: 'Bearer tok' }), res)
+
+    expect(runtime.gateway).not.toHaveBeenCalled()
+    expect(sent[0]).toMatchObject({
+      status: 503,
+      body: { errors: [{ extensions: { code: 'UPSTREAM_UNAVAILABLE' } }] },
+    })
+  })
+
+  it('lets a failed check through when AUTH_MODE=log', async () => {
+    env.authMode = 'log'
+    auth.checkCaller.mockResolvedValue('missing')
+    const graphqlReq = graphReq('/graphql')
+
+    await handleGraphQL(graphqlReq, res)
+
+    expect(runtime.gateway).toHaveBeenCalledWith(graphqlReq, res)
+    expect(sent).toEqual([])
+  })
+})
+
+describe('internal GraphQL port', () => {
+  beforeEach(() => {
+    sent.length = 0
+    runtime.gateway.mockClear()
+    auth.checkCaller.mockReset()
+    env.authMode = 'enforce'
+  })
+
+  it('forwards a tokenless request without checking it, marked as internal', async () => {
+    const graphqlReq = graphReq('/graphql')
+
+    await handleInternalGraphQL(graphqlReq, res)
+
+    expect(auth.checkCaller).not.toHaveBeenCalled()
+    expect(runtime.gateway).toHaveBeenCalledWith(graphqlReq, res)
+    expect(receivedOnInternalPort(graphqlReq)).toBe(true)
+    expect(sent).toEqual([])
+  })
+
+  it('leaves requests on the routed port unmarked', async () => {
+    auth.checkCaller.mockResolvedValue('authenticated')
+    const graphqlReq = graphReq('/graphql', { authorization: 'Bearer tok' })
+
+    await handleGraphQL(graphqlReq, res)
+
+    expect(receivedOnInternalPort(graphqlReq)).toBe(false)
+  })
+
+  it('still derives scoped headers and drops client-supplied ones', async () => {
+    const graphqlReq = graphReq(
+      '/resourcemanager.miloapis.com/v1alpha1/projects/proj-a/graphql',
+      CLIENT_RESOURCE_HEADERS
+    )
+
+    await handleInternalGraphQL(graphqlReq, res)
+
+    expect(auth.checkCaller).not.toHaveBeenCalled()
+    expect(graphqlReq.headers['x-resource-name']).toBe('proj-a')
+    expect(graphqlReq.headers['x-resource-api-group']).toBe('resourcemanager.miloapis.com')
   })
 })

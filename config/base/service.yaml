@@ -14,6 +14,21 @@ spec:
       protocol: TCP
       appProtocol: https
       targetPort: https
+    # geolocateIP and parseUserAgent only, without the token check, for
+    # in-cluster callers (the Zitadel actions receiver). The HTTPRoute routes
+    # port 4000, so this port is never public.
+    - name: internal
+      port: 4001
+      protocol: TCP
+      appProtocol: https
+      targetPort: internal
+    # Prometheus only. The HTTPRoute routes port 4000, so /metrics never
+    # reaches a public listener.
+    - name: metrics
+      port: 9464
+      protocol: TCP
+      appProtocol: https
+      targetPort: metrics
   selector:
     app.kubernetes.io/component: backend
     app.kubernetes.io/instance: graphql-gateway

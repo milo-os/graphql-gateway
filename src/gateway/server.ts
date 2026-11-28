@@ -12,6 +12,7 @@ import {
   handleReadinessCheck,
   isGraphQLEndpoint,
   handleGraphQL,
+  handleInternalGraphQL,
   isMetrics,
   handleMetrics,
 } from './handlers'
@@ -80,13 +81,7 @@ export const createGatewayServer = () => {
       return handleReadinessCheck(req, res)
     }
 
-    // Metrics endpoint
-    if (isMetrics(pathname)) {
-      log.debug(logMessage)
-      return handleMetrics(req, res)
-    }
-
-    // 404 for everything else
+    // 404 for everything else, /metrics included: it is served on the metrics port
     log.warn(`Not found: ${pathname}`)
     sendJson(res, 404, {
       error: 'Not Found',
@@ -99,4 +94,46 @@ export const createGatewayServer = () => {
   server.keepAliveTimeout = 75_000
   server.headersTimeout = 76_000
   return server
+}
+
+/**
+ * Serves geolocateIP and parseUserAgent without the token check on the internal
+ * port, for in-cluster callers that send no token (the Zitadel actions
+ * receiver). useInternalPortAllowlist refuses every other operation here. The
+ * Service names this port separately and no HTTPRoute targets it, so it is
+ * never public. Health checks stay on the main port.
+ */
+export const createInternalGraphQLServer = () => {
+  const tlsOptions = loadTlsOptions()
+
+  const dispatch = async (req: IncomingMessage, res: ServerResponse) => {
+    const { pathname } = parseUrl(req.url!, req.headers.host!)
+    if (isGraphQLEndpoint(pathname)) {
+      log.info(`${req.method} ${pathname} (internal)`)
+      return handleInternalGraphQL(req, res)
+    }
+    sendJson(res, 404, { error: 'Not Found' })
+  }
+
+  const server = createServer(tlsOptions, withRequestContext(dispatch))
+  server.keepAliveTimeout = 75_000
+  server.headersTimeout = 76_000
+  return server
+}
+
+/**
+ * Serves /metrics on its own port. The Service names this port separately and
+ * the HTTPRoute only routes the GraphQL port, so Prometheus can scrape it
+ * in-cluster while it stays off any public hostname.
+ */
+export const createMetricsServer = () => {
+  const tlsOptions = loadTlsOptions()
+
+  const dispatch = async (req: IncomingMessage, res: ServerResponse) => {
+    const { pathname } = parseUrl(req.url!, req.headers.host!)
+    if (isMetrics(pathname)) return handleMetrics(req, res)
+    sendJson(res, 404, { error: 'Not Found' })
+  }
+
+  return createServer(tlsOptions, dispatch)
 }

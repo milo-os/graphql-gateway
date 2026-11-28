@@ -9,6 +9,10 @@ import {
 import { instrumentFetch } from '@/gateway/metrics/upstream-fetch'
 import type { K8sMTLSConfig } from '@/gateway/clients'
 import { log } from '@/shared/utils'
+import { bearerToken, createCallerCache, reviewToken } from './caller'
+import type { CallerVerdict } from './caller'
+
+export type { CallerVerdict } from './caller'
 
 // K8s mTLS state
 let k8sServer: string | null = null
@@ -117,4 +121,23 @@ export function getOriginalFetch(): typeof fetch {
  */
 export function isInitialized(): boolean {
   return initialized
+}
+
+let callerCache: ((token: string) => Promise<CallerVerdict>) | null = null
+
+/**
+ * Decides whether a GraphQL request comes from a caller Milo accepts, from
+ * its Authorization header. Milo reviews the token through the fetch that
+ * presents no client certificate, so it answers for the caller rather than
+ * for the gateway.
+ *
+ * @throws Error if auth not initialized
+ */
+export function checkCaller(authorization: string | string[] | undefined): Promise<CallerVerdict> {
+  const token = bearerToken(authorization)
+  if (!token) return Promise.resolve('missing')
+  callerCache ??= createCallerCache({
+    review: (t) => reviewToken(t, getOriginalFetch(), getK8sServer()),
+  })
+  return callerCache(token)
 }

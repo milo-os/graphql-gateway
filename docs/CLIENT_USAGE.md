@@ -24,6 +24,8 @@ import * as dotenv from 'dotenv'
 dotenv.config()
 
 // The URL of your running GraphQL Gateway (local or remote)
+// The gateway needs a token on every request, introspection included.
+// For example: export DATUM_TOKEN="$(datumctl auth get-token --output=token)"
 const GRAPHQL_ENDPOINT = process.env.GRAPHQL_URL || 'http://localhost:4000/graphql' // or 'https://graphql.prod.env.datum.net/graphql'
 
 const config: CodegenConfig = {
@@ -31,7 +33,7 @@ const config: CodegenConfig = {
   // Point schema to the gateway to fetch the latest schema introspection
   schema: {
     [GRAPHQL_ENDPOINT]: {
-      headers: {},
+      headers: { Authorization: `Bearer ${process.env.DATUM_TOKEN}` },
     },
   },
   // Paths to your GraphQL operation files
@@ -124,7 +126,8 @@ export async function graphqlRequest<TData, TVariables>(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      // 'Authorization': `Bearer ${token}` // Add auth if needed
+      // Required: the gateway answers 401 without a token Milo accepts
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ query, variables }),
   })
@@ -147,6 +150,10 @@ export async function graphqlRequest<TData, TVariables>(
 
 > [!NOTE]
 > This is just a reference implementation. Since the Gateway exposes a standard GraphQL introspection endpoint, you are free to use any GraphQL client (Apollo, Urql, or custom fetch wrappers) and implement your own error handling or logic as needed.
+
+### In-cluster callers without a token
+
+A service inside the cluster that has no user token and needs only `geolocateIP` or `parseUserAgent`, such as the Zitadel actions receiver, calls the internal port instead: `https://graphql-gateway.graphql-gateway.svc.cluster.local:4001/graphql`. It answers queries whose root fields are those two only, without a token, and is not reachable from outside the cluster. Every other operation there gets HTTP 403 with code `FORBIDDEN`. A service that needs anything else must call port 4000 with a token.
 
 ## 3. Querying Resources
 
@@ -277,8 +284,6 @@ When switching scopes, you typically re-create or re-configure your GraphQL clie
 function createOrgClient(orgName: string) {
   const uri = `https://graphql.prod.env.datum.net/resourcemanager.miloapis.com/v1alpha1/organizations/${orgName}/graphql`
 
-  return new GraphQLClient(uri, {
-    /* ... */
-  })
+  return new GraphQLClient(uri, {/* ... */})
 }
 ```
